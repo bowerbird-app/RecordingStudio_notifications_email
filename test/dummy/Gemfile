@@ -1,7 +1,10 @@
 source "https://rubygems.org"
 
-# Use the gem_template engine
-gem "gem_template", path: "../.."
+# Email notification channel under test
+gem "recording_studio_notifications_email", path: "../.."
+gem "recording_studio_notifications",
+    github: "bowerbird-app/RecordingStudio_notifications",
+    branch: "copilot/create-recording-studio-notifications"
 
 # RecordingStudio engine
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "recording_studio/v3.0.0"

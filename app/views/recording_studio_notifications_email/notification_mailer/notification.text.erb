@@ -1,0 +1,6 @@
+<%= @event.title %>
+
+<% if @event.body.present? %><%= @event.body %>
+
+<% end %><% if @event.url.present? %>View notification: <%= @event.url %>
+<% end %>

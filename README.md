@@ -1,139 +1,157 @@
-# GemTemplate
+# RecordingStudioNotificationsEmail
 
-Internal template for building Rails engine addons on top of RecordingStudio.
+`recording_studio_notifications_email` is the Action Mailer channel for
+[`recording_studio_notifications`](https://github.com/bowerbird-app/RecordingStudio_notifications).
+It is a standalone Rails engine under `RecordingStudioNotificationsEmail`.
 
-## What's Included
+The gem stores no data, mounts no endpoints, and processes no webhooks. The
+parent notifications engine owns persistence, background delivery, retries,
+idempotency, preferences, and delivery status.
 
-- **RecordingStudio** gem installed and configured
-- **Devise** authentication with a pre-seeded admin user
-- **Workspace**, **Folder**, and **Page** recordables seeded into the dummy host app
-- **FlatPack** UI component library for all views
-- **Dummy app** (`test/dummy/`) with a FlatPack-based sign-in screen, a simple home page, mounted RecordingStudio routes, and FlatPack's built-in rounded theme enabled by default
-
-The dummy app ships with a starter sidebar documentation shell for authenticated pages. The menu entries in `test/dummy/app/views/layouts/flat_pack/_sidebar.html.erb` and the linked docs pages are intended to be rewritten to suit the addon you are building; the template provides the structure and styling, not final product copy. By default, that starter shell uses FlatPack's built-in rounded theme via the root layout attribute rather than custom Tailwind theme recreation.
-
-## Quick Start
-
-### GitHub Codespaces (Recommended)
-
-1. Click **Code** → **Codespaces** → **Create codespace**
-2. Wait for setup to complete
-3. Run:
-   ```bash
-   cd test/dummy
-   bin/rails db:setup
-   bin/dev
-   ```
-4. Open port 3000 — you'll land on the dummy app home page and can sign in at `/users/sign_in`
-
-The dummy app is intended as a host-app validation surface for authentication, FlatPack rendering, Tailwind source scanning, and RecordingStudio route wiring.
-
-### Login Credentials
-
-| Field    | Value             |
-|----------|-------------------|
-| Email    | admin@admin.com   |
-| Password | Password          |
-
-The login form is prefilled with these credentials for fast access.
-
-### Useful Routes
-
-- `/` — dummy app home page
-- `/users/sign_in` — Devise sign-in page
-- `/recording_studio` — redirect to `/` while the mounted RecordingStudio engine remains data/API-focused
-- `/docs/install` — install guide rendered inside the dummy app
-- `/docs/config`, `/docs/recordable_types`, `/docs/recordings_tree`, `/docs/gem_views`, `/docs/methods` — starter sidebar pages to customize for your gem
-
-The home page in `test/dummy/app/views/home/index.html.erb` is also a deliberate starting point. Keep it focused on a minimal demo of the gem's primary behavior; use the sidebar pages for deeper explanations and supporting reference material.
-
-## Architecture
-
-### Root Recording Pattern
-
-This template follows RecordingStudio's root recording pattern:
-
-- **Workspace** is the top-level recordable
-- **Folder** and **Page** demonstrate nested recordables under the workspace root
-- Each configured recordable declares `recording_studio_recordable(...)`; strict declaration validation stays enabled
-- A root `RecordingStudio::Recording` wraps the Workspace
-- `Current.actor` is set from `current_user` (Devise) in `ApplicationController`
-
-### Extending RecordingStudio
-
-To add new recordable types:
-
-1. Create your model (e.g., `Page`, `Comment`)
-2. Register it in `config/initializers/recording_studio.rb`:
-   ```ruby
-   RecordingStudio.configure do |config|
-     config.recordable_types = ["Workspace", "YourNewType"]
-   end
-   ```
-3. Declare whether the model can be a root and which parents may contain it:
-   ```ruby
-   class YourNewType < ApplicationRecord
-     recording_studio_recordable label: "Your new type",
-                                 root: false,
-                                 allowed_parent_types: ["Workspace", "Folder"]
-   end
-   ```
-4. Validate declarations and create recordings under the root:
-   ```ruby
-   RecordingStudio.validate_recordable_declarations!
-   root_recording = RecordingStudio.root_recording_for(workspace)
-   root_recording.record(YourNewType) do |record|
-     record.title = "Example"
-   end
-   ```
-
-### RecordingStudio v3 Declarations
-
-RecordingStudio v3 expects every configured ActiveRecord recordable type to declare its hierarchy rules:
-
-- `Workspace` declares `root: true`
-- `Folder` and `Page` declare `root: false, allowed_parent_types: ["Workspace", "Folder"]`
-- `config.require_recordable_declarations = true` remains enabled in the dummy app initializer
-
-Useful console checks:
+## Installation
 
 ```ruby
-RecordingStudio.validate_recordable_declarations!
-RecordingStudio.root_recordable_types
-RecordingStudio.allowed_parent_types_for("Page")
+gem "recording_studio_notifications_email"
 ```
 
-### FlatPack UI Components
+```bash
+bin/rails generate recording_studio_notifications_email:install
+```
 
-All views use FlatPack ViewComponents. Available components include:
+No migration or route is required. During Rails preparation the engine
+registers an `:email` channel equivalent to:
 
-- `FlatPack::Button::Component` — Buttons (`:primary`, `:secondary`, `:ghost`)
-- `FlatPack::Card::Component` — Cards (`:default`, `:elevated`, `:outlined`)
-- `FlatPack::Alert::Component` — Alerts (`:success`, `:error`, `:warning`, `:info`)
-- `FlatPack::Badge::Component` — Status badges
-- `FlatPack::Table::Component` — Data tables
-- `FlatPack::TextInput::Component`, `EmailInput`, `PasswordInput` — Form inputs
-- `FlatPack::Breadcrumb::Component` — Navigation breadcrumbs
-- `FlatPack::Navbar::Component` — Navigation sidebar
+```ruby
+RecordingStudioNotifications.register_channel(
+  :email,
+  RecordingStudioNotificationsEmail.adapter
+)
+```
 
-Use the live FlatPack demo app at [flatpack-c6p8f.ondigitalocean.app](https://flatpack-c6p8f.ondigitalocean.app/) as the approved UI reference for current shared patterns. Its component table is the fastest way to discover available FlatPack components before introducing new custom UI, and user-provided FlatPack demo URLs should be treated as task context.
+For local development in this repository, parent gems are sourced from GitHub
+until published releases are available (`recording_studio` and
+`recording_studio_notifications` in `Gemfile`).
 
-In GitHub Codespaces or other restricted environments, you may need to enable access to that URL before the agent can inspect the app. If access is unavailable, provide sanitized screenshots, copied markup, or component details so the agent can stay aligned with the shared UI.
+## Configuration
 
-See the [FlatPack README](https://github.com/bowerbird-app/flatpack) for full documentation.
+```ruby
+RecordingStudioNotificationsEmail.configure do |config|
+  config.from = Rails.application.credentials.dig(:notifications, :from_email)
+  config.reply_to = "support@example.com"
 
-## Tech Stack
+  # Recipients use `recipient.email` by default.
+  config.recipients.register(User) { |user| user.notification_email }
 
-| Component       | Version |
-|-----------------|---------|
-| Ruby            | 3.3+    |
-| Rails           | 8.1+    |
-| PostgreSQL      | 16      |
-| TailwindCSS     | 4       |
-| RecordingStudio | v3.0.0 (pinned to `recording_studio/v3.0.0` in `test/dummy/Gemfile`) |
-| FlatPack        | v0.1.84 (pinned in `test/dummy/Gemfile`) |
-| Devise          | latest  |
+  # Both page_comment.html.erb and page_comment.text.erb must exist.
+  config.templates.register(:page_comment, "notification_mailer/page_comment")
 
-## Documentation
+  # Optional deterministic Message-ID domain. The local part is a SHA-256
+  # digest; identifiers and signed tokens are not exposed.
+  config.message_id_domain = "mail.example.com"
+end
+```
 
-The original gem template documentation is preserved in `docs/gem_template/` as architectural reference material. Use it as background on the engine conventions; the README and dummy app are the source of truth for the Recording Studio addon workflow.
+`config.from` is required at delivery time. It may also be supplied through
+`RECORDING_STUDIO_NOTIFICATIONS_EMAIL_FROM`.
+
+The recipient and template registries synchronize reads, writes, and resets,
+so registration from Rails preparation callbacks is safe. Model-specific
+recipient resolvers search the recipient's class ancestry. A resolver may
+return one address or an array of addresses.
+
+## Parent notification setup
+
+Enable email on a notification type in the parent engine:
+
+```ruby
+RecordingStudioNotifications.register_notification_type(
+  :page_comment,
+  label: "Page comment",
+  default_channels: %i[in_app email],
+  available_channels: %i[in_app email],
+  scope: :root,
+  allowed_cadences: %i[individual daily weekly]
+)
+```
+
+Then use the normal parent API:
+
+```ruby
+RecordingStudioNotifications.notify(
+  notification_type: :page_comment,
+  recipient: user,
+  notifiable: page,
+  title: "New comment",
+  body: "A collaborator commented on your page.",
+  url: page_url(page)
+)
+```
+
+The parent `DeliveryJob` already decides between synchronous and asynchronous
+work. The email adapter calls `deliver_now` inside that job to avoid nested
+jobs and to ensure parent delivery status accurately reflects the SMTP result.
+Daily, weekly, and other parent rollups are supported through `deliver_rollup`.
+
+## Templates
+
+The engine includes escaped HTML and plain-text fallback templates for
+individual and rollup messages:
+
+- `recording_studio_notifications_email/notification_mailer/notification`
+- `recording_studio_notifications_email/notification_mailer/rollup`
+
+Applications can override those engine view paths directly or register a
+notification-type-specific template. Custom mailers are supported:
+
+```ruby
+config.mailer_class = "MyNotificationsMailer"
+```
+
+The class must support Action Mailer's `.with(...)` API and expose
+`notification` and `rollup` actions.
+
+## Correlation references
+
+Every message includes
+`X-Recording-Studio-Notification-Reference`. The value is a purpose-scoped,
+expiring Rails signed message containing only notification and delivery IDs.
+The signature provides integrity and expiry checks only; it does not provide
+confidentiality and should not be treated as authorization. It does not load
+models and is safe to validate at an application boundary:
+
+```ruby
+reference = RecordingStudioNotificationsEmail::Correlation.verify(header_value)
+reference&.notification_id
+reference&.notification_ids
+reference&.delivery_ids
+```
+
+`notification_ids` and `delivery_ids` are index-aligned for rollups.
+
+Use `verify!` when invalid or expired input should raise
+`ActiveSupport::MessageVerifier::InvalidSignature`. References expire after 30
+days by default:
+
+```ruby
+config.signed_reference_expires_in = 7.days
+```
+
+This gem deliberately does not provide inbound email or webhook endpoints.
+
+## Event facade
+
+Adapters and templates receive a read-only
+`RecordingStudioNotificationsEmail::Event`. It normalizes the parent
+notification fields and delegates recordable labels, names, and root
+resolution to public `RecordingStudio` APIs. This avoids coupling email
+presentation to Recording Studio tables or model internals.
+
+## Validation
+
+The standard suite is:
+
+```bash
+bundle exec rake test
+```
+
+The gem requires Ruby 3.3+ and Rails 8.1.

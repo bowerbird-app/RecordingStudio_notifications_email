@@ -1,0 +1,12 @@
+<!doctype html>
+<html>
+  <body>
+    <h1><%= @event.title %></h1>
+    <% if @event.body.present? %>
+      <p><%= @event.body %></p>
+    <% end %>
+    <% if @event.url.present? %>
+      <p><%= link_to "View notification", @event.url %></p>
+    <% end %>
+  </body>
+</html>
