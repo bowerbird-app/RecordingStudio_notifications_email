@@ -52,11 +52,17 @@ class CorrelationTest < Minitest::Test
     )
 
     reference = RecordingStudioNotificationsEmail::Correlation.verify!(token)
+    payload = RecordingStudioNotificationsEmail.configuration.message_verifier.verified(
+      token,
+      purpose: RecordingStudioNotificationsEmail::Correlation::PURPOSE
+    )
 
     assert_equal %w[notification-1 notification-2], reference.notification_ids
     assert_equal %w[delivery-1 delivery-2], reference.delivery_ids
-    assert_equal "weekly/user-1", reference.rollup_key
     assert reference.rollup?
+    assert_equal true, payload["rollup"]
+    refute payload.key?("rollup_key")
+    refute_includes token, "weekly/user-1"
   end
 
   def test_records_without_ids_are_rejected
@@ -88,7 +94,7 @@ class CorrelationTest < Minitest::Test
       {
         "notification_ids" => ["notification-1"],
         "delivery_ids" => ["delivery-1"],
-        "rollup_key" => nil
+        "rollup" => false
       },
       purpose: RecordingStudioNotificationsEmail::Correlation::PURPOSE,
       expires_in: -1.second
@@ -147,7 +153,7 @@ class CorrelationTest < Minitest::Test
       {
         "notification_id" => "notification-legacy",
         "delivery_id" => "delivery-legacy",
-        "rollup_key" => nil
+        "rollup" => false
       },
       purpose: RecordingStudioNotificationsEmail::Correlation::PURPOSE,
       expires_in: 1.hour

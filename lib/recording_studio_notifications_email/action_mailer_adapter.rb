@@ -41,6 +41,9 @@ module RecordingStudioNotificationsEmail
       end
 
       recipients = events.map { |event| recipient_for(event) }
+      unless recipients.uniq.one?
+        raise DeliveryError, "rollup notifications must resolve to one email address"
+      end
 
       reference = Correlation.sign(
         notifications: notifications,

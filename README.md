@@ -114,7 +114,8 @@ The class must support Action Mailer's `.with(...)` API and expose
 
 Every message includes
 `X-Recording-Studio-Notification-Reference`. The value is a purpose-scoped,
-expiring Rails signed message containing only notification and delivery IDs.
+expiring Rails signed message containing notification and delivery IDs plus a
+non-sensitive rollup marker.
 The signature provides integrity and expiry checks only; it does not provide
 confidentiality and should not be treated as authorization. It does not load
 models and is safe to validate at an application boundary:

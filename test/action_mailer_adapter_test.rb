@@ -188,6 +188,33 @@ class ActionMailerAdapterTest < Minitest::Test
     end
   end
 
+  def test_rollup_rejects_equivalent_recipients_with_conflicting_addresses
+    notifications = [
+      build_notification(
+        id: "notification-1",
+        recipient: Recipient.new(id: "person-1", email: "current@example.test")
+      ),
+      build_notification(
+        id: "notification-2",
+        recipient: Recipient.new(id: "person-1", email: "stale@example.test")
+      )
+    ]
+
+    error = assert_raises(RecordingStudioNotificationsEmail::DeliveryError) do
+      @adapter.deliver_rollup(
+        notifications: notifications,
+        deliveries: [Delivery.new("delivery-1"), Delivery.new("delivery-2")],
+        rollup_key: "weekly/person",
+        cadence: :weekly,
+        period_starts_at: Time.now,
+        period_ends_at: Time.now,
+        idempotency_key: "weekly/person"
+      )
+    end
+
+    assert_match(/one email address/, error.message)
+  end
+
   private
 
   def build_notification(id: "notification-1", recipient: Recipient.new(email: "person@example.test"))

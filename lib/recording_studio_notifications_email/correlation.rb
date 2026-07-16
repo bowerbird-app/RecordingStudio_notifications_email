@@ -7,7 +7,7 @@ module RecordingStudioNotificationsEmail
     DOMAIN_PATTERN = /\A(?=.{1,253}\z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*
                      [a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\z/ix
 
-    Reference = Data.define(:notification_ids, :delivery_ids, :rollup_key) do
+    Reference = Data.define(:notification_ids, :delivery_ids, :rollup) do
       def notification_id
         notification_ids.first
       end
@@ -17,7 +17,7 @@ module RecordingStudioNotificationsEmail
       end
 
       def rollup?
-        rollup_key.present? || delivery_ids.many?
+        rollup || delivery_ids.many?
       end
     end
 
@@ -43,7 +43,7 @@ module RecordingStudioNotificationsEmail
           {
             "notification_ids" => notification_ids.map(&:to_s),
             "delivery_ids" => delivery_ids.map(&:to_s),
-            "rollup_key" => rollup_key.to_s.presence
+            "rollup" => rollup_key.present?
           },
           purpose: PURPOSE,
           expires_in: expires_in
@@ -74,7 +74,7 @@ module RecordingStudioNotificationsEmail
           {
             "notification_ids" => verified_reference.notification_ids,
             "delivery_ids" => verified_reference.delivery_ids,
-            "rollup_key" => verified_reference.rollup_key
+            "rollup" => verified_reference.rollup
           }
         )
         digest = OpenSSL::Digest::SHA256.hexdigest(identity)
@@ -136,7 +136,7 @@ module RecordingStudioNotificationsEmail
         Reference.new(
           notification_ids: notification_ids.freeze,
           delivery_ids: delivery_ids.freeze,
-          rollup_key: payload["rollup_key"].to_s.presence
+          rollup: payload["rollup"] == true || payload["rollup_key"].present?
         )
       rescue KeyError, TypeError, NoMethodError
         nil
