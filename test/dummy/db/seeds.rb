@@ -22,6 +22,11 @@ user = User.find_or_create_by!(email: "admin@admin.com") do |u|
   u.password_confirmation = "Password"
 end
 
+commenter = User.find_or_create_by!(email: "commenter@commenter.com") do |u|
+  u.password = "Password"
+  u.password_confirmation = "Password"
+end
+
 # Create the workspace recordables
 workspace = Workspace.find_or_create_by!(name: "Studio Workspace")
 accessible_workspace = Workspace.find_or_create_by!(name: "Client Workspace")
@@ -38,6 +43,22 @@ begin
   accessible_root_recording = RecordingStudio.root_recording_for(accessible_workspace)
   private_root_recording = RecordingStudio.root_recording_for(private_workspace)
 
+  [root_recording, accessible_root_recording, private_root_recording].each do |workspace_root|
+    RecordingStudioAccessible.grant_access(
+      recording: workspace_root,
+      actor: user,
+      role: :admin,
+      manager_actor: user
+    )
+
+    RecordingStudioAccessible.grant_access(
+      recording: workspace_root,
+      actor: commenter,
+      role: :view,
+      manager_actor: user
+    )
+  end
+
   folder_recording = find_or_record_child.call(folder, root_recording, root_recording)
 
   find_or_record_child.call(page, root_recording, folder_recording)
@@ -46,6 +67,7 @@ ensure
 end
 
 puts "Seeded: admin@admin.com / Password"
+puts "Seeded: commenter@commenter.com / Password"
 puts "Seeded: Workspace '#{workspace.name}' with root recording ##{root_recording.id}"
 puts "Seeded: Workspace '#{accessible_workspace.name}' with root recording ##{accessible_root_recording.id}"
 puts "Seeded: Workspace '#{private_workspace.name}' with root recording ##{private_root_recording.id}"

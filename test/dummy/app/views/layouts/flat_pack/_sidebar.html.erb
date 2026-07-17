@@ -34,6 +34,18 @@
       ) %>
 
       <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "Notifications",
+        href: "/recording_studio_notifications",
+        icon: :bell_alert
+      ) %>
+
+      <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "System alerts",
+        href: main_app.new_system_notifications_path,
+        icon: :megaphone
+      ) %>
+
+      <%= render FlatPack::Sidebar::Item::Component.new(
         label: "Recordable types",
         href: main_app.docs_recordable_types_path,
         icon: :queue_list

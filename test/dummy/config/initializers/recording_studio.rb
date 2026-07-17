@@ -18,4 +18,7 @@ RecordingStudio.configure do |config|
 
   # Recordable duplication strategy for revisions
   config.recordable_dup_strategy = :dup
+
+  # Allow RecordingStudioAccessible direct access grants on workspace roots.
+  config.enable_capability :accessible, on: "Workspace"
 end

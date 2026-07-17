@@ -9,6 +9,52 @@
     <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
       <% card.header do %>
         <%= render FlatPack::PageTitle::Component.new(
+          title: "Create page",
+          subtitle: "Creates a Page recordable and triggers workspace-scoped in-app notifications.",
+          variant: :h3,
+          class: "mb-0 pb-0"
+        ) %>
+      <% end %>
+
+      <% card.body do %>
+        <%= form_with url: pages_path, scope: :page, method: :post, class: "space-y-4" do |f| %>
+          <%= render FlatPack::TextInput::Component.new(
+            name: "page[title]",
+            value: params.dig(:page, :title),
+            label: "Page title",
+            required: true,
+            placeholder: "New product spec"
+          ) %>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Workspace</label>
+            <%= f.select :workspace_id,
+                         Workspace.order(:name).map { |workspace| [workspace.name, workspace.id] },
+                         {},
+                         class: "w-full rounded-md border px-3 py-2 text-sm" %>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Parent folder (optional)</label>
+            <%= f.select :parent_folder_id,
+                         [["Root workspace", ""]] + Folder.order(:name).map { |folder| [folder.name, folder.id] },
+                         {},
+                         class: "w-full rounded-md border px-3 py-2 text-sm" %>
+          </div>
+
+          <%= render FlatPack::Button::Component.new(
+            text: "Create page + notify workspace users",
+            style: :primary,
+            size: :md,
+            type: :submit
+          ) %>
+        <% end %>
+      <% end %>
+    <% end %>
+
+    <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+      <% card.header do %>
+        <%= render FlatPack::PageTitle::Component.new(
           title: "What's working",
           subtitle: "Core template capabilities already wired into the dummy app.",
           variant: :h3,

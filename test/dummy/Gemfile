@@ -4,7 +4,7 @@ source "https://rubygems.org"
 gem "recording_studio_notifications_email", path: "../.."
 gem "recording_studio_notifications",
     github: "bowerbird-app/RecordingStudio_notifications",
-    branch: "copilot/create-recording-studio-notifications"
+  branch: "main"
 
 # RecordingStudio engine
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "recording_studio/v3.0.0"
@@ -37,7 +37,7 @@ gem "jbuilder"
 gem "tailwindcss-rails"
 
 # FlatPack UI component library [https://github.com/bowerbird-app/flatpack]
-gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.84"
+gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.125"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
