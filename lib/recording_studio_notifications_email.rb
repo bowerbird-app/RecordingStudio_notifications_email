@@ -10,6 +10,7 @@ require "recording_studio_notifications_email/version"
 require "recording_studio_notifications_email/configuration"
 require "recording_studio_notifications_email/event"
 require "recording_studio_notifications_email/correlation"
+require "recording_studio_notifications_email/delivery_callbacks"
 require "recording_studio_notifications_email/action_mailer_adapter"
 require "recording_studio_notifications_email/engine"
 
@@ -47,6 +48,14 @@ module RecordingStudioNotificationsEmail
         @configuration = Configuration.new
         @adapter = nil
       end
+    end
+
+    def mark_delivered_from_reference!(reference:, delivered_at: Time.current)
+      DeliveryCallbacks.mark_delivered_from_reference!(
+        reference: reference,
+        delivered_at: delivered_at,
+        configuration: configuration
+      )
     end
 
     private
