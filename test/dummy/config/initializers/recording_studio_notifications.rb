@@ -19,10 +19,22 @@ register_dummy_notification_types = lambda do
       label: "Page created",
       description: "A page was created in one of your workspaces",
       icon: :document_text,
-      default_channels: [:in_app],
-      available_channels: [:in_app],
+      default_channels: [:in_app, :email],
+      available_channels: [:in_app, :email],
       scope: :root,
       allowed_cadences: [:individual],
+      default_cadence: :individual
+    )
+
+    config.notification_types.register(
+      :page_comment,
+      label: "Page comment",
+      description: "A page received a new comment",
+      icon: :chat_bubble_left_right,
+      default_channels: [:in_app, :email],
+      available_channels: [:in_app, :email],
+      scope: :root,
+      allowed_cadences: [:individual, :daily],
       default_cadence: :individual
     )
 
@@ -31,8 +43,8 @@ register_dummy_notification_types = lambda do
       label: "System announcement",
       description: "Global system notification sent to all users",
       icon: :megaphone,
-      default_channels: [:in_app],
-      available_channels: [:in_app],
+      default_channels: [:in_app, :email],
+      available_channels: [:in_app, :email],
       scope: :global,
       allowed_cadences: [:individual],
       default_cadence: :individual

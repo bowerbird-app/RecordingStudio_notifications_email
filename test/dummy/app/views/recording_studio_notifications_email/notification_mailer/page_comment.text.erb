@@ -1,0 +1,8 @@
+<%= @event.title.presence || "New comment on your page" %>
+
+<% if @event.body.present? %><%= @event.body %>
+
+<% end %>Notification type: <%= @event.notification_type.to_s.humanize %>
+
+<% if @event.url.present? %>Open page: <%= @event.url %>
+<% end %>
