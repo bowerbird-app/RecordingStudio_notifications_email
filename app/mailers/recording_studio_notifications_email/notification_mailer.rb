@@ -6,6 +6,7 @@ module RecordingStudioNotificationsEmail
 
     def notification
       @event = params.fetch(:event)
+      @tracked_notification_destination = params[:tracked_notification_path].presence || @event.url
       @correlation_reference = params.fetch(:correlation_reference)
       prepare_headers
 
@@ -44,5 +45,6 @@ module RecordingStudioNotificationsEmail
       headers[Correlation::HEADER] = @correlation_reference
       headers["Message-ID"] = params[:message_id] if params[:message_id]
     end
+
   end
 end

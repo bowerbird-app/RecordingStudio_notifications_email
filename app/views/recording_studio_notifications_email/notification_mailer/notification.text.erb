@@ -2,5 +2,5 @@
 
 <% if @event.body.present? %><%= @event.body %>
 
-<% end %><% if @event.url.present? %>View notification: <%= @event.url %>
+<% end %><% if @tracked_notification_destination.present? %>View notification: <%= @tracked_notification_destination %>
 <% end %>

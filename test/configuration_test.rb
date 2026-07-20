@@ -3,6 +3,12 @@
 require "test_helper"
 
 class ConfigurationTest < Minitest::Test
+  class FakeMailer
+    def self.with(...)
+      self
+    end
+  end
+
   def setup
     @configuration = RecordingStudioNotificationsEmail::Configuration.new
   end
@@ -39,5 +45,11 @@ class ConfigurationTest < Minitest::Test
 
     assert_equal 20, threads.map(&:value).uniq.size
     assert_equal 22, @configuration.templates.keys.size
+  end
+
+  def test_resolve_mailer_class_constantizes_string_values
+    @configuration.mailer_class = "ConfigurationTest::FakeMailer"
+
+    assert_equal ConfigurationTest::FakeMailer, @configuration.resolve_mailer_class
   end
 end

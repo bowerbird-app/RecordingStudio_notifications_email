@@ -5,8 +5,8 @@
     <% if @event.body.present? %>
       <p><%= @event.body %></p>
     <% end %>
-    <% if @event.url.present? %>
-      <p><%= link_to "View notification", @event.url %></p>
+    <% if @tracked_notification_destination.present? %>
+      <p><%= link_to "View notification", @tracked_notification_destination %></p>
     <% end %>
   </body>
 </html>

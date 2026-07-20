@@ -35,6 +35,8 @@ module RecordingStudioNotificationsEmail
     end
 
     def resolve_mailer_class
+      return mailer_class.to_s.constantize if mailer_class.is_a?(String) || mailer_class.is_a?(Symbol)
+
       return mailer_class if mailer_class.respond_to?(:with)
 
       mailer_class.to_s.constantize

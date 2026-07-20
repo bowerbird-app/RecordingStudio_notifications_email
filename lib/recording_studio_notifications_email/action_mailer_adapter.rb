@@ -20,6 +20,7 @@ module RecordingStudioNotificationsEmail
         from: configured_from,
         reply_to: configured_reply_to,
         template_path: @configuration.template_for(event.notification_type),
+        tracked_notification_path: tracked_notification_path(notification),
         correlation_reference: reference,
         message_id: Correlation.message_id(reference, configuration: @configuration)
       ).notification
@@ -109,6 +110,12 @@ module RecordingStudioNotificationsEmail
       else
         [:object, recipient.__id__]
       end
+    end
+
+    def tracked_notification_path(notification)
+      RecordingStudioNotifications::Engine.routes.url_helpers.open_notification_path(notification.id)
+    rescue StandardError
+      nil
     end
   end
 
