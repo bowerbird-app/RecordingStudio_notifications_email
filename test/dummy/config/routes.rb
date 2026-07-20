@@ -1,12 +1,27 @@
 Rails.application.routes.draw do
+  if Rails.env.development?
+    mount LetterOpenerWeb::Engine, at: "/letter_opener"
+  end
+
   devise_for :users
 
   # RecordingStudio engine is data/API-focused and has no browser root route.
   # Keep legacy links working by redirecting the base path to the app home.
   get "/recording_studio", to: redirect("/"), as: nil
   mount RecordingStudio::Engine, at: "/recording_studio"
+  mount RecordingStudioCommentable::Engine, at: "/commentable"
   mount RecordingStudioNotifications::Engine, at: "/recording_studio_notifications"
   mount RecordingStudioRootSwitchable::Engine, at: "/recording_studio_root_switchable"
+
+  scope module: :recording_studio_commentable do
+    resources :recordings, only: [] do
+      resources :comments, only: %i[index new create edit update destroy] do
+        collection do
+          get :all, path: "all"
+        end
+      end
+    end
+  end
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
@@ -25,7 +40,7 @@ Rails.application.routes.draw do
   get "docs/gem_views", to: "docs#gem_views", as: :docs_gem_views
   get "docs/methods", to: "docs#methods", as: :docs_methods
 
-  resources :pages, only: [:create]
+  resources :pages, only: [:index, :create]
   resource :system_notifications, only: [:new, :create]
 
   # Defines the root path route ("/")

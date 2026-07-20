@@ -24,7 +24,12 @@ RecordingStudioRootSwitchable.configure do |config|
     scope.description = "Every workspace root in the dummy app."
     scope.available_roots = lambda do |**|
       Workspace.order(:name).filter_map do |workspace|
-        RecordingStudio.root_recording_for(workspace)
+        begin
+          RecordingStudio.root_recording_for(workspace)
+        rescue StandardError => e
+          Rails.logger&.warn("[RecordingStudioRootSwitchable] skipping workspace #{workspace.id}: #{e.class} #{e.message}")
+          nil
+        end
       end
     end
     scope.access_check = ->(**) { true }

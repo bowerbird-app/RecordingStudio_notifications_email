@@ -1,6 +1,17 @@
 # frozen_string_literal: true
 
 class PagesController < ApplicationController
+  def index
+    @workspaces = Workspace.order(:name)
+    @folders = Folder.order(:name)
+    @pages = Page.order(created_at: :desc)
+    @recordings_by_page_id = RecordingStudio::Recording.where(
+      recordable_type: "Page",
+      recordable_id: @pages.map(&:id),
+      trashed_at: nil
+    ).index_by(&:recordable_id)
+  end
+
   def create
     workspace = Workspace.find(page_params.fetch(:workspace_id))
     root_recording = RecordingStudio.root_recording_for(workspace)
@@ -13,9 +24,9 @@ class PagesController < ApplicationController
       parent_recording: parent_recording_for(root_recording)
     )
 
-    redirect_to root_path, notice: "Created page '#{page.title}'."
+    redirect_to pages_path, notice: "Created page '#{page.title}'."
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => e
-    redirect_to root_path, alert: "Could not create page: #{e.message}"
+    redirect_to pages_path, alert: "Could not create page: #{e.message}"
   end
 
   private

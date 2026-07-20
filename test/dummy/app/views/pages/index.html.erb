@@ -1,0 +1,95 @@
+<div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Pages",
+    subtitle: "Create pages and open threaded comments with notifications.",
+    variant: :h1
+  ) %>
+
+  <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+    <% card.header do %>
+      <%= render FlatPack::PageTitle::Component.new(
+        title: "Create page",
+        subtitle: "Creates a page recording and triggers page-created notifications.",
+        variant: :h3,
+        class: "mb-0 pb-0"
+      ) %>
+    <% end %>
+
+    <% card.body do %>
+      <%= form_with url: pages_path, scope: :page, method: :post, class: "space-y-4" do |f| %>
+        <%= render FlatPack::TextInput::Component.new(
+          name: "page[title]",
+          value: params.dig(:page, :title),
+          label: "Page title",
+          required: true,
+          placeholder: "Quarterly roadmap"
+        ) %>
+
+        <div class="space-y-2">
+          <label class="text-sm font-medium">Workspace</label>
+          <%= f.select :workspace_id,
+                       @workspaces.map { |workspace| [workspace.name, workspace.id] },
+                       {},
+                       class: "w-full rounded-md border px-3 py-2 text-sm" %>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-sm font-medium">Parent folder (optional)</label>
+          <%= f.select :parent_folder_id,
+                       [["Root workspace", ""]] + @folders.map { |folder| [folder.name, folder.id] },
+                       {},
+                       class: "w-full rounded-md border px-3 py-2 text-sm" %>
+        </div>
+
+        <%= render FlatPack::Button::Component.new(
+          text: "Create page",
+          style: :primary,
+          size: :md,
+          type: :submit
+        ) %>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+    <% card.header do %>
+      <%= render FlatPack::PageTitle::Component.new(
+        title: "Existing pages",
+        subtitle: "Open each page comment feed from here.",
+        variant: :h3,
+        class: "mb-0 pb-0"
+      ) %>
+    <% end %>
+
+    <% card.body do %>
+      <% if @pages.empty? %>
+        <p class="text-sm text-(--surface-muted-content-color)">No pages yet. Create one to start a comment thread.</p>
+      <% else %>
+        <div class="space-y-3">
+          <% @pages.each do |page| %>
+            <% recording = @recordings_by_page_id[page.id] %>
+            <div class="flex flex-col gap-3 rounded-lg border border-(--surface-border-color) p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div class="space-y-1">
+                <p class="text-sm font-semibold"><%= page.title.presence || "Untitled page" %></p>
+                <p class="text-xs text-(--surface-muted-content-color)">Created <%= time_ago_in_words(page.created_at) %> ago</p>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <% if recording.present? %>
+                  <%= render RecordingStudioCommentable::CommentsButton::Component.new(recording: recording) %>
+                <% else %>
+                  <%= render FlatPack::Button::Component.new(
+                    text: "Comments unavailable",
+                    style: :secondary,
+                    size: :sm,
+                    disabled: true
+                  ) %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>

@@ -73,5 +73,6 @@ Rails.application.config.to_prepare do
 
   ActiveSupport::Notifications.subscribe("recordings.event_created") do |_name, _start, _finish, _id, payload|
     Notifications::PageCreatedNotifier.call(payload)
+    Notifications::PageCommentNotifier.call(payload)
   end
 end

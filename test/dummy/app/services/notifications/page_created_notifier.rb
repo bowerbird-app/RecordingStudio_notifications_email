@@ -32,7 +32,7 @@ module Notifications
             root_recording_id: root_recording.id,
             event_id: @event_payload[:event_id]
           },
-          channels: [:in_app],
+          channels: notification_channels,
           idempotency_key: "page-created/#{@event_payload[:event_id]}/#{recipient.id}"
         )
       end
@@ -82,6 +82,12 @@ module Notifications
       @recipients ||= User.order(:email).select do |user|
         RecordingStudioAccessible.authorized?(actor: user, recording: root_recording, role: :view)
       end
+    end
+
+    def notification_channels
+      return [:in_app, :email] if Rails.env.development?
+
+      [:in_app]
     end
   end
 end
