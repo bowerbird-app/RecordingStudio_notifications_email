@@ -2,6 +2,8 @@
 
 register_dummy_notification_types = lambda do
   RecordingStudioNotifications.configure do |config|
+    config.rollup_delivery_enabled = true
+
     # Register notification types used by the dummy app.
     config.notification_types.register(
       :generic,
@@ -11,7 +13,8 @@ register_dummy_notification_types = lambda do
       default_channels: [:in_app, :email],
       available_channels: [:in_app, :email],
       scope: :optional_root,
-      allowed_cadences: [:individual, :daily, :weekly]
+      allowed_cadences: [:daily],
+      default_cadence: :daily
     )
 
     config.notification_types.register(
@@ -22,8 +25,8 @@ register_dummy_notification_types = lambda do
       default_channels: [:in_app, :email],
       available_channels: [:in_app, :email],
       scope: :root,
-      allowed_cadences: [:individual],
-      default_cadence: :individual
+      allowed_cadences: [:daily],
+      default_cadence: :daily
     )
 
     config.notification_types.register(
@@ -34,8 +37,8 @@ register_dummy_notification_types = lambda do
       default_channels: [:in_app, :email],
       available_channels: [:in_app, :email],
       scope: :root,
-      allowed_cadences: [:individual, :daily],
-      default_cadence: :individual
+      allowed_cadences: [:daily],
+      default_cadence: :daily
     )
 
     config.notification_types.register(
@@ -46,8 +49,8 @@ register_dummy_notification_types = lambda do
       default_channels: [:in_app, :email],
       available_channels: [:in_app, :email],
       scope: :global,
-      allowed_cadences: [:individual],
-      default_cadence: :individual
+      allowed_cadences: [:daily],
+      default_cadence: :daily
     )
   end
 end
