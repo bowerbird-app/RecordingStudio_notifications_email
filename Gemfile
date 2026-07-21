@@ -8,7 +8,7 @@ gemspec
 # Development sources until parent gems are published on RubyGems.
 gem "recording_studio_notifications",
     github: "bowerbird-app/RecordingStudio_notifications",
-    branch: "copilot/create-recording-studio-notifications"
+    branch: "main"
 gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.125"
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "recording_studio/v3.0.0"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "0.3.1"
