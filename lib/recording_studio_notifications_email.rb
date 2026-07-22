@@ -92,8 +92,8 @@ module RecordingStudioNotificationsEmail
       )
     end
 
-    def mark_unsubscribed_from_reference!(reference:, unsubscribed_at: Time.current)
-      DeliveryCallbacks.mark_unsubscribed_from_reference!(
+    def mark_unsubscribed!(reference:, unsubscribed_at: Time.current)
+      DeliveryCallbacks.mark_unsubscribed!(
         reference: reference,
         unsubscribed_at: unsubscribed_at,
         configuration: configuration

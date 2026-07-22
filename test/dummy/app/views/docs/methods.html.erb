@@ -61,10 +61,10 @@
       RUBY
     },
     {
-      title: "RecordingStudioNotificationsEmail.mark_unsubscribed_from_reference!",
+      title: "RecordingStudioNotificationsEmail.mark_unsubscribed!",
       subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks and applies unsubscribed/opt-out callbacks on core delivery records.",
       code: <<~'RUBY'
-        RecordingStudioNotificationsEmail.mark_unsubscribed_from_reference!(
+        RecordingStudioNotificationsEmail.mark_unsubscribed!(
           reference: params[:reference],
           unsubscribed_at: Time.current
         )

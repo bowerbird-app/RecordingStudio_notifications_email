@@ -125,8 +125,8 @@ module RecordingStudioNotificationsEmail
         )
       end
 
-      def mark_unsubscribed_from_reference!(reference:, unsubscribed_at: Time.current,
-                                            configuration: RecordingStudioNotificationsEmail.configuration)
+      def mark_unsubscribed!(reference:, unsubscribed_at: Time.current,
+                             configuration: RecordingStudioNotificationsEmail.configuration)
         mark_event_from_reference!(
           event_type: :unsubscribed,
           reference: reference,

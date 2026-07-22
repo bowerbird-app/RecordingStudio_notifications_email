@@ -216,7 +216,7 @@ If your webhook pipeline prefers explicit handlers, call these directly:
 - `mark_clicked!`
 - `mark_bounced!`
 - `mark_complained!`
-- `mark_unsubscribed_from_reference!`
+- `mark_unsubscribed!`
 
 Preferred delivery callback contract in the parent delivery model:
 
