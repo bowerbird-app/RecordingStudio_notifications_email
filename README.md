@@ -177,6 +177,20 @@ event = RecordingStudioNotificationsEmail::WebhookEvent.new(
 RecordingStudioNotificationsEmail.ingest_webhook_event!(event: event)
 ```
 
+Optional provider-specific normalization hook:
+
+```ruby
+RecordingStudioNotificationsEmail.configure do |config|
+  config.webhook_event_transformer = lambda do |event|
+    # Return a WebhookEvent or Hash payload compatible with WebhookEvent.new
+    # Example: map provider-specific event naming before callback dispatch
+    event
+  end
+end
+```
+
+The transformer must return a valid event payload and cannot return `nil`.
+
 Supported event types are:
 
 - `:delivered`
@@ -186,6 +200,15 @@ Supported event types are:
 - `:complained`
 - `:unsubscribed`
 
+Idempotency convention for webhook ingestion:
+
+- `WebhookEvent#idempotency_key` is always present.
+- Default key uses `"#{provider}:#{external_event_id}"` when provider supplies a stable event id.
+- Without an external event id, a deterministic synthetic key is generated from provider,
+  event type, reference token, external message id, and occurred-at timestamp.
+- A webhook gem may pass an explicit `idempotency_key:` when provider semantics require
+  a custom dedupe strategy.
+
 If your webhook pipeline prefers explicit handlers, call these directly:
 
 - `mark_delivered_from_reference!`
@@ -194,6 +217,19 @@ If your webhook pipeline prefers explicit handlers, call these directly:
 - `mark_bounced_from_reference!`
 - `mark_complained_from_reference!`
 - `mark_unsubscribed_from_reference!`
+
+Preferred delivery callback contract in the parent delivery model:
+
+- Delivered: `delivered?`, `mark_delivered!(at:)`
+- Opened: `email_opened?`, `mark_email_opened!(at:)`
+- Clicked: `email_clicked?`, `mark_email_clicked!(at:)`
+- Bounced: `email_bounced?`, `mark_email_bounced!(at:)`
+- Complained: `email_complained?`, `mark_email_complained!(at:)`
+- Unsubscribed: `email_unsubscribed?`, `mark_email_unsubscribed!(at:)`
+
+For backward compatibility this gem accepts a small alias set (for example
+`opened?`/`mark_opened!`), but new integrations should implement the canonical
+`email_*` callback names.
 
 Failures raise typed errors:
 

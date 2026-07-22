@@ -62,4 +62,54 @@ class WebhookEventTest < Minitest::Test
       )
     end
   end
+
+  def test_uses_provider_and_external_event_id_as_default_idempotency_key
+    event = RecordingStudioNotificationsEmail::WebhookEvent.new(
+      provider: :postmark,
+      event_type: :opened,
+      reference: "signed-reference",
+      external_event_id: "evt_123"
+    )
+
+    assert_equal "postmark:evt_123", event.idempotency_key
+  end
+
+  def test_builds_deterministic_synthetic_idempotency_key_without_external_event_id
+    occurred_at = Time.utc(2026, 7, 22, 0, 0, 0)
+    attrs = {
+      provider: :postmark,
+      event_type: :opened,
+      reference: "signed-reference",
+      occurred_at: occurred_at,
+      external_message_id: "msg_123"
+    }
+
+    first = RecordingStudioNotificationsEmail::WebhookEvent.new(**attrs)
+    second = RecordingStudioNotificationsEmail::WebhookEvent.new(**attrs)
+
+    assert_equal first.idempotency_key, second.idempotency_key
+    assert_match(/\Apostmark:synthetic:[0-9a-f]{64}\z/, first.idempotency_key)
+  end
+
+  def test_accepts_explicit_idempotency_key_override
+    event = RecordingStudioNotificationsEmail::WebhookEvent.new(
+      provider: :postmark,
+      event_type: :opened,
+      reference: "signed-reference",
+      idempotency_key: "provider:custom-key"
+    )
+
+    assert_equal "provider:custom-key", event.idempotency_key
+  end
+
+  def test_rejects_blank_explicit_idempotency_key
+    assert_raises(RecordingStudioNotificationsEmail::InvalidWebhookPayloadError) do
+      RecordingStudioNotificationsEmail::WebhookEvent.new(
+        provider: :postmark,
+        event_type: :opened,
+        reference: "signed-reference",
+        idempotency_key: "   "
+      )
+    end
+  end
 end
