@@ -214,7 +214,7 @@ If your webhook pipeline prefers explicit handlers, call these directly:
 - `mark_delivered!`
 - `mark_opened!`
 - `mark_clicked!`
-- `mark_bounced_from_reference!`
+- `mark_bounced!`
 - `mark_complained_from_reference!`
 - `mark_unsubscribed_from_reference!`
 

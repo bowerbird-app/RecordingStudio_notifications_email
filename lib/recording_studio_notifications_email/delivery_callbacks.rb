@@ -105,8 +105,8 @@ module RecordingStudioNotificationsEmail
         )
       end
 
-      def mark_bounced_from_reference!(reference:, bounced_at: Time.current,
-                                       configuration: RecordingStudioNotificationsEmail.configuration)
+      def mark_bounced!(reference:, bounced_at: Time.current,
+                        configuration: RecordingStudioNotificationsEmail.configuration)
         mark_event_from_reference!(
           event_type: :bounced,
           reference: reference,

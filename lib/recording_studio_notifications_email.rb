@@ -76,8 +76,8 @@ module RecordingStudioNotificationsEmail
       )
     end
 
-    def mark_bounced_from_reference!(reference:, bounced_at: Time.current)
-      DeliveryCallbacks.mark_bounced_from_reference!(
+    def mark_bounced!(reference:, bounced_at: Time.current)
+      DeliveryCallbacks.mark_bounced!(
         reference: reference,
         bounced_at: bounced_at,
         configuration: configuration

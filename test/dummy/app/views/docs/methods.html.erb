@@ -41,10 +41,10 @@
       RUBY
     },
     {
-      title: "RecordingStudioNotificationsEmail.mark_bounced_from_reference!",
+      title: "RecordingStudioNotificationsEmail.mark_bounced!",
       subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks and applies bounced callbacks on core delivery records.",
       code: <<~'RUBY'
-        RecordingStudioNotificationsEmail.mark_bounced_from_reference!(
+        RecordingStudioNotificationsEmail.mark_bounced!(
           reference: params[:reference],
           bounced_at: Time.current
         )
