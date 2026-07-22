@@ -39,6 +39,11 @@ Rails.application.routes.draw do
   get "docs/recordings_tree", to: "docs#recordings_tree", as: :docs_recordings_tree
   get "docs/gem_views", to: "docs#gem_views", as: :docs_gem_views
   get "docs/methods", to: "docs#methods", as: :docs_methods
+    get "docs/webhook_lab", to: "docs#webhook_lab", as: :docs_webhook_lab
+    post "docs/webhook_lab/create_notification", to: "docs#create_webhook_lab_notification",
+      as: :create_docs_webhook_lab_notification
+    post "docs/webhook_lab/fire_event", to: "docs#fire_webhook_lab_event",
+      as: :fire_docs_webhook_lab_event
 
   resources :pages, only: [:index, :create]
   resource :system_notifications, only: [:new, :create]

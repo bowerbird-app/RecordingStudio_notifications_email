@@ -40,6 +40,12 @@
       ) %>
 
       <%= render FlatPack::Sidebar::Item::Component.new(
+        label: "Webhook Lab",
+        href: main_app.docs_webhook_lab_path,
+        icon: :paper_airplane
+      ) %>
+
+      <%= render FlatPack::Sidebar::Item::Component.new(
         label: "Notifications",
         href: "/recording_studio_notifications",
         icon: :bell_alert
