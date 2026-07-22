@@ -52,8 +52,8 @@ module RecordingStudioNotificationsEmail
       end
     end
 
-    def mark_delivered_from_reference!(reference:, delivered_at: Time.current)
-      DeliveryCallbacks.mark_delivered_from_reference!(
+    def mark_delivered!(reference:, delivered_at: Time.current)
+      DeliveryCallbacks.mark_delivered!(
         reference: reference,
         delivered_at: delivered_at,
         configuration: configuration

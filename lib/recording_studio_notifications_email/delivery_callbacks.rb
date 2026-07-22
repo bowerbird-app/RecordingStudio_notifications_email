@@ -57,8 +57,8 @@ module RecordingStudioNotificationsEmail
     )
 
     class << self
-      def mark_delivered_from_reference!(reference:, delivered_at: Time.current,
-                                         configuration: RecordingStudioNotificationsEmail.configuration)
+      def mark_delivered!(reference:, delivered_at: Time.current,
+              configuration: RecordingStudioNotificationsEmail.configuration)
         resolved_reference = resolve_reference!(reference, configuration: configuration)
         requested_ids = resolved_reference.delivery_ids.map(&:to_s).uniq
         deliveries = RecordingStudioNotifications::Delivery.where(id: requested_ids).to_a

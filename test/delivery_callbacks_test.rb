@@ -138,7 +138,7 @@ class DeliveryCallbacksTest < Minitest::Test
     delivery = FakeDelivery.new(id: "delivery-1")
 
     with_stubbed_delivery_where([delivery]) do
-      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_delivered_from_reference!(
+      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_delivered!(
         reference: reference,
         delivered_at: @delivered_at,
         configuration: @configuration
@@ -160,7 +160,7 @@ class DeliveryCallbacksTest < Minitest::Test
     already_delivered = FakeDelivery.new(id: "delivery-1", delivered: true)
 
     with_stubbed_delivery_where([already_delivered]) do
-      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_delivered_from_reference!(
+      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_delivered!(
         reference: reference,
         delivered_at: @delivered_at,
         configuration: @configuration
@@ -174,7 +174,7 @@ class DeliveryCallbacksTest < Minitest::Test
 
   def test_invalid_reference_raises
     assert_raises(ActiveSupport::MessageVerifier::InvalidSignature) do
-      RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_delivered_from_reference!(
+      RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_delivered!(
         reference: "not-a-token",
         delivered_at: @delivered_at,
         configuration: @configuration
@@ -373,7 +373,7 @@ class DeliveryCallbacksTest < Minitest::Test
 
     with_stubbed_delivery_where([delivery]) do
       RecordingStudioNotificationsEmail.instance_variable_set(:@configuration, @configuration)
-      result = RecordingStudioNotificationsEmail.mark_delivered_from_reference!(
+      result = RecordingStudioNotificationsEmail.mark_delivered!(
         reference: reference,
         delivered_at: @delivered_at
       )

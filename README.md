@@ -211,7 +211,7 @@ Idempotency convention for webhook ingestion:
 
 If your webhook pipeline prefers explicit handlers, call these directly:
 
-- `mark_delivered_from_reference!`
+- `mark_delivered!`
 - `mark_opened_from_reference!`
 - `mark_clicked_from_reference!`
 - `mark_bounced_from_reference!`

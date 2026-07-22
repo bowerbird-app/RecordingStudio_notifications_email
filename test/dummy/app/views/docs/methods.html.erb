@@ -7,10 +7,10 @@
 
   <% sections = [
     {
-      title: "RecordingStudioNotificationsEmail.mark_delivered_from_reference!",
+      title: "RecordingStudioNotificationsEmail.mark_delivered!",
       subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks, resolves signed IDs, then invokes core delivery mutation methods.",
       code: <<~'RUBY'
-        result = RecordingStudioNotificationsEmail.mark_delivered_from_reference!(
+        result = RecordingStudioNotificationsEmail.mark_delivered!(
           reference: params[:reference],
           delivered_at: Time.current
         )
