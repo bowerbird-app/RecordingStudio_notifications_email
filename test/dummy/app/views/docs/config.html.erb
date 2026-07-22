@@ -1,14 +1,213 @@
 <div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
-    title: "Config",
-    subtitle: "Replace this placeholder with the configuration settings your generated gem exposes.",
+    title: "Configuration & Usage",
+    subtitle: "This email channel requires RecordingStudioNotifications. This guide assumes the core notifications gem is already installed and configured.",
     variant: :h1
+  ) %>
+
+  <%= render FlatPack::SectionTitle::Component.new(
+    title: "Prerequisite",
+    subtitle: "Install and configure recording_studio_notifications first, then add this email channel.",
   ) %>
 
   <%= render FlatPack::CodeBlock::Component.new(
     language: :ruby,
+    code: <<~CODE
+      # Host app Gemfile
+      gem "recording_studio_notifications"
+      gem "recording_studio_notifications_email"
+    CODE
+  ) %>
+
+  <%= render FlatPack::SectionTitle::Component.new(
+    title: "Configuration",
+    subtitle: "Run the installer, then configure the channel in an initializer.",
+  ) %>
+
+  <%= render FlatPack::CodeBlock::Component.new(
+    language: :bash,
+    code: <<~CODE
+      bundle install
+      bin/rails generate recording_studio_notifications_email:install
+    CODE
+  ) %>
+
+  <%= render FlatPack::CodeBlock::Component.new(
+    language: :ruby,
+    code: <<~CODE
+      # config/initializers/recording_studio_notifications_email.rb
+      RecordingStudioNotificationsEmail.configure do |config|
+        # Required sender
+        config.from = Rails.application.credentials.dig(:notifications, :from_email)
+
+        # Optional reply destination
+        config.reply_to = "support@example.com"
+
+        # Optional custom mailer (must implement .with(...).notification and .rollup)
+        config.mailer_class = "RecordingStudioNotificationsEmail::NotificationMailer"
+
+        # Optional channel key registered with RecordingStudioNotifications
+        config.channel = :email
+
+        # Optional signed reference lifetime (default: 30.days)
+        config.signed_reference_expires_in = 7.days
+
+        # Optional Message-ID domain
+        config.message_id_domain = "mail.example.com"
+      end
+    CODE
+  ) %>
+
+  <%= render FlatPack::SectionTitle::Component.new(
+    title: "Configuration Options",
+    subtitle: "Every configurable setting on RecordingStudioNotificationsEmail::Configuration.",
+  ) %>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead>
+        <tr class="border-b border-slate-200">
+          <th class="py-2 pr-4 font-semibold">Option</th>
+          <th class="py-2 pr-4 font-semibold">Type</th>
+          <th class="py-2 pr-4 font-semibold">Default</th>
+          <th class="py-2 font-semibold">Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">from</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">String</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">ENV["RECORDING_STUDIO_NOTIFICATIONS_EMAIL_FROM"]</code></td>
+          <td class="py-2">Required sender address used for all outgoing messages.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">reply_to</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">String or Array&lt;String&gt;</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">nil</code></td>
+          <td class="py-2">Optional Reply-To address (or addresses) for outgoing messages.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">mailer_class</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">String, Symbol, or Class</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">RecordingStudioNotificationsEmail::NotificationMailer</code></td>
+          <td class="py-2">Mailer used by the adapter. Must support Action Mailer <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">.with(...)</code>.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">channel</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">Symbol</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">:email</code></td>
+          <td class="py-2">Channel key registered with RecordingStudioNotifications.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">signed_reference_expires_in</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">ActiveSupport::Duration</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">30.days</code></td>
+          <td class="py-2">Expiration window for correlation references in email headers.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">message_id_domain</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">String</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">nil</code></td>
+          <td class="py-2">Optional deterministic Message-ID domain for outbound messages.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">templates</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">Registry</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">default + rollup</code></td>
+          <td class="py-2">Template registry keyed by notification type.</td>
+        </tr>
+        <tr>
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">recipients</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">RecipientRegistry</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">recipient.email fallback</code></td>
+          <td class="py-2">Recipient resolver registry; supports model-specific email resolution.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <%= render FlatPack::SectionTitle::Component.new(
+    title: "Template Registration",
+    subtitle: "Override defaults per notification type and for rollups.",
+  ) %>
+
+  <%= render FlatPack::CodeBlock::Component.new(
+    language: :ruby,
+    code: <<~CODE
+      RecordingStudioNotificationsEmail.configure do |config|
+        # Per-type override (expects both .html.erb and .text.erb)
+        config.templates.register(:page_comment, "notification_mailer/page_comment")
+
+        # Optional rollup override
+        config.templates.register(:rollup, "notification_mailer/rollup")
+      end
+    CODE
+  ) %>
+
+  <%= render FlatPack::SectionTitle::Component.new(
+    title: "Recipient Resolution",
+    subtitle: "Resolve recipient emails by model type; falls back to recipient.email.",
+  ) %>
+
+  <%= render FlatPack::CodeBlock::Component.new(
+    language: :ruby,
+    code: <<~CODE
+      RecordingStudioNotificationsEmail.configure do |config|
+        config.recipients.register(User) { |user| user.notification_email }
+
+        # You can also return multiple addresses
+        # config.recipients.register(Team) { |team| team.alert_emails }
+      end
+    CODE
+  ) %>
+
+  <%= render FlatPack::SectionTitle::Component.new(
+    title: "Parent Notification Setup",
+    subtitle: "Enable :email on notification types in recording_studio_notifications.",
+  ) %>
+
+  <%= render FlatPack::CodeBlock::Component.new(
+    language: :ruby,
+    code: <<~CODE
+      RecordingStudioNotifications.register_notification_type(
+        :page_comment,
+        label: "Page comment",
+        default_channels: %i[in_app email],
+        available_channels: %i[in_app email],
+        scope: :root,
+        allowed_cadences: %i[individual daily weekly]
+      )
+    CODE
+  ) %>
+
+  <%= render FlatPack::SectionTitle::Component.new(
+    title: "Sending Notifications",
+    subtitle: "Use the parent gem API; do not call the mailer directly.",
+  ) %>
+
+  <%= render FlatPack::CodeBlock::Component.new(
+    language: :ruby,
+    code: <<~CODE
+      RecordingStudioNotifications.notify(
+        notification_type: :page_comment,
+        recipient: user,
+        notifiable: page,
+        title: "New comment",
+        body: "A collaborator commented on your page.",
+        url: page_url(page)
+      )
+    CODE
+  ) %>
+
+  <p class="text-sm">Delivery remains owned by RecordingStudioNotifications. This channel is registered during Rails preparation and calls <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">deliver_now</code> inside the parent delivery workflow so delivery status and retries remain centralized.</p>
+
+  <%= render FlatPack::CodeBlock::Component.new(
+    language: :ruby,
     code: <<~'CODE'
-      # Add the config settings for the gem here.
+      RecordingStudioNotifications.register_channel(
+        :email,
+        RecordingStudioNotificationsEmail.adapter
+      )
     CODE
   ) %>
 </div>

@@ -10,13 +10,31 @@ idempotency, preferences, and delivery status.
 
 ## Installation
 
+Add the email channel alongside `recording_studio_notifications` in the host
+Rails application's `Gemfile`:
+
 ```ruby
+# The core gem owns notification records, delivery preferences, and jobs.
+gem "recording_studio_notifications"
+
+# This gem provides the Action Mailer `:email` channel.
 gem "recording_studio_notifications_email"
 ```
 
+Install the bundle, complete the core gem's installation and migrations, then
+generate this channel's initializer:
+
 ```bash
+bundle install
+bin/rails generate recording_studio_notifications:install
+bin/rails db:migrate
 bin/rails generate recording_studio_notifications_email:install
 ```
+
+The email generator creates
+`config/initializers/recording_studio_notifications_email.rb`; set its required
+`config.from` value before delivering mail. This channel has no migration or
+routes of its own.
 
 No migration or route is required. During Rails preparation the engine
 registers an `:email` channel equivalent to:
@@ -136,6 +154,52 @@ days by default:
 ```ruby
 config.signed_reference_expires_in = 7.days
 ```
+
+## Webhook integration contract
+
+This gem intentionally does not mount inbound webhook routes, but it exposes a
+provider-agnostic callback surface so a separate webhook gem (for example,
+Postmark) can plug in without adapter rewrites.
+
+Build and ingest normalized webhook events:
+
+```ruby
+event = RecordingStudioNotificationsEmail::WebhookEvent.new(
+  provider: :postmark,
+  event_type: :opened,
+  reference: header_value,
+  occurred_at: Time.current,
+  external_event_id: "evt_123",
+  external_message_id: "msg_123",
+  metadata: { "stream" => "outbound" }
+)
+
+RecordingStudioNotificationsEmail.ingest_webhook_event!(event: event)
+```
+
+Supported event types are:
+
+- `:delivered`
+- `:opened`
+- `:clicked`
+- `:bounced`
+- `:complained`
+- `:unsubscribed`
+
+If your webhook pipeline prefers explicit handlers, call these directly:
+
+- `mark_delivered_from_reference!`
+- `mark_opened_from_reference!`
+- `mark_clicked_from_reference!`
+- `mark_bounced_from_reference!`
+- `mark_complained_from_reference!`
+- `mark_unsubscribed_from_reference!`
+
+Failures raise typed errors:
+
+- `RecordingStudioNotificationsEmail::InvalidWebhookPayloadError`
+- `RecordingStudioNotificationsEmail::UnsupportedWebhookEventError`
+- `ActiveSupport::MessageVerifier::InvalidSignature`
 
 This gem deliberately does not provide inbound email or webhook endpoints.
 

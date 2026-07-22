@@ -11,6 +11,8 @@ require "recording_studio_notifications_email/configuration"
 require "recording_studio_notifications_email/event"
 require "recording_studio_notifications_email/correlation"
 require "recording_studio_notifications_email/delivery_callbacks"
+require "recording_studio_notifications_email/webhook_errors"
+require "recording_studio_notifications_email/webhook_event"
 require "recording_studio_notifications_email/action_mailer_adapter"
 require "recording_studio_notifications_email/engine"
 
@@ -56,6 +58,50 @@ module RecordingStudioNotificationsEmail
         delivered_at: delivered_at,
         configuration: configuration
       )
+    end
+
+    def mark_opened_from_reference!(reference:, opened_at: Time.current)
+      DeliveryCallbacks.mark_opened_from_reference!(
+        reference: reference,
+        opened_at: opened_at,
+        configuration: configuration
+      )
+    end
+
+    def mark_clicked_from_reference!(reference:, clicked_at: Time.current)
+      DeliveryCallbacks.mark_clicked_from_reference!(
+        reference: reference,
+        clicked_at: clicked_at,
+        configuration: configuration
+      )
+    end
+
+    def mark_bounced_from_reference!(reference:, bounced_at: Time.current)
+      DeliveryCallbacks.mark_bounced_from_reference!(
+        reference: reference,
+        bounced_at: bounced_at,
+        configuration: configuration
+      )
+    end
+
+    def mark_complained_from_reference!(reference:, complained_at: Time.current)
+      DeliveryCallbacks.mark_complained_from_reference!(
+        reference: reference,
+        complained_at: complained_at,
+        configuration: configuration
+      )
+    end
+
+    def mark_unsubscribed_from_reference!(reference:, unsubscribed_at: Time.current)
+      DeliveryCallbacks.mark_unsubscribed_from_reference!(
+        reference: reference,
+        unsubscribed_at: unsubscribed_at,
+        configuration: configuration
+      )
+    end
+
+    def ingest_webhook_event!(event:)
+      DeliveryCallbacks.ingest_webhook_event!(event: event, configuration: configuration)
     end
 
     private
