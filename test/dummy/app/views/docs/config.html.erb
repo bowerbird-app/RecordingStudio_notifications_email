@@ -54,6 +54,25 @@
 
         # Optional Message-ID domain
         config.message_id_domain = "mail.example.com"
+
+        # Optional recipient resolvers by model type
+        config.recipients.register(User) { |user| user.notification_email }
+        config.recipients.register("default") { |recipient| recipient.email }
+
+        # Optional template overrides
+        # Individual (non-rollup) template by notification type
+        config.templates.register(:page_comment, "notification_mailer/page_comment")
+        config.templates.register(:page_created, "notification_mailer/page_created")
+
+        # Shared rollup template path
+        config.templates.register(:rollup, "notification_mailer/rollup")
+
+        # Optional webhook event translation hook (middleware-style)
+        config.webhook_event_transformer = lambda do |event|
+          next event if event.event_type != :opened
+
+          event.to_h.merge(event_type: :clicked)
+        end
       end
     CODE
   ) %>
@@ -127,41 +146,6 @@
   </div>
 
   <%= render FlatPack::SectionTitle::Component.new(
-    title: "Template Registration",
-    subtitle: "Override defaults per notification type and for rollups.",
-  ) %>
-
-  <%= render FlatPack::CodeBlock::Component.new(
-    language: :ruby,
-    code: <<~CODE
-      RecordingStudioNotificationsEmail.configure do |config|
-        # Per-type override (expects both .html.erb and .text.erb)
-        config.templates.register(:page_comment, "notification_mailer/page_comment")
-
-        # Optional rollup override
-        config.templates.register(:rollup, "notification_mailer/rollup")
-      end
-    CODE
-  ) %>
-
-  <%= render FlatPack::SectionTitle::Component.new(
-    title: "Recipient Resolution",
-    subtitle: "Resolve recipient emails by model type; falls back to recipient.email.",
-  ) %>
-
-  <%= render FlatPack::CodeBlock::Component.new(
-    language: :ruby,
-    code: <<~CODE
-      RecordingStudioNotificationsEmail.configure do |config|
-        config.recipients.register(User) { |user| user.notification_email }
-
-        # You can also return multiple addresses
-        # config.recipients.register(Team) { |team| team.alert_emails }
-      end
-    CODE
-  ) %>
-
-  <%= render FlatPack::SectionTitle::Component.new(
     title: "Parent Notification Setup",
     subtitle: "Enable :email on notification types in recording_studio_notifications.",
   ) %>
@@ -201,13 +185,4 @@
 
   <p class="text-sm">Delivery remains owned by RecordingStudioNotifications. This channel is registered during Rails preparation and calls <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">deliver_now</code> inside the parent delivery workflow so delivery status and retries remain centralized.</p>
 
-  <%= render FlatPack::CodeBlock::Component.new(
-    language: :ruby,
-    code: <<~'CODE'
-      RecordingStudioNotifications.register_channel(
-        :email,
-        RecordingStudioNotificationsEmail.adapter
-      )
-    CODE
-  ) %>
 </div>

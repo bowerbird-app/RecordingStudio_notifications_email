@@ -19,12 +19,12 @@ class CorrelationTest < Minitest::Test
   end
 
   def test_signed_reference_round_trips_ids
-    token = RecordingStudioNotificationsEmail::Correlation.sign(
+    token = RecordingStudioNotificationsEmail::DeliveryToken.sign(
       notification: Record.new("notification-1"),
       delivery: Record.new("delivery-1")
     )
 
-    reference = RecordingStudioNotificationsEmail::Correlation.verify!(token)
+    reference = RecordingStudioNotificationsEmail::DeliveryToken.verify!(token)
 
     assert_equal ["notification-1"], reference.notification_ids
     assert_equal "notification-1", reference.notification_id
@@ -33,28 +33,28 @@ class CorrelationTest < Minitest::Test
   end
 
   def test_tampered_reference_is_rejected
-    token = RecordingStudioNotificationsEmail::Correlation.sign(
+    token = RecordingStudioNotificationsEmail::DeliveryToken.sign(
       notification: Record.new("notification-1"),
       delivery: Record.new("delivery-1")
     )
 
-    assert_nil RecordingStudioNotificationsEmail::Correlation.verify("#{token}tampered")
+    assert_nil RecordingStudioNotificationsEmail::DeliveryToken.verify("#{token}tampered")
     assert_raises(ActiveSupport::MessageVerifier::InvalidSignature) do
-      RecordingStudioNotificationsEmail::Correlation.verify!("#{token}tampered")
+      RecordingStudioNotificationsEmail::DeliveryToken.verify!("#{token}tampered")
     end
   end
 
   def test_rollup_reference_records_all_deliveries_without_loading_models
-    token = RecordingStudioNotificationsEmail::Correlation.sign(
+    token = RecordingStudioNotificationsEmail::DeliveryToken.sign(
       notifications: [Record.new("notification-1"), Record.new("notification-2")],
       deliveries: [Record.new("delivery-1"), Record.new("delivery-2")],
       rollup_key: "weekly/user-1"
     )
 
-    reference = RecordingStudioNotificationsEmail::Correlation.verify!(token)
+    reference = RecordingStudioNotificationsEmail::DeliveryToken.verify!(token)
     payload = RecordingStudioNotificationsEmail.configuration.message_verifier.verified(
       token,
-      purpose: RecordingStudioNotificationsEmail::Correlation::PURPOSE
+      purpose: RecordingStudioNotificationsEmail::DeliveryToken::PURPOSE
     )
 
     assert_equal %w[notification-1 notification-2], reference.notification_ids
@@ -67,7 +67,7 @@ class CorrelationTest < Minitest::Test
 
   def test_records_without_ids_are_rejected
     assert_raises(ArgumentError) do
-      RecordingStudioNotificationsEmail::Correlation.sign(
+      RecordingStudioNotificationsEmail::DeliveryToken.sign(
         notification: Record.new(nil),
         delivery: Record.new("delivery-1")
       )
@@ -76,13 +76,13 @@ class CorrelationTest < Minitest::Test
 
   def test_a_delivery_is_required
     assert_raises(ArgumentError) do
-      RecordingStudioNotificationsEmail::Correlation.sign(notification: Record.new("notification-1"))
+      RecordingStudioNotificationsEmail::DeliveryToken.sign(notification: Record.new("notification-1"))
     end
   end
 
   def test_notifications_and_deliveries_must_align
     assert_raises(ArgumentError) do
-      RecordingStudioNotificationsEmail::Correlation.sign(
+      RecordingStudioNotificationsEmail::DeliveryToken.sign(
         notifications: [Record.new("notification-1"), Record.new("notification-2")],
         deliveries: [Record.new("delivery-1")]
       )
@@ -96,13 +96,13 @@ class CorrelationTest < Minitest::Test
         "delivery_ids" => ["delivery-1"],
         "rollup" => false
       },
-      purpose: RecordingStudioNotificationsEmail::Correlation::PURPOSE,
+      purpose: RecordingStudioNotificationsEmail::DeliveryToken::PURPOSE,
       expires_in: -1.second
     )
 
-    assert_nil RecordingStudioNotificationsEmail::Correlation.verify(token)
+    assert_nil RecordingStudioNotificationsEmail::DeliveryToken.verify(token)
     assert_raises(ActiveSupport::MessageVerifier::InvalidSignature) do
-      RecordingStudioNotificationsEmail::Correlation.verify!(token)
+      RecordingStudioNotificationsEmail::DeliveryToken.verify!(token)
     end
   end
 
@@ -111,7 +111,7 @@ class CorrelationTest < Minitest::Test
       RecordingStudioNotificationsEmail.configuration.signed_reference_expires_in = value
 
       assert_raises(RecordingStudioNotificationsEmail::ConfigurationError) do
-        RecordingStudioNotificationsEmail::Correlation.sign(
+        RecordingStudioNotificationsEmail::DeliveryToken.sign(
           notification: Record.new("notification-1"),
           delivery: Record.new("delivery-1")
         )
@@ -121,29 +121,29 @@ class CorrelationTest < Minitest::Test
 
   def test_message_id_is_stable_and_rejects_an_invalid_domain
     RecordingStudioNotificationsEmail.configuration.message_id_domain = "mail.example.test"
-    first_token = RecordingStudioNotificationsEmail::Correlation.sign(
+    first_token = RecordingStudioNotificationsEmail::DeliveryToken.sign(
       notifications: [Record.new("notification-1"), Record.new("notification-2")],
       deliveries: [Record.new("delivery-1"), Record.new("delivery-2")]
     )
-    second_token = RecordingStudioNotificationsEmail::Correlation.sign(
+    second_token = RecordingStudioNotificationsEmail::DeliveryToken.sign(
       notifications: [Record.new("notification-1"), Record.new("notification-2")],
       deliveries: [Record.new("delivery-1"), Record.new("delivery-2")]
     )
 
     assert_equal(
-      RecordingStudioNotificationsEmail::Correlation.message_id(first_token),
-      RecordingStudioNotificationsEmail::Correlation.message_id(second_token)
+      RecordingStudioNotificationsEmail::DeliveryToken.message_id(first_token),
+      RecordingStudioNotificationsEmail::DeliveryToken.message_id(second_token)
     )
 
     RecordingStudioNotificationsEmail.configuration.message_id_domain = "invalid\nBcc"
     assert_raises(RecordingStudioNotificationsEmail::ConfigurationError) do
-      RecordingStudioNotificationsEmail::Correlation.message_id(first_token)
+      RecordingStudioNotificationsEmail::DeliveryToken.message_id(first_token)
     end
 
     %w[example..test -example.test example-.test .example.test].each do |domain|
       RecordingStudioNotificationsEmail.configuration.message_id_domain = domain
       assert_raises(RecordingStudioNotificationsEmail::ConfigurationError) do
-        RecordingStudioNotificationsEmail::Correlation.message_id(first_token)
+        RecordingStudioNotificationsEmail::DeliveryToken.message_id(first_token)
       end
     end
   end
@@ -155,11 +155,11 @@ class CorrelationTest < Minitest::Test
         "delivery_id" => "delivery-legacy",
         "rollup" => false
       },
-      purpose: RecordingStudioNotificationsEmail::Correlation::PURPOSE,
+      purpose: RecordingStudioNotificationsEmail::DeliveryToken::PURPOSE,
       expires_in: 1.hour
     )
 
-    reference = RecordingStudioNotificationsEmail::Correlation.verify!(token)
+    reference = RecordingStudioNotificationsEmail::DeliveryToken.verify!(token)
 
     assert_equal ["notification-legacy"], reference.notification_ids
     assert_equal "notification-legacy", reference.notification_id

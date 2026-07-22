@@ -9,7 +9,7 @@ require "recording_studio_notifications"
 require "recording_studio_notifications_email/version"
 require "recording_studio_notifications_email/configuration"
 require "recording_studio_notifications_email/event"
-require "recording_studio_notifications_email/correlation"
+require "recording_studio_notifications_email/delivery_token"
 require "recording_studio_notifications_email/delivery_callbacks"
 require "recording_studio_notifications_email/webhook_errors"
 require "recording_studio_notifications_email/webhook_event"
@@ -100,8 +100,8 @@ module RecordingStudioNotificationsEmail
       )
     end
 
-    def ingest_webhook_event!(event:)
-      DeliveryCallbacks.ingest_webhook_event!(event: event, configuration: configuration)
+    def process_webhook_event!(event:)
+      DeliveryCallbacks.process_webhook_event!(event: event, configuration: configuration)
     end
 
     private

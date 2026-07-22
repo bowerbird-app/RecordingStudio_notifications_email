@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module RecordingStudioNotificationsEmail
-  module Correlation
+  module DeliveryToken
     PURPOSE = "recording_studio_notifications_email.correlation"
     HEADER = "X-Recording-Studio-Notification-Reference"
     DOMAIN_PATTERN = /\A(?=.{1,253}\z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*

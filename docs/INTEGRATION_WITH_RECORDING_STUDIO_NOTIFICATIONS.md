@@ -372,13 +372,13 @@ In a remote development environment such as Codespaces, a local desktop browser
 may not exist. The web route is more reliable than expecting Letter Opener to
 automatically open a new browser window.
 
-## Correlation and Troubleshooting
+## Delivery token and Troubleshooting
 
 Each email includes the `X-Recording-Studio-Notification-Reference` header. It
 is a signed and expiring reference to notification and delivery IDs.
 
 ```ruby
-reference = RecordingStudioNotificationsEmail::Correlation.verify(header_value)
+reference = RecordingStudioNotificationsEmail::DeliveryToken.verify(header_value)
 # Verifies the signature and expiry. Returns nil when invalid or expired.
 
 reference&.notification_id

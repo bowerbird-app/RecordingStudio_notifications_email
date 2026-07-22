@@ -164,7 +164,7 @@ module RecordingStudioNotificationsEmail
         )
       end
 
-      def ingest_webhook_event!(event:, configuration: RecordingStudioNotificationsEmail.configuration)
+      def process_webhook_event!(event:, configuration: RecordingStudioNotificationsEmail.configuration)
         webhook_event = normalize_webhook_event(event)
         webhook_event = apply_webhook_event_transformer(webhook_event, configuration: configuration)
 
@@ -179,9 +179,9 @@ module RecordingStudioNotificationsEmail
       private
 
       def resolve_reference!(reference, configuration:)
-        return reference if reference.is_a?(Correlation::Reference)
+        return reference if reference.is_a?(DeliveryToken::Reference)
 
-        Correlation.verify!(reference, configuration: configuration)
+        DeliveryToken.verify!(reference, configuration: configuration)
       end
 
       def normalize_webhook_event(event)

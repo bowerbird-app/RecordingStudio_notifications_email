@@ -34,7 +34,7 @@ class NotificationMailerTest < Minitest::Test
     assert_equal ["person@example.test"], message.to
     assert_equal ["notifications@example.test"], message.from
     assert_equal "Account notice", message.subject
-    assert_equal "signed-reference", message[RecordingStudioNotificationsEmail::Correlation::HEADER].value
+    assert_equal "signed-reference", message[RecordingStudioNotificationsEmail::DeliveryToken::HEADER].value
     assert_includes message.html_part.body.to_s, "A useful update"
     assert_includes message.text_part.body.to_s, "A useful update"
   end

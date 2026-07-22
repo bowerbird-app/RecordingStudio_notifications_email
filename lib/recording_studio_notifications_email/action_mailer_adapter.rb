@@ -13,7 +13,7 @@ module RecordingStudioNotificationsEmail
 
     def deliver(notification:, delivery:)
       event = Event.wrap(notification, delivery: delivery)
-      reference = Correlation.sign(notification: notification, delivery: delivery, configuration: @configuration)
+      reference = DeliveryToken.sign(notification: notification, delivery: delivery, configuration: @configuration)
       message = mailer.with(
         event: event,
         to: recipient_for(event),
@@ -22,7 +22,7 @@ module RecordingStudioNotificationsEmail
         template_path: @configuration.template_for(event.notification_type),
         tracked_notification_path: tracked_notification_path(notification),
         correlation_reference: reference,
-        message_id: Correlation.message_id(reference, configuration: @configuration)
+        message_id: DeliveryToken.message_id(reference, configuration: @configuration)
       ).notification
 
       message.deliver_now
@@ -46,7 +46,7 @@ module RecordingStudioNotificationsEmail
         raise DeliveryError, "rollup notifications must resolve to one email address"
       end
 
-      reference = Correlation.sign(
+      reference = DeliveryToken.sign(
         notifications: notifications,
         deliveries: deliveries,
         rollup_key: rollup_key || idempotency_key,
@@ -62,7 +62,7 @@ module RecordingStudioNotificationsEmail
         cadence: cadence,
         period_starts_at: period_starts_at,
         period_ends_at: period_ends_at,
-        message_id: Correlation.message_id(reference, configuration: @configuration)
+        message_id: DeliveryToken.message_id(reference, configuration: @configuration)
       ).rollup
 
       message.deliver_now

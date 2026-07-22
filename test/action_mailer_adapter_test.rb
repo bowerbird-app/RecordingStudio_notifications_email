@@ -56,7 +56,7 @@ class ActionMailerAdapterTest < Minitest::Test
     assert_equal "person@example.test", FakeMailer.params.fetch(:to)
     assert_equal "notifications@example.test", FakeMailer.params.fetch(:from)
     assert_instance_of RecordingStudioNotificationsEmail::Event, FakeMailer.params.fetch(:event)
-    assert RecordingStudioNotificationsEmail::Correlation.verify(
+    assert RecordingStudioNotificationsEmail::DeliveryToken.verify(
       FakeMailer.params.fetch(:correlation_reference),
       configuration: @configuration
     )
@@ -128,7 +128,7 @@ class ActionMailerAdapterTest < Minitest::Test
     assert message.delivered
     assert_equal :rollup, FakeMailer.action
     assert_equal 2, FakeMailer.params.fetch(:events).size
-    reference = RecordingStudioNotificationsEmail::Correlation.verify(
+    reference = RecordingStudioNotificationsEmail::DeliveryToken.verify(
       FakeMailer.params.fetch(:correlation_reference),
       configuration: @configuration
     )

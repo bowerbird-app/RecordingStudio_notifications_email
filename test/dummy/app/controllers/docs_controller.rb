@@ -95,7 +95,7 @@ class DocsController < ApplicationController
       return
     end
 
-    reference = RecordingStudioNotificationsEmail::Correlation.sign(
+    reference = RecordingStudioNotificationsEmail::DeliveryToken.sign(
       notification: notification,
       delivery: delivery
     )
@@ -204,7 +204,7 @@ class DocsController < ApplicationController
     @webhook_lab_notification = target && RecordingStudioNotifications::Notification.find_by(id: target["notification_id"])
     @webhook_lab_delivery = target && RecordingStudioNotifications::Delivery.find_by(id: target["delivery_id"])
     @webhook_lab_reference = @webhook_lab_notification && @webhook_lab_delivery &&
-      RecordingStudioNotificationsEmail::Correlation.sign(
+      RecordingStudioNotificationsEmail::DeliveryToken.sign(
         notification: @webhook_lab_notification,
         delivery: @webhook_lab_delivery
       )
@@ -222,21 +222,14 @@ class DocsController < ApplicationController
 
   def load_webhook_lab_classes!
     require_dependency "recording_studio_notifications_email"
-    require_dependency "recording_studio_notifications_email/correlation"
+    require_dependency "recording_studio_notifications_email/delivery_token"
     require_dependency "recording_studio_notifications_email/delivery_callbacks"
     require_dependency "recording_studio_notifications_email/webhook_errors"
     require_dependency "recording_studio_notifications_email/webhook_event"
   end
 
   def ingest_webhook_lab_event!(event)
-    if RecordingStudioNotificationsEmail.respond_to?(:ingest_webhook_event!)
-      RecordingStudioNotificationsEmail.ingest_webhook_event!(event: event)
-    else
-      RecordingStudioNotificationsEmail::DeliveryCallbacks.ingest_webhook_event!(
-        event: event,
-        configuration: RecordingStudioNotificationsEmail.configuration
-      )
-    end
+    RecordingStudioNotificationsEmail.process_webhook_event!(event: event)
   end
 
   def webhook_lab_target
@@ -313,7 +306,7 @@ class DocsController < ApplicationController
     raise ArgumentError, "webhook lab target notification was not found" unless notification
     raise ArgumentError, "webhook lab target delivery was not found" unless delivery
 
-    RecordingStudioNotificationsEmail::Correlation.sign(
+    RecordingStudioNotificationsEmail::DeliveryToken.sign(
       notification: notification,
       delivery: delivery
     )

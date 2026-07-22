@@ -152,7 +152,7 @@ class DeliveryCallbacksTest < Minitest::Test
   end
 
   def test_reports_missing_and_already_delivered_ids
-    reference = RecordingStudioNotificationsEmail::Correlation::Reference.new(
+    reference = RecordingStudioNotificationsEmail::DeliveryToken::Reference.new(
       notification_ids: %w[notification-1 notification-2],
       delivery_ids: %w[delivery-1 delivery-2],
       rollup: true
@@ -220,7 +220,7 @@ class DeliveryCallbacksTest < Minitest::Test
     end
   end
 
-  def test_ingest_webhook_event_routes_to_matching_callback
+  def test_process_webhook_event_routes_to_matching_callback
     reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
     delivery = FakeDelivery.new(id: "delivery-1")
     event = RecordingStudioNotificationsEmail::WebhookEvent.new(
@@ -234,7 +234,7 @@ class DeliveryCallbacksTest < Minitest::Test
     )
 
     with_stubbed_delivery_where([delivery]) do
-      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.ingest_webhook_event!(
+      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.process_webhook_event!(
         event: event,
         configuration: @configuration
       )
@@ -245,7 +245,7 @@ class DeliveryCallbacksTest < Minitest::Test
     end
   end
 
-  def test_ingest_webhook_event_applies_transformer
+  def test_process_webhook_event_applies_transformer
     reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
     delivery = FakeDelivery.new(id: "delivery-1")
     event = RecordingStudioNotificationsEmail::WebhookEvent.new(
@@ -260,7 +260,7 @@ class DeliveryCallbacksTest < Minitest::Test
     end
 
     with_stubbed_delivery_where([delivery]) do
-      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.ingest_webhook_event!(
+      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.process_webhook_event!(
         event: event,
         configuration: @configuration
       )
@@ -271,7 +271,7 @@ class DeliveryCallbacksTest < Minitest::Test
     end
   end
 
-  def test_ingest_webhook_event_raises_when_transformer_returns_nil
+  def test_process_webhook_event_raises_when_transformer_returns_nil
     reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
     event = RecordingStudioNotificationsEmail::WebhookEvent.new(
       provider: :postmark,
@@ -282,7 +282,7 @@ class DeliveryCallbacksTest < Minitest::Test
     @configuration.webhook_event_transformer = ->(_incoming) { nil }
 
     error = assert_raises(RecordingStudioNotificationsEmail::InvalidWebhookTransformError) do
-      RecordingStudioNotificationsEmail::DeliveryCallbacks.ingest_webhook_event!(
+      RecordingStudioNotificationsEmail::DeliveryCallbacks.process_webhook_event!(
         event: event,
         configuration: @configuration
       )
@@ -291,7 +291,7 @@ class DeliveryCallbacksTest < Minitest::Test
     assert_includes error.message, "returned nil"
   end
 
-  def test_ingest_webhook_event_raises_when_transformer_returns_invalid_payload
+  def test_process_webhook_event_raises_when_transformer_returns_invalid_payload
     reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
     event = RecordingStudioNotificationsEmail::WebhookEvent.new(
       provider: :postmark,
@@ -302,7 +302,7 @@ class DeliveryCallbacksTest < Minitest::Test
     @configuration.webhook_event_transformer = ->(_incoming) { { provider: :postmark } }
 
     error = assert_raises(RecordingStudioNotificationsEmail::InvalidWebhookTransformError) do
-      RecordingStudioNotificationsEmail::DeliveryCallbacks.ingest_webhook_event!(
+      RecordingStudioNotificationsEmail::DeliveryCallbacks.process_webhook_event!(
         event: event,
         configuration: @configuration
       )
@@ -400,7 +400,7 @@ class DeliveryCallbacksTest < Minitest::Test
       assert_equal :opened, opened_result.event_type
       assert_equal @delivered_at, delivery.opened_at
 
-      ingest_result = RecordingStudioNotificationsEmail.ingest_webhook_event!(
+      process_result = RecordingStudioNotificationsEmail.process_webhook_event!(
         event: {
           provider: :postmark,
           event_type: :unsubscribed,
@@ -409,7 +409,19 @@ class DeliveryCallbacksTest < Minitest::Test
           metadata: {}
         }
       )
-      assert_equal :unsubscribed, ingest_result.event_type
+      assert_equal :unsubscribed, process_result.event_type
+      assert_equal @delivered_at, delivery.unsubscribed_at
+
+      process_result = RecordingStudioNotificationsEmail.process_webhook_event!(
+        event: {
+          provider: :postmark,
+          event_type: :unsubscribed,
+          reference: reference,
+          occurred_at: @delivered_at,
+          metadata: {}
+        }
+      )
+      assert_equal :unsubscribed, process_result.event_type
       assert_equal @delivered_at, delivery.unsubscribed_at
     end
   ensure
@@ -419,7 +431,7 @@ class DeliveryCallbacksTest < Minitest::Test
   private
 
   def signed_reference(notification_id:, delivery_id:)
-    RecordingStudioNotificationsEmail::Correlation.sign(
+    RecordingStudioNotificationsEmail::DeliveryToken.sign(
       notification: Record.new(notification_id),
       delivery: Record.new(delivery_id),
       configuration: @configuration

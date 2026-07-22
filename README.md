@@ -128,7 +128,7 @@ config.mailer_class = "MyNotificationsMailer"
 The class must support Action Mailer's `.with(...)` API and expose
 `notification` and `rollup` actions.
 
-## Correlation references
+## Delivery token references
 
 Every message includes
 `X-Recording-Studio-Notification-Reference`. The value is a purpose-scoped,
@@ -139,7 +139,7 @@ confidentiality and should not be treated as authorization. It does not load
 models and is safe to validate at an application boundary:
 
 ```ruby
-reference = RecordingStudioNotificationsEmail::Correlation.verify(header_value)
+reference = RecordingStudioNotificationsEmail::DeliveryToken.verify(header_value)
 reference&.notification_id
 reference&.notification_ids
 reference&.delivery_ids
@@ -174,7 +174,7 @@ event = RecordingStudioNotificationsEmail::WebhookEvent.new(
   metadata: { "stream" => "outbound" }
 )
 
-RecordingStudioNotificationsEmail.ingest_webhook_event!(event: event)
+RecordingStudioNotificationsEmail.process_webhook_event!(event: event)
 ```
 
 Optional provider-specific normalization hook:
