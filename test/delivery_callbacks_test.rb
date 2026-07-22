@@ -116,9 +116,7 @@ class DeliveryCallbacksTest < Minitest::Test
   def setup
     @had_delivery_constant = RecordingStudioNotifications.const_defined?(:Delivery, false)
     @original_delivery_constant = RecordingStudioNotifications.const_get(:Delivery) if @had_delivery_constant
-    unless @had_delivery_constant
-      RecordingStudioNotifications.const_set(:Delivery, Class.new)
-    end
+    RecordingStudioNotifications.const_set(:Delivery, Class.new) unless @had_delivery_constant
 
     @configuration = RecordingStudioNotificationsEmail::Configuration.new
     @configuration.message_verifier = ActiveSupport::MessageVerifier.new("c" * 64, serializer: JSON)
@@ -188,7 +186,7 @@ class DeliveryCallbacksTest < Minitest::Test
     delivery = FakeDelivery.new(id: "delivery-1", notification: notification)
 
     with_stubbed_delivery_where([delivery]) do
-      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_opened_from_reference!(
+      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_opened!(
         reference: reference,
         opened_at: @delivered_at,
         configuration: @configuration
@@ -279,7 +277,7 @@ class DeliveryCallbacksTest < Minitest::Test
       reference: reference,
       metadata: {}
     )
-    @configuration.webhook_event_transformer = ->(_incoming) { nil }
+    @configuration.webhook_event_transformer = ->(_incoming) {}
 
     error = assert_raises(RecordingStudioNotificationsEmail::InvalidWebhookTransformError) do
       RecordingStudioNotificationsEmail::DeliveryCallbacks.process_webhook_event!(
@@ -317,7 +315,7 @@ class DeliveryCallbacksTest < Minitest::Test
     delivery = DeliveryWithoutOpenedCallbacks.new(id: "delivery-1", notification: notification)
 
     with_stubbed_delivery_where([delivery]) do
-      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_opened_from_reference!(
+      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_opened!(
         reference: reference,
         opened_at: @delivered_at,
         configuration: @configuration
@@ -354,7 +352,7 @@ class DeliveryCallbacksTest < Minitest::Test
     delivery = ContractAwareDelivery.new(id: "delivery-1")
 
     with_stubbed_delivery_where([delivery]) do
-      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_opened_from_reference!(
+      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_opened!(
         reference: reference,
         opened_at: @delivered_at,
         configuration: @configuration
@@ -393,7 +391,7 @@ class DeliveryCallbacksTest < Minitest::Test
     with_stubbed_delivery_where([delivery]) do
       RecordingStudioNotificationsEmail.instance_variable_set(:@configuration, @configuration)
 
-      opened_result = RecordingStudioNotificationsEmail.mark_opened_from_reference!(
+      opened_result = RecordingStudioNotificationsEmail.mark_opened!(
         reference: reference,
         opened_at: @delivered_at
       )

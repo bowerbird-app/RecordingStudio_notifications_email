@@ -85,8 +85,8 @@ module RecordingStudioNotificationsEmail
         )
       end
 
-      def mark_opened_from_reference!(reference:, opened_at: Time.current,
-                                      configuration: RecordingStudioNotificationsEmail.configuration)
+      def mark_opened!(reference:, opened_at: Time.current,
+                       configuration: RecordingStudioNotificationsEmail.configuration)
         mark_event_from_reference!(
           event_type: :opened,
           reference: reference,

@@ -19,10 +19,10 @@
       RUBY
     },
     {
-      title: "RecordingStudioNotificationsEmail.mark_opened_from_reference!",
+      title: "RecordingStudioNotificationsEmail.mark_opened!",
       subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks for opened events and applies core delivery/opened semantics.",
       code: <<~'RUBY'
-        result = RecordingStudioNotificationsEmail.mark_opened_from_reference!(
+        result = RecordingStudioNotificationsEmail.mark_opened!(
           reference: params[:reference],
           opened_at: Time.current
         )

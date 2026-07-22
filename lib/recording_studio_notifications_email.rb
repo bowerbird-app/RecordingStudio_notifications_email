@@ -60,8 +60,8 @@ module RecordingStudioNotificationsEmail
       )
     end
 
-    def mark_opened_from_reference!(reference:, opened_at: Time.current)
-      DeliveryCallbacks.mark_opened_from_reference!(
+    def mark_opened!(reference:, opened_at: Time.current)
+      DeliveryCallbacks.mark_opened!(
         reference: reference,
         opened_at: opened_at,
         configuration: configuration
