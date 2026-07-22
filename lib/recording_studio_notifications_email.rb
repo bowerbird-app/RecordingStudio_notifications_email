@@ -84,8 +84,8 @@ module RecordingStudioNotificationsEmail
       )
     end
 
-    def mark_complained_from_reference!(reference:, complained_at: Time.current)
-      DeliveryCallbacks.mark_complained_from_reference!(
+    def mark_complained!(reference:, complained_at: Time.current)
+      DeliveryCallbacks.mark_complained!(
         reference: reference,
         complained_at: complained_at,
         configuration: configuration

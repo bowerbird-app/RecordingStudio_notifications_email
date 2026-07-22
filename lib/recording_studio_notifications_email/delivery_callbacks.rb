@@ -115,8 +115,8 @@ module RecordingStudioNotificationsEmail
         )
       end
 
-      def mark_complained_from_reference!(reference:, complained_at: Time.current,
-                                          configuration: RecordingStudioNotificationsEmail.configuration)
+      def mark_complained!(reference:, complained_at: Time.current,
+                           configuration: RecordingStudioNotificationsEmail.configuration)
         mark_event_from_reference!(
           event_type: :complained,
           reference: reference,

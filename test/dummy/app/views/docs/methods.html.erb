@@ -51,10 +51,10 @@
       RUBY
     },
     {
-      title: "RecordingStudioNotificationsEmail.mark_complained_from_reference!",
+      title: "RecordingStudioNotificationsEmail.mark_complained!",
       subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks and applies complained/spam-report callbacks on core delivery records.",
       code: <<~'RUBY'
-        RecordingStudioNotificationsEmail.mark_complained_from_reference!(
+        RecordingStudioNotificationsEmail.mark_complained!(
           reference: params[:reference],
           complained_at: Time.current
         )
