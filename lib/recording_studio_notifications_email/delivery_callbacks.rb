@@ -2,6 +2,45 @@
 
 module RecordingStudioNotificationsEmail
   module DeliveryCallbacks
+    EVENT_METHOD_CONTRACT = {
+      delivered: {
+        predicate: :delivered?,
+        predicate_aliases: [],
+        mutator: :mark_delivered!,
+        mutator_aliases: []
+      },
+      opened: {
+        predicate: :email_opened?,
+        predicate_aliases: %i[opened? read?],
+        mutator: :mark_email_opened!,
+        mutator_aliases: %i[mark_opened! mark_read!]
+      },
+      clicked: {
+        predicate: :email_clicked?,
+        predicate_aliases: %i[clicked?],
+        mutator: :mark_email_clicked!,
+        mutator_aliases: %i[mark_clicked!]
+      },
+      bounced: {
+        predicate: :email_bounced?,
+        predicate_aliases: %i[bounced? failed?],
+        mutator: :mark_email_bounced!,
+        mutator_aliases: %i[mark_bounced! mark_failed!]
+      },
+      complained: {
+        predicate: :email_complained?,
+        predicate_aliases: %i[complained? spam_reported?],
+        mutator: :mark_email_complained!,
+        mutator_aliases: %i[mark_complained! mark_spam_reported!]
+      },
+      unsubscribed: {
+        predicate: :email_unsubscribed?,
+        predicate_aliases: %i[unsubscribed? opted_out?],
+        mutator: :mark_email_unsubscribed!,
+        mutator_aliases: %i[mark_unsubscribed! mark_opted_out!]
+      }
+    }.freeze
+
     DeliveryUpdateResult = Data.define(
       :reference,
       :updated_delivery_ids,
@@ -126,7 +165,8 @@ module RecordingStudioNotificationsEmail
       end
 
       def ingest_webhook_event!(event:, configuration: RecordingStudioNotificationsEmail.configuration)
-        webhook_event = event.is_a?(WebhookEvent) ? event : WebhookEvent.new(**event)
+        webhook_event = normalize_webhook_event(event)
+        webhook_event = apply_webhook_event_transformer(webhook_event, configuration: configuration)
 
         mark_event_from_reference!(
           event_type: webhook_event.event_type,
@@ -144,17 +184,48 @@ module RecordingStudioNotificationsEmail
         Correlation.verify!(reference, configuration: configuration)
       end
 
+      def normalize_webhook_event(event)
+        event.is_a?(WebhookEvent) ? event : WebhookEvent.new(**event)
+      end
+
+      def apply_webhook_event_transformer(webhook_event, configuration:)
+        transformer = configuration.respond_to?(:webhook_event_transformer) ? configuration.webhook_event_transformer : nil
+        return webhook_event unless transformer
+
+        unless transformer.respond_to?(:call)
+          raise InvalidWebhookTransformError, "webhook_event_transformer must respond to call"
+        end
+
+        transformed = transformer.call(webhook_event)
+        return normalize_webhook_event(transformed) if transformed
+
+        raise InvalidWebhookTransformError, "webhook_event_transformer returned nil"
+      rescue ArgumentError, TypeError => error
+        raise InvalidWebhookTransformError, "webhook_event_transformer returned invalid payload: #{error.message}"
+      end
+
       def apply_event!(delivery, event_type:, occurred_at:)
         normalized_event = event_type.to_sym
         return apply_delivered!(delivery, occurred_at: occurred_at) if normalized_event == :delivered
 
         predicate = predicate_for(normalized_event).find { |name| delivery.respond_to?(name) }
-        return :already_applied if predicate && delivery.public_send(predicate)
+        if predicate && delivery.public_send(predicate)
+          mark_notification_as_read!(delivery, occurred_at: occurred_at) if normalized_event == :opened
+          return :already_applied
+        end
 
         mutator = mutator_for(normalized_event).find { |name| delivery.respond_to?(name) }
-        raise UnsupportedWebhookEventError, unsupported_event_message(normalized_event) unless mutator
+        unless mutator
+          if normalized_event == :opened
+            read_result = mark_notification_as_read!(delivery, occurred_at: occurred_at)
+            return read_result if read_result
+          end
+
+          raise UnsupportedWebhookEventError, unsupported_event_message(normalized_event)
+        end
 
         delivery.public_send(mutator, at: occurred_at)
+        mark_notification_as_read!(delivery, occurred_at: occurred_at) if normalized_event == :opened
         :updated
       end
 
@@ -168,29 +239,47 @@ module RecordingStudioNotificationsEmail
       end
 
       def predicate_for(event_type)
-        case event_type
-        when :opened then %i[opened? email_opened? read?]
-        when :clicked then %i[clicked? email_clicked?]
-        when :bounced then %i[bounced? failed?]
-        when :complained then %i[complained? spam_reported?]
-        when :unsubscribed then %i[unsubscribed? opted_out?]
-        else []
-        end
+        callback_methods_for(event_type, type: :predicate)
       end
 
       def mutator_for(event_type)
-        case event_type
-        when :opened then %i[mark_opened! mark_email_opened! mark_read!]
-        when :clicked then %i[mark_clicked! mark_email_clicked!]
-        when :bounced then %i[mark_bounced! mark_failed!]
-        when :complained then %i[mark_complained! mark_spam_reported!]
-        when :unsubscribed then %i[mark_unsubscribed! mark_opted_out!]
-        else []
-        end
+        callback_methods_for(event_type, type: :mutator)
+      end
+
+      def callback_methods_for(event_type, type:)
+        contract = EVENT_METHOD_CONTRACT[event_type.to_sym]
+        return [] unless contract
+
+        primary_key = type == :predicate ? :predicate : :mutator
+        alias_key = type == :predicate ? :predicate_aliases : :mutator_aliases
+
+        [contract.fetch(primary_key), *Array(contract.fetch(alias_key))].freeze
       end
 
       def unsupported_event_message(event_type)
         "delivery model does not support #{event_type} callbacks"
+      end
+
+      def mark_notification_as_read!(delivery, occurred_at:)
+        notification = notification_for_delivery(delivery)
+        return unless notification
+        return unless notification.respond_to?(:read_at) && notification.respond_to?(:read_at=)
+
+        return :already_applied unless notification.read_at.nil?
+
+        notification.read_at = occurred_at
+        notification.save! if notification.respond_to?(:save!)
+        :updated
+      end
+
+      def notification_for_delivery(delivery)
+        return delivery.notification if delivery.respond_to?(:notification)
+
+        notification_id = delivery.respond_to?(:notification_id) ? delivery.notification_id : nil
+        return unless notification_id
+        return unless defined?(RecordingStudioNotifications::Notification)
+
+        RecordingStudioNotifications::Notification.find_by(id: notification_id)
       end
     end
   end
