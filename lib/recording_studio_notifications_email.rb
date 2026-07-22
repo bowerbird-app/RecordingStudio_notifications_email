@@ -68,8 +68,8 @@ module RecordingStudioNotificationsEmail
       )
     end
 
-    def mark_clicked_from_reference!(reference:, clicked_at: Time.current)
-      DeliveryCallbacks.mark_clicked_from_reference!(
+    def mark_clicked!(reference:, clicked_at: Time.current)
+      DeliveryCallbacks.mark_clicked!(
         reference: reference,
         clicked_at: clicked_at,
         configuration: configuration

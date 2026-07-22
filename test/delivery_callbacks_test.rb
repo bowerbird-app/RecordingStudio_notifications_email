@@ -207,7 +207,7 @@ class DeliveryCallbacksTest < Minitest::Test
     delivery.mark_clicked!(at: @delivered_at)
 
     with_stubbed_delivery_where([delivery]) do
-      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_clicked_from_reference!(
+      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_clicked!(
         reference: reference,
         clicked_at: @delivered_at,
         configuration: @configuration
@@ -336,7 +336,7 @@ class DeliveryCallbacksTest < Minitest::Test
 
     with_stubbed_delivery_where([delivery]) do
       error = assert_raises(RecordingStudioNotificationsEmail::UnsupportedWebhookEventError) do
-        RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_clicked_from_reference!(
+        RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_clicked!(
           reference: reference,
           clicked_at: @delivered_at,
           configuration: @configuration

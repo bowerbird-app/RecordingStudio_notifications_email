@@ -95,8 +95,8 @@ module RecordingStudioNotificationsEmail
         )
       end
 
-      def mark_clicked_from_reference!(reference:, clicked_at: Time.current,
-                                       configuration: RecordingStudioNotificationsEmail.configuration)
+      def mark_clicked!(reference:, clicked_at: Time.current,
+                        configuration: RecordingStudioNotificationsEmail.configuration)
         mark_event_from_reference!(
           event_type: :clicked,
           reference: reference,
