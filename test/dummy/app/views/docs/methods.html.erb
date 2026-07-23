@@ -114,21 +114,6 @@
         reference = RecordingStudioNotificationsEmail::DeliveryToken.verify!(params[:reference])
         puts reference.notification_id
       RUBY
-    },
-    {
-      title: "Hook Contract: Delivery callback methods",
-      subtitle: "Core contract: yes. These methods must exist on RecordingStudioNotifications::Delivery and are invoked by this gem during webhook transitions.",
-      code: <<~'RUBY'
-        # Preferred methods on RecordingStudioNotifications::Delivery
-        # delivered? / mark_delivered!(at:)
-        # email_opened? / mark_email_opened!(at:)
-        # email_clicked? / mark_email_clicked!(at:)
-        # email_bounced? / mark_email_bounced!(at:)
-        # email_complained? / mark_email_complained!(at:)
-        # email_unsubscribed? / mark_email_unsubscribed!(at:)
-
-        # The gem also supports aliases like opened?/mark_opened! for compatibility.
-      RUBY
     }
   ] %>
 
