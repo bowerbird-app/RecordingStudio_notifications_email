@@ -13,7 +13,7 @@ register_dummy_notification_types = lambda do
       default_channels: [:in_app, :email],
       available_channels: [:in_app, :email],
       scope: :optional_root,
-      allowed_cadences: [:daily],
+      allowed_cadences: %i[individual daily weekly],
       default_cadence: :daily
     )
 
@@ -25,7 +25,7 @@ register_dummy_notification_types = lambda do
       default_channels: [:in_app, :email],
       available_channels: [:in_app, :email],
       scope: :root,
-      allowed_cadences: [:daily],
+      allowed_cadences: %i[individual daily weekly],
       default_cadence: :daily
     )
 
@@ -37,7 +37,7 @@ register_dummy_notification_types = lambda do
       default_channels: [:in_app, :email],
       available_channels: [:in_app, :email],
       scope: :root,
-      allowed_cadences: [:daily],
+      allowed_cadences: %i[individual daily weekly],
       default_cadence: :daily
     )
 
@@ -49,7 +49,7 @@ register_dummy_notification_types = lambda do
       default_channels: [:in_app, :email],
       available_channels: [:in_app, :email],
       scope: :global,
-      allowed_cadences: [:daily],
+      allowed_cadences: %i[individual daily weekly],
       default_cadence: :daily
     )
   end

@@ -54,7 +54,7 @@ begin
     RecordingStudioAccessible.grant_access(
       recording: workspace_root,
       actor: commenter,
-      role: :view,
+      role: :edit,
       manager_actor: user
     )
   end

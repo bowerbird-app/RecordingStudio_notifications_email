@@ -42,9 +42,8 @@ module RecordingStudioNotificationsEmail
     end
 
     def prepare_headers
-      headers[Correlation::HEADER] = @correlation_reference
+      headers[DeliveryToken::HEADER] = @correlation_reference
       headers["Message-ID"] = params[:message_id] if params[:message_id]
     end
-
   end
 end
