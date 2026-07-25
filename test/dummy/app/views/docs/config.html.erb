@@ -145,6 +145,22 @@
     </table>
   </div>
 
+  <p class="text-sm">Use this shared rollup template when different notification types need different email layouts. It routes <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">:page_created</code> and <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">:page_commented</code> rollups to their own partial templates.</p>
+
+  <%= render FlatPack::CodeBlock::Component.new(
+    language: :erb,
+    code: [
+      "# app/views/recording_studio_notifications_email/notification_mailer/rollup.html.erb",
+      ["<", "%"].join + " notification_type = @events.first.notification_type.to_sym " + ["%", ">"].join,
+      "",
+      ["<", "%"].join + " if notification_type == :page_created " + ["%", ">"].join,
+      "  " + ["<", "%="].join + " render \"page_created_rollup\", events: @events " + ["%", ">"].join,
+      ["<", "%"].join + " elsif notification_type == :page_commented " + ["%", ">"].join,
+      "  " + ["<", "%="].join + " render \"page_commented_rollup\", events: @events " + ["%", ">"].join,
+      ["<", "%"].join + " end " + ["%", ">"].join
+    ].join("\n")
+  ) %>
+
   <%= render FlatPack::SectionTitle::Component.new(
     title: "Parent Notification Setup",
     subtitle: "Enable :email on notification types in recording_studio_notifications.",
