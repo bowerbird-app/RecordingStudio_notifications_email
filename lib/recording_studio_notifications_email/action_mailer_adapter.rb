@@ -19,7 +19,7 @@ module RecordingStudioNotificationsEmail
         to: recipient_for(event),
         from: configured_from,
         reply_to: configured_reply_to,
-        template_path: @configuration.template_for(event.notification_type),
+        template_path: individual_template_path_for(event),
         tracked_notification_path: tracked_notification_path(notification),
         correlation_reference: reference,
         message_id: DeliveryToken.message_id(reference, configuration: @configuration)
@@ -46,6 +46,8 @@ module RecordingStudioNotificationsEmail
         raise DeliveryError, "rollup notifications must resolve to one email address"
       end
 
+      template_path = rollup_template_path_for(events)
+
       reference = DeliveryToken.sign(
         notifications: notifications,
         deliveries: deliveries,
@@ -57,7 +59,7 @@ module RecordingStudioNotificationsEmail
         to: recipients.first,
         from: configured_from,
         reply_to: configured_reply_to,
-        template_path: @configuration.rollup_template,
+        template_path: template_path,
         correlation_reference: reference,
         cadence: cadence,
         period_starts_at: period_starts_at,
@@ -72,6 +74,37 @@ module RecordingStudioNotificationsEmail
 
     def mailer
       @configuration.resolve_mailer_class
+    end
+
+    def individual_template_path_for(event)
+      template_path_for(
+        event.notification_type,
+        :individual_mailer,
+        Configuration::DEFAULT_TEMPLATE
+      )
+    end
+
+    def rollup_template_path_for(events)
+      notification_types = events.map(&:notification_type).uniq
+      unless notification_types.one?
+        raise DeliveryError, "rollup notifications must share one notification type"
+      end
+
+      template_path_for(
+        notification_types.first,
+        :rollup_mailer,
+        Configuration::DEFAULT_ROLLUP_TEMPLATE
+      )
+    end
+
+    def template_path_for(notification_type, attribute, default)
+      definition = RecordingStudioNotifications.notification_types.fetch(notification_type)
+      path = definition.public_send(attribute).presence if definition.respond_to?(attribute)
+      path ||= RecordingStudioNotificationsEmail.notification_type_mailers.fetch(notification_type, attribute)
+
+      path.presence || default
+    rescue KeyError
+      default
     end
 
     def recipient_for(event)

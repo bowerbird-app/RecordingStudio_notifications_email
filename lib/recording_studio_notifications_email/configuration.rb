@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "registry"
 require_relative "recipient_registry"
 
 module RecordingStudioNotificationsEmail
@@ -11,7 +10,7 @@ module RecordingStudioNotificationsEmail
     attr_accessor :from, :reply_to, :mailer_class, :channel, :message_verifier,
                   :signed_reference_expires_in, :message_id_domain,
                   :webhook_event_transformer
-    attr_reader :templates, :recipients
+    attr_reader :recipients
 
     def initialize
       @from = ENV.fetch("RECORDING_STUDIO_NOTIFICATIONS_EMAIL_FROM", nil)
@@ -22,18 +21,7 @@ module RecordingStudioNotificationsEmail
       @signed_reference_expires_in = 30.days
       @message_id_domain = nil
       @webhook_event_transformer = nil
-      @templates = Registry.new(label: "template")
       @recipients = RecipientRegistry.new
-      templates.register(:default, DEFAULT_TEMPLATE)
-      templates.register(:rollup, DEFAULT_ROLLUP_TEMPLATE)
-    end
-
-    def template_for(notification_type)
-      templates[notification_type] || templates.fetch(:default)
-    end
-
-    def rollup_template
-      templates.fetch(:rollup)
     end
 
     def resolve_mailer_class
@@ -63,7 +51,6 @@ module RecordingStudioNotificationsEmail
         signed_reference_expires_in: signed_reference_expires_in,
         message_id_domain: message_id_domain,
         webhook_event_transformer: webhook_event_transformer&.class&.name,
-        templates: templates.keys,
         recipient_types: recipients.keys
       }
     end

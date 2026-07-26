@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "mail"
+
 module RecordingStudioNotificationsEmail
   # Resolves an email destination without coupling the adapter to a User model.
   class RecipientRegistry

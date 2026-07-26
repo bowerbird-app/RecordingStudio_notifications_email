@@ -106,7 +106,7 @@ module RecordingStudioNotificationsEmail
           raise ArgumentError, "provide either #{singular_label} or #{plural_label}"
         end
 
-        records = singular.present? ? Array(singular) : Array(plural)
+        records = singular.present? ? [singular] : Array(plural)
         raise ArgumentError, "at least one #{singular_label} is required" if records.empty?
 
         records.map { |record| extract_id(record, singular_label).to_s }
