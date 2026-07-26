@@ -8,7 +8,7 @@ RecordingStudioNotificationsEmail.configure do |config|
   # `email`.
   # config.recipients.register(User) { |user| user.notification_email }
 
-  # Optional per-notification template override. Provide matching .html.erb and
-  # .text.erb templates under app/views.
-  # config.templates.register(:page_comment, "notification_mailer/page_comment")
+  # Register optional individual_mailer: and rollup_mailer: template paths on
+  # each notification type. Provide matching .html.erb and .text.erb templates
+  # under app/views.
 end

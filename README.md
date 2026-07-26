@@ -60,9 +60,6 @@ RecordingStudioNotificationsEmail.configure do |config|
   # Recipients use `recipient.email` by default.
   config.recipients.register(User) { |user| user.notification_email }
 
-  # Both page_comment.html.erb and page_comment.text.erb must exist.
-  config.templates.register(:page_comment, "notification_mailer/page_comment")
-
   # Optional deterministic Message-ID domain. The local part is a SHA-256
   # digest; identifiers and signed tokens are not exposed.
   config.message_id_domain = "mail.example.com"
@@ -72,10 +69,10 @@ end
 `config.from` is required at delivery time. It may also be supplied through
 `RECORDING_STUDIO_NOTIFICATIONS_EMAIL_FROM`.
 
-The recipient and template registries synchronize reads, writes, and resets,
-so registration from Rails preparation callbacks is safe. Model-specific
-recipient resolvers search the recipient's class ancestry. A resolver may
-return one address or an array of addresses.
+The recipient registry synchronizes reads, writes, and resets, so registration
+from Rails preparation callbacks is safe. Model-specific recipient resolvers
+search the recipient's class ancestry. A resolver may return one address or an
+array of addresses.
 
 ## Parent notification setup
 
@@ -88,9 +85,15 @@ RecordingStudioNotifications.register_notification_type(
   default_channels: %i[in_app email],
   available_channels: %i[in_app email],
   scope: :root,
-  allowed_cadences: %i[individual daily weekly]
+  allowed_cadences: %i[individual daily weekly],
+  individual_mailer: "notification_mailer/individual/page_comment",
+  rollup_mailer: "notification_mailer/rollup/page_comment"
 )
 ```
+
+`individual_mailer` and `rollup_mailer` are optional Rails template paths. Each
+path needs matching `.html.erb` and `.text.erb` files. When omitted, the email
+channel renders its bundled individual or rollup template.
 
 Then use the normal parent API:
 

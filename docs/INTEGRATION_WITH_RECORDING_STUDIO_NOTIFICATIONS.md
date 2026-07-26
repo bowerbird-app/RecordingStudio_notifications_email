@@ -238,25 +238,33 @@ recording_studio_notifications_email/notification_mailer/notification
 recording_studio_notifications_email/notification_mailer/rollup
 ```
 
-To give a notification type its own visual treatment, register an override.
+To give a notification type its own visual treatment, register its template
+paths with the notification type.
 
 ```ruby
-RecordingStudioNotificationsEmail.configure do |config|
-  config.templates.register(
-    :page_comment,
-    # Notification type this template applies to.
-
-    "notification_mailer/page_comment"
-    # Rails template path, without `.html.erb` or `.text.erb`.
-  )
-end
+RecordingStudioNotifications.register_notification_type(
+  :page_comment,
+  label: "Page comment",
+  default_channels: %i[in_app email],
+  available_channels: %i[in_app email],
+  scope: :root,
+  allowed_cadences: %i[individual daily weekly],
+  individual_mailer: "notification_mailer/individual/page_comment",
+  rollup_mailer: "notification_mailer/rollup/page_comment"
+)
 ```
+
+Both paths are optional and omit the `.html.erb` or `.text.erb` suffix. The
+email channel uses its bundled individual or rollup template when a path is not
+registered.
 
 The host app must provide both files:
 
 ```text
-app/views/notification_mailer/page_comment.html.erb
-app/views/notification_mailer/page_comment.text.erb
+app/views/notification_mailer/individual/page_comment.html.erb
+app/views/notification_mailer/individual/page_comment.text.erb
+app/views/notification_mailer/rollup/page_comment.html.erb
+app/views/notification_mailer/rollup/page_comment.text.erb
 ```
 
 A simple HTML template looks like this:
