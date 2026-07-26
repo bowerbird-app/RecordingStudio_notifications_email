@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+  <body>
+    <h1><%= pluralize(@events.size, "new comment") %></h1>
+    <ul>
+      <% @events.each do |event| %>
+        <li>
+          <strong><%= event.title %></strong>
+          <% if event.body.present? %><div><%= event.body %></div><% end %>
+          <% if event.url.present? %><%= link_to "Open page", event.url %><% end %>
+        </li>
+      <% end %>
+    </ul>
+  </body>
+</html>

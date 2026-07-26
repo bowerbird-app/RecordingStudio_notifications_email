@@ -38,7 +38,9 @@ register_dummy_notification_types = lambda do
       available_channels: [:in_app, :email],
       scope: :root,
       allowed_cadences: %i[individual daily weekly],
-      default_cadence: :daily
+      default_cadence: :daily,
+      individual_mailer: "recording_studio_notifications_email/notification_mailer/page_comment",
+      rollup_mailer: "recording_studio_notifications_email/notification_mailer/rollup/page_comment"
     )
 
     config.notification_types.register(
@@ -56,6 +58,8 @@ register_dummy_notification_types = lambda do
 end
 
 RecordingStudioNotifications.configure do |config|
+  config.deliver_later = false if Rails.env.development?
+
   # Resolve the current actor for API calls and engine controllers.
   config.actor_resolver = -> { Current.actor }
 
