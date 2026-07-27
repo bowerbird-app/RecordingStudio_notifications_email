@@ -57,16 +57,6 @@
               required: false,
               placeholder: "evt_123"
             ) %>
-
-            <div class="space-y-2">
-              <label class="text-sm font-medium" for="webhook_lab_transformer_mode">Transformer mode</label>
-              <select id="webhook_lab_transformer_mode" name="webhook_lab_transformer_mode" disabled class="w-full rounded-md border px-3 py-2 text-sm opacity-100">
-                <% @webhook_lab_transformers.each do |value, label| %>
-                  <option value="<%= value %>" <%= "selected" if @webhook_lab_form_defaults["transformer_mode"] == value %>><%= label %></option>
-                <% end %>
-              </select>
-              <p class="text-xs text-(--body-muted-content-color)">Choose the same mode from each event form below.</p>
-            </div>
           </div>
 
           <div class="flex flex-wrap gap-3">
@@ -74,7 +64,6 @@
               <%= form_with url: fire_docs_webhook_lab_event_path, method: :post, class: "flex items-center gap-2" do %>
                 <%= hidden_field_tag :event_type, event_type %>
                 <%= hidden_field_tag :external_event_id, @webhook_lab_form_defaults["external_event_id"] %>
-                <%= hidden_field_tag :transformer_mode, @webhook_lab_form_defaults["transformer_mode"] %>
                 <%= render FlatPack::Button::Component.new(
                   text: "Send #{event_type}",
                   style: :secondary,
@@ -87,7 +76,7 @@
 
           <%= form_with url: docs_webhook_lab_path, method: :get, class: "grid gap-3 md:grid-cols-3" do %>
             <%= hidden_field_tag :noop, true %>
-            <div class="md:col-span-2">
+            <div>
               <%= render FlatPack::TextInput::Component.new(
                 name: "external_event_id",
                 value: @webhook_lab_form_defaults["external_event_id"],
@@ -95,14 +84,6 @@
                 required: false,
                 placeholder: "evt_123"
               ) %>
-            </div>
-            <div class="space-y-2">
-              <label class="text-sm font-medium" for="transformer_mode">Set transformer mode</label>
-              <select id="transformer_mode" name="transformer_mode" class="w-full rounded-md border px-3 py-2 text-sm">
-                <% @webhook_lab_transformers.each do |value, label| %>
-                  <option value="<%= value %>" <%= "selected" if @webhook_lab_form_defaults["transformer_mode"] == value %>><%= label %></option>
-                <% end %>
-              </select>
             </div>
             <div>
               <%= render FlatPack::Button::Component.new(

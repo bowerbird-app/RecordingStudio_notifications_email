@@ -59,12 +59,6 @@
         config.recipients.register(User) { |user| user.notification_email }
         config.recipients.register("default") { |recipient| recipient.email }
 
-        # Optional webhook event translation hook (middleware-style)
-        config.webhook_event_transformer = lambda do |event|
-          next event if event.event_type != :opened
-
-          event.to_h.merge(event_type: :clicked)
-        end
       end
     CODE
   ) %>

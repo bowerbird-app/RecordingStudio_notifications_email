@@ -8,8 +8,7 @@ module RecordingStudioNotificationsEmail
     DEFAULT_ROLLUP_TEMPLATE = "recording_studio_notifications_email/notification_mailer/rollup"
 
     attr_accessor :from, :reply_to, :mailer_class, :channel, :message_verifier,
-                  :signed_reference_expires_in, :message_id_domain,
-                  :webhook_event_transformer
+                  :signed_reference_expires_in, :message_id_domain
     attr_reader :recipients
 
     def initialize
@@ -20,7 +19,6 @@ module RecordingStudioNotificationsEmail
       @message_verifier = nil
       @signed_reference_expires_in = 30.days
       @message_id_domain = nil
-      @webhook_event_transformer = nil
       @recipients = RecipientRegistry.new
     end
 
@@ -50,7 +48,6 @@ module RecordingStudioNotificationsEmail
         mailer_class: mailer_class.respond_to?(:name) ? mailer_class.name : mailer_class,
         signed_reference_expires_in: signed_reference_expires_in,
         message_id_domain: message_id_domain,
-        webhook_event_transformer: webhook_event_transformer&.class&.name,
         recipient_types: recipients.keys
       }
     end

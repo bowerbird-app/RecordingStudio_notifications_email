@@ -166,7 +166,6 @@ module RecordingStudioNotificationsEmail
 
       def process_webhook_event!(event:, configuration: RecordingStudioNotificationsEmail.configuration)
         webhook_event = normalize_webhook_event(event)
-        webhook_event = apply_webhook_event_transformer(webhook_event, configuration: configuration)
 
         mark_event_from_reference!(
           event_type: webhook_event.event_type,
@@ -186,22 +185,6 @@ module RecordingStudioNotificationsEmail
 
       def normalize_webhook_event(event)
         event.is_a?(WebhookEvent) ? event : WebhookEvent.new(**event)
-      end
-
-      def apply_webhook_event_transformer(webhook_event, configuration:)
-        transformer = configuration.respond_to?(:webhook_event_transformer) ? configuration.webhook_event_transformer : nil
-        return webhook_event unless transformer
-
-        unless transformer.respond_to?(:call)
-          raise InvalidWebhookTransformError, "webhook_event_transformer must respond to call"
-        end
-
-        transformed = transformer.call(webhook_event)
-        return normalize_webhook_event(transformed) if transformed
-
-        raise InvalidWebhookTransformError, "webhook_event_transformer returned nil"
-      rescue ArgumentError, TypeError => error
-        raise InvalidWebhookTransformError, "webhook_event_transformer returned invalid payload: #{error.message}"
       end
 
       def apply_event!(delivery, event_type:, occurred_at:)

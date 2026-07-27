@@ -4,10 +4,6 @@ require "recording_studio_notifications_email"
 
 class DocsController < ApplicationController
   WEBHOOK_LAB_EVENTS = %w[delivered opened clicked bounced].freeze
-  WEBHOOK_LAB_TRANSFORMERS = {
-    "none" => "No transform",
-    "opened_to_clicked" => "Map opened -> clicked"
-  }.freeze
 
   def install
   end
@@ -51,8 +47,7 @@ class DocsController < ApplicationController
   def webhook_lab
     if params[:noop].present?
       session[:webhook_lab_form_defaults] = {
-        "external_event_id" => params[:external_event_id].presence,
-        "transformer_mode" => normalize_transformer_mode(params[:transformer_mode])
+        "external_event_id" => params[:external_event_id].presence
       }
 
       redirect_to docs_webhook_lab_path
@@ -109,8 +104,7 @@ class DocsController < ApplicationController
     session[:webhook_lab_last_result] = nil
     session[:webhook_lab_last_payload] = nil
     session[:webhook_lab_form_defaults] = {
-      "external_event_id" => nil,
-      "transformer_mode" => "none"
+      "external_event_id" => nil
     }
 
     redirect_to docs_webhook_lab_path,
@@ -147,25 +141,20 @@ class DocsController < ApplicationController
       return
     end
 
-    transformer_mode = normalize_transformer_mode(payload["transformer_mode"])
     reference = signed_reference_for_target(target)
     event = RecordingStudioNotificationsEmail::WebhookEvent.new(
-      **payload.except("transformer_mode").merge("reference" => reference).symbolize_keys
+      **payload.merge("reference" => reference).symbolize_keys
     )
 
-    result = with_webhook_lab_transformer(mode: transformer_mode) do
-      ingest_webhook_lab_event!(event)
-    end
+    result = ingest_webhook_lab_event!(event)
 
     session[:webhook_lab_last_payload] = payload
     session[:webhook_lab_form_defaults] = {
-      "external_event_id" => payload["external_event_id"],
-      "transformer_mode" => transformer_mode
+      "external_event_id" => payload["external_event_id"]
     }
     session[:webhook_lab_last_result] = {
       replayed: replay,
       event_type: result.event_type.to_s,
-      transformer_mode: transformer_mode,
       payload: payload,
       idempotency_key: event.idempotency_key,
       updated_delivery_ids: result.updated_delivery_ids,
@@ -181,7 +170,6 @@ class DocsController < ApplicationController
          ArgumentError => e
     session[:webhook_lab_last_result] = {
       event_type: event_type,
-      transformer_mode: payload&.dig("transformer_mode"),
       payload: payload,
       idempotency_key: nil,
       updated_delivery_ids: [],
@@ -209,14 +197,12 @@ class DocsController < ApplicationController
         delivery: @webhook_lab_delivery
       )
     @webhook_lab_events = WEBHOOK_LAB_EVENTS
-    @webhook_lab_transformers = WEBHOOK_LAB_TRANSFORMERS
     @webhook_lab_last_payload = webhook_lab_last_payload
 
     defaults = session[:webhook_lab_form_defaults]
     defaults = defaults.stringify_keys if defaults.is_a?(Hash)
     @webhook_lab_form_defaults = {
-      "external_event_id" => defaults&.fetch("external_event_id", nil),
-      "transformer_mode" => normalize_transformer_mode(defaults&.fetch("transformer_mode", "none"))
+      "external_event_id" => defaults&.fetch("external_event_id", nil)
     }
   end
 
@@ -257,47 +243,8 @@ class DocsController < ApplicationController
       "external_event_id" => params[:external_event_id].presence,
       "metadata" => {
         "source" => "dummy_webhook_lab"
-      },
-      "transformer_mode" => normalize_transformer_mode(params[:transformer_mode])
+        }
     }
-  end
-
-  def normalize_transformer_mode(value)
-    mode = value.to_s
-    return mode if WEBHOOK_LAB_TRANSFORMERS.key?(mode)
-
-    "none"
-  end
-
-  def with_webhook_lab_transformer(mode:)
-    configuration = RecordingStudioNotificationsEmail.configuration
-    supports_transformer = configuration.respond_to?(:webhook_event_transformer) &&
-      configuration.respond_to?(:webhook_event_transformer=)
-
-    return yield unless supports_transformer
-
-    original_transformer = configuration.webhook_event_transformer
-    configuration.webhook_event_transformer = webhook_lab_transformer_for(mode)
-
-    yield
-  ensure
-    if defined?(supports_transformer) && supports_transformer
-      configuration.webhook_event_transformer = original_transformer
-    end
-  end
-
-  def webhook_lab_transformer_for(mode)
-    return nil if mode == "none"
-
-    return lambda do |event|
-      if event.event_type == :opened
-        event.to_h.merge(event_type: :clicked)
-      else
-        event
-      end
-    end if mode == "opened_to_clicked"
-
-    nil
   end
 
   def signed_reference_for_target(target)

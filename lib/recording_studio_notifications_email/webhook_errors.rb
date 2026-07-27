@@ -6,6 +6,4 @@ module RecordingStudioNotificationsEmail
   class InvalidWebhookPayloadError < WebhookError; end
 
   class UnsupportedWebhookEventError < WebhookError; end
-
-  class InvalidWebhookTransformError < WebhookError; end
 end

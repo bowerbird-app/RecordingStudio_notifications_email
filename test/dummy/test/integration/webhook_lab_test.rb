@@ -37,8 +37,7 @@ class WebhookLabTest < ActionDispatch::IntegrationTest
 
     post fire_docs_webhook_lab_event_path, params: {
       event_type: "delivered",
-      external_event_id: "evt-delivered-001",
-      transformer_mode: "none"
+      external_event_id: "evt-delivered-001"
     }
     follow_redirect!
 
@@ -57,8 +56,7 @@ class WebhookLabTest < ActionDispatch::IntegrationTest
 
     post fire_docs_webhook_lab_event_path, params: {
       event_type: "delivered",
-      external_event_id: "evt-replay-001",
-      transformer_mode: "none"
+      external_event_id: "evt-replay-001"
     }
     follow_redirect!
 
@@ -70,28 +68,6 @@ class WebhookLabTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes unescaped_response_body, "\"replayed\": true"
     assert_includes unescaped_response_body, "\"idempotency_key\": \"dummy:evt-replay-001\""
-  end
-
-  test "transformer mode remaps opened to clicked" do
-    user = create_user("webhook-lab-transform@example.com")
-    sign_in user
-
-    create_target_notification_for(user)
-
-    post fire_docs_webhook_lab_event_path, params: {
-      event_type: "opened",
-      external_event_id: "evt-opened-001",
-      transformer_mode: "opened_to_clicked"
-    }
-    follow_redirect!
-
-    assert_response :success
-    assert_includes unescaped_response_body, "\"transformer_mode\": \"opened_to_clicked\""
-
-    transformed_to_clicked = unescaped_response_body.include?("\"event_type\": \"clicked\"") ||
-      unescaped_response_body.include?("clicked callbacks")
-    assert transformed_to_clicked,
-           "expected webhook result to show clicked event handling after transformer remap"
   end
 
   private
