@@ -2,7 +2,7 @@
 
 RecordingStudio.configure do |config|
   # Registered delegated_type recordables (strings or classes)
-  config.recordable_types = [ "Workspace", "Folder", "Page" ]
+  config.recordable_types = [ "Workspace", "Folder", "Page", "RecordingStudioCommentable::Comment" ]
 
   # Require each configured ActiveRecord type to call recording_studio_recordable.
   config.require_recordable_declarations = true
@@ -18,4 +18,7 @@ RecordingStudio.configure do |config|
 
   # Recordable duplication strategy for revisions
   config.recordable_dup_strategy = :dup
+
+  # Allow RecordingStudioAccessible direct access grants on workspace roots.
+  config.enable_capability :accessible, on: "Workspace"
 end

@@ -7,6 +7,11 @@
 @source "../../../vendor/bundle/**/recording_studio/app/views/**/*.erb";
 @source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/recordingstudio-*/app/views/**/*.erb";
 
+/* Include RecordingStudioNotifications engine views for Tailwind CSS */
+@source "../../../vendor/bundle/**/RecordingStudio_notifications-*/app/views/**/*.erb";
+@source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/RecordingStudio_notifications-*/app/views/**/*.erb";
+@source "../../../../../../usr/local/bundle/ruby/3.3.0/bundler/gems/RecordingStudio_notifications-5ae524ff5c17/app/views/**/*.erb";
+
 /* Scan FlatPack components for classes used by the bundled ViewComponents */
 @source "../../../vendor/bundle/**/flatpack/app/components/**/*.{rb,erb}";
 @source "../../../../../../usr/local/bundle/ruby/**/bundler/gems/flatpack-*/app/components/**/*.{rb,erb}";

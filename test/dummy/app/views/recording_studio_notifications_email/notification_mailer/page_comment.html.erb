@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+  <body>
+    <h1><%= @event.title.presence || "New comment on your page" %></h1>
+
+    <% if @event.body.present? %>
+      <p><%= @event.body %></p>
+    <% end %>
+
+    <p>
+      <strong>Notification type:</strong>
+      <%= @event.notification_type.to_s.humanize %>
+    </p>
+
+    <% if @tracked_notification_destination.present? %>
+      <p><%= link_to "Open page", @tracked_notification_destination %></p>
+    <% end %>
+  </body>
+</html>

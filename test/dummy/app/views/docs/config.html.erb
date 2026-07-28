@@ -1,14 +1,370 @@
 <div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
-    title: "Config",
-    subtitle: "Replace this placeholder with the configuration settings your generated gem exposes.",
+    title: "Configuration & Usage",
+    subtitle: "This email channel requires RecordingStudioNotifications. This guide assumes the core notifications gem is already installed and configured.",
     variant: :h1
+  ) %>
+
+  <%= render FlatPack::SectionTitle::Component.new(
+    title: "Prerequisite",
+    subtitle: "Install and configure recording_studio_notifications first, then add this email channel.",
   ) %>
 
   <%= render FlatPack::CodeBlock::Component.new(
     language: :ruby,
-    code: <<~'CODE'
-      # Add the config settings for the gem here.
+    code: <<~CODE
+      # Host app Gemfile
+      gem "recording_studio_notifications"
+      gem "recording_studio_notifications_email"
     CODE
   ) %>
+
+  <%= render FlatPack::SectionTitle::Component.new(
+    title: "Configuration",
+    subtitle: "Run the installer, then configure the channel in an initializer.",
+  ) %>
+
+  <%= render FlatPack::CodeBlock::Component.new(
+    language: :bash,
+    code: <<~CODE
+      bundle install
+      bin/rails generate recording_studio_notifications_email:install
+    CODE
+  ) %>
+
+  <%= render FlatPack::CodeBlock::Component.new(
+    language: :ruby,
+    code: <<~CODE
+      # config/initializers/recording_studio_notifications_email.rb
+      RecordingStudioNotificationsEmail.configure do |config|
+        # Required sender
+        config.from = Rails.application.credentials.dig(:notifications, :from_email)
+
+        # Optional reply destination
+        config.reply_to = "support@example.com"
+
+        # Optional custom mailer (must implement .with(...).notification and .rollup)
+        config.mailer_class = "RecordingStudioNotificationsEmail::NotificationMailer"
+
+        # Optional channel key registered with RecordingStudioNotifications
+        config.channel = :email
+
+        # Optional signed reference lifetime (default: 30.days)
+        config.signed_reference_expires_in = 7.days
+
+        # Optional Message-ID domain
+        config.message_id_domain = "mail.example.com"
+
+        # Optional recipient resolvers by model type
+        config.recipients.register(User) { |user| user.notification_email }
+        config.recipients.register("default") { |recipient| recipient.email }
+
+      end
+    CODE
+  ) %>
+
+  <%= render FlatPack::SectionTitle::Component.new(
+    title: "Configuration Options",
+    subtitle: "Every configurable setting on RecordingStudioNotificationsEmail::Configuration.",
+  ) %>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead>
+        <tr class="border-b border-slate-200">
+          <th class="py-2 pr-4 font-semibold">Option</th>
+          <th class="py-2 pr-4 font-semibold">Type</th>
+          <th class="py-2 pr-4 font-semibold">Default</th>
+          <th class="py-2 font-semibold">Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">from</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">String</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">ENV["RECORDING_STUDIO_NOTIFICATIONS_EMAIL_FROM"]</code></td>
+          <td class="py-2">Required sender address used for all outgoing messages.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">reply_to</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">String or Array&lt;String&gt;</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">nil</code></td>
+          <td class="py-2">Optional Reply-To address (or addresses) for outgoing messages.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">mailer_class</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">String, Symbol, or Class</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">RecordingStudioNotificationsEmail::NotificationMailer</code></td>
+          <td class="py-2">Mailer used by the adapter. Must support Action Mailer <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">.with(...)</code>.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">channel</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">Symbol</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">:email</code></td>
+          <td class="py-2">Channel key registered with RecordingStudioNotifications.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">signed_reference_expires_in</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">ActiveSupport::Duration</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">30.days</code></td>
+          <td class="py-2">Expiration window for correlation references in email headers.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">message_id_domain</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">String</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">nil</code></td>
+          <td class="py-2">Optional deterministic Message-ID domain for outbound messages.</td>
+        </tr>
+        <tr>
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">recipients</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">RecipientRegistry</code></td>
+          <td class="py-2 pr-4"><code class="text-xs">recipient.email fallback</code></td>
+          <td class="py-2">Recipient resolver registry; supports model-specific email resolution.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <%= render FlatPack::SectionTitle::Component.new(
+    title: "Parent Notification Setup",
+    subtitle: "Enable :email and optionally set individual and rollup template paths on each notification type.",
+  ) %>
+
+  <%= render FlatPack::CodeBlock::Component.new(
+    language: :ruby,
+    code: <<~CODE
+      RecordingStudioNotifications.configure do |config|
+        config.notification_types.register(
+          :page_comment,
+          label: "Page comment",
+          default_channels: %i[in_app email],
+          available_channels: %i[in_app email],
+          scope: :root,
+          allowed_cadences: %i[individual daily weekly],
+          individual_mailer: "notification_mailer/individual/page_comment",
+          rollup_mailer: "notification_mailer/rollup/page_comment"
+        )
+      end
+    CODE
+  ) %>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead>
+        <tr class="border-b border-slate-200">
+          <th class="py-2 pr-4 font-semibold">Parameter</th>
+          <th class="py-2 pr-4 font-semibold">Required</th>
+          <th class="py-2 pr-4 font-semibold">Allowed values / default</th>
+          <th class="py-2 font-semibold">Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">key</code></td>
+          <td class="py-2 pr-4">Yes</td>
+          <td class="py-2 pr-4">Non-blank String or Symbol</td>
+          <td class="py-2">Unique identifier used when creating notifications, for example <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">:page_comment</code>.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">label</code></td>
+          <td class="py-2 pr-4">Yes</td>
+          <td class="py-2 pr-4">String</td>
+          <td class="py-2">Human-readable name shown in notification preferences.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">description</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">String or <code class="text-xs">nil</code></td>
+          <td class="py-2">Supporting copy for the notification preference.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">icon</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">String or Symbol; default <code class="text-xs">:bell</code></td>
+          <td class="py-2">FlatPack icon name displayed with the notification type.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">category</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">String or Symbol; default <code class="text-xs">:general</code></td>
+          <td class="py-2">Preference grouping identifier.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">default_channels</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">Array of registered channel keys; default <code class="text-xs">nil</code></td>
+          <td class="py-2">Channels enabled for new recipients. Include <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">:email</code> to opt into email by default.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">required_channels</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">Array of available channel keys; default <code class="text-xs">[]</code></td>
+          <td class="py-2">Channels recipients cannot disable. Every required channel must also be available.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">available_channels</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">Array of registered channel keys; defaults to the default and required channels</td>
+          <td class="py-2">Channels recipients may select. Include <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">:email</code> to make this email channel available.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">scope</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4"><code class="text-xs">:global</code>, <code class="text-xs">:root</code>, or <code class="text-xs">:optional_root</code>; default <code class="text-xs">:optional_root</code></td>
+          <td class="py-2">Determines whether the preference applies globally, to a required root, or optionally to a root.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">creation_action</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">String, Symbol, or <code class="text-xs">nil</code>; default <code class="text-xs">nil</code></td>
+          <td class="py-2">Optional action identifier associated with creating this notification type.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">allowed_cadences</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4"><code class="text-xs">:individual</code>, <code class="text-xs">:daily</code>, <code class="text-xs">:every_other_day</code>, <code class="text-xs">:weekly</code>, <code class="text-xs">:biweekly</code>, or <code class="text-xs">:monthly</code>; default <code class="text-xs">[:individual]</code></td>
+          <td class="py-2">Non-empty cadence choices available to recipients.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">default_cadence</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">One allowed cadence; default <code class="text-xs">:individual</code></td>
+          <td class="py-2">Cadence assigned when the recipient has not selected one.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">required_cadence</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">One allowed cadence or <code class="text-xs">nil</code>; default <code class="text-xs">nil</code></td>
+          <td class="py-2">Locks delivery to a cadence for all recipients.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">individual_mailer</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">Template path String or <code class="text-xs">nil</code></td>
+          <td class="py-2">Email-channel template for <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">:individual</code> deliveries. Falls back to the bundled template.</td>
+        </tr>
+        <tr>
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">rollup_mailer</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">Template path String or <code class="text-xs">nil</code></td>
+          <td class="py-2">Email-channel template for daily, weekly, and other rollup deliveries. Falls back to the bundled rollup template.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <%= render FlatPack::SectionTitle::Component.new(
+    title: "Sending Notifications",
+    subtitle: "Use the parent gem API; do not call the mailer directly.",
+  ) %>
+
+  <%= render FlatPack::CodeBlock::Component.new(
+    language: :ruby,
+    code: <<~CODE
+      RecordingStudioNotifications.notify(
+        notification_type: :page_comment,
+        recipient: user,
+        notifiable: page,
+        title: "New comment",
+        body: "A collaborator commented on your page.",
+        url: page_url(page)
+      )
+    CODE
+  ) %>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead>
+        <tr class="border-b border-slate-200">
+          <th class="py-2 pr-4 font-semibold">Parameter</th>
+          <th class="py-2 pr-4 font-semibold">Required</th>
+          <th class="py-2 pr-4 font-semibold">Allowed values / default</th>
+          <th class="py-2 font-semibold">Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">notification_type</code></td>
+          <td class="py-2 pr-4">Yes</td>
+          <td class="py-2 pr-4">Registered String or Symbol key</td>
+          <td class="py-2">The notification type registered through <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">config.notification_types.register</code>.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">recipient</code></td>
+          <td class="py-2 pr-4">Yes</td>
+          <td class="py-2 pr-4">Application record</td>
+          <td class="py-2">Person or entity that receives the notification and whose preferences determine enabled channels and cadence.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">title</code></td>
+          <td class="py-2 pr-4">Yes</td>
+          <td class="py-2 pr-4">Non-blank String</td>
+          <td class="py-2">Notification heading used by in-app and email deliveries.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">body</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">String or <code class="text-xs">nil</code>; default <code class="text-xs">nil</code></td>
+          <td class="py-2">Optional notification detail.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">url</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">Safe application URL or <code class="text-xs">nil</code>; default <code class="text-xs">nil</code></td>
+          <td class="py-2">Destination opened from the notification. The parent gem validates URLs for safety.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">metadata</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">Hash; default <code class="text-xs">{}</code></td>
+          <td class="py-2">Structured application data retained with the notification.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">actor</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">Application record or <code class="text-xs">nil</code>; defaults to the configured actor resolver</td>
+          <td class="py-2">The user or system actor responsible for the event.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">notifiable</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">Application record or <code class="text-xs">nil</code></td>
+          <td class="py-2">Domain object the notification concerns. It can supply root-recording context.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">recording</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">RecordingStudio::Recording or <code class="text-xs">nil</code></td>
+          <td class="py-2">Recording context for non-global notifications. Its root must match any supplied root or notifiable record.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">root_recording</code></td>
+          <td class="py-2 pr-4">For <code class="text-xs">scope: :root</code></td>
+          <td class="py-2 pr-4">Root RecordingStudio::Recording or <code class="text-xs">nil</code></td>
+          <td class="py-2">Required for root-scoped types unless it can be resolved consistently from <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">recording</code> or <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">notifiable</code>.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">channels</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">Array of registered, available channel keys; defaults to the type or global default</td>
+          <td class="py-2">Requested delivery channels. Required channels are always included, and recipient preferences can disable optional channels.</td>
+        </tr>
+        <tr class="border-b border-slate-100">
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">idempotency_key</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4">Non-blank String or <code class="text-xs">nil</code>; default <code class="text-xs">nil</code></td>
+          <td class="py-2">Prevents duplicate notifications for the same recipient when the same event is retried.</td>
+        </tr>
+        <tr>
+          <td class="py-2 pr-4"><code class="rounded bg-slate-100 px-1 py-0.5 text-xs">deliver_later</code></td>
+          <td class="py-2 pr-4">No</td>
+          <td class="py-2 pr-4"><code class="text-xs">true</code>, <code class="text-xs">false</code>, or <code class="text-xs">nil</code>; default is the parent configuration</td>
+          <td class="py-2">Overrides whether immediate deliveries are enqueued or processed in the current request. Rollup deliveries remain scheduled by cadence.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-sm">Delivery remains owned by RecordingStudioNotifications. This channel is registered during Rails preparation and calls <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">deliver_now</code> inside the parent delivery workflow so delivery status and retries remain centralized.</p>
+
 </div>

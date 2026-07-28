@@ -1,0 +1,8 @@
+<%= @event.title.presence || "New page created" %>
+
+<% if @event.body.present? %><%= @event.body %>
+
+<% end %>Notification type: <%= @event.notification_type.to_s.humanize %>
+
+<% if @tracked_notification_destination.present? %>Open page: <%= @tracked_notification_destination %>
+<% end %>

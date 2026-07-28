@@ -1,0 +1,38 @@
+<div class="mx-auto w-full max-w-3xl space-y-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "System notifications",
+    subtitle: "Send an in-app announcement to every user.",
+    variant: :h2
+  ) %>
+
+  <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+    <% card.body do %>
+      <%= form_with url: system_notifications_path, scope: :system_notification, method: :post, class: "space-y-4" do |f| %>
+        <%= render FlatPack::TextInput::Component.new(
+          name: "system_notification[title]",
+          value: params.dig(:system_notification, :title),
+          label: "Title",
+          required: true,
+          placeholder: "System announcement"
+        ) %>
+
+        <%= render FlatPack::TextArea::Component.new(
+          name: "system_notification[body]",
+          value: params.dig(:system_notification, :body) || @default_message,
+          label: "Body",
+          rows: 4,
+          required: true
+        ) %>
+
+        <div>
+          <%= render FlatPack::Button::Component.new(
+            text: "Send to all users",
+            style: :primary,
+            size: :md,
+            type: :submit
+          ) %>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>

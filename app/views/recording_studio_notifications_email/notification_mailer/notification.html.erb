@@ -1,0 +1,12 @@
+<!doctype html>
+<html>
+  <body>
+    <h1><%= @event.title %></h1>
+    <% if @event.body.present? %>
+      <p><%= @event.body %></p>
+    <% end %>
+    <% if @tracked_notification_destination.present? %>
+      <p><%= link_to "View notification", @tracked_notification_destination %></p>
+    <% end %>
+  </body>
+</html>

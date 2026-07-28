@@ -1,30 +1,140 @@
 <div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
   <%= render FlatPack::PageTitle::Component.new(
-    title: "Methods",
-    subtitle: "Document the public methods your addon exposes.",
+    title: "Methods & Hooks",
+    subtitle: "Public methods in this gem, what they call, and where they delegate to RecordingStudioNotifications core.",
     variant: :h1
   ) %>
 
-  <%= render FlatPack::SectionTitle::Component.new(
-    title: "Example method",
-    subtitle: "recordingstudio_addon.example_method",
-  ) %>
+  <% sections = [
+    {
+      title: "RecordingStudioNotificationsEmail.mark_delivered!",
+      subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks, resolves signed IDs, then invokes core delivery mutation methods.",
+      code: <<~'RUBY'
+        result = RecordingStudioNotificationsEmail.mark_delivered!(
+          reference: params[:reference],
+          delivered_at: Time.current
+        )
 
-  <%= render FlatPack::CodeBlock::Component.new(
-    language: :ruby,
-    code: <<~'CODE'
-      # Explain what this method does before the example.
-      result = RecordingstudioAddon.example_method(
-        # Replace with the real arguments this method accepts.
-        input: "demo value"
-      )
+        puts result.updated_delivery_ids
+      RUBY
+    },
+    {
+      title: "RecordingStudioNotificationsEmail.mark_opened!",
+      subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks for opened events and applies core delivery/opened semantics.",
+      code: <<~'RUBY'
+        result = RecordingStudioNotificationsEmail.mark_opened!(
+          reference: params[:reference],
+          opened_at: Time.current
+        )
 
-      # Show what the method returns or what side effect it creates.
-      puts result
-    CODE
-  ) %>
+        puts result.event_type
+      RUBY
+    },
+    {
+      title: "RecordingStudioNotificationsEmail.mark_clicked!",
+      subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks and applies clicked callbacks on core delivery records.",
+      code: <<~'RUBY'
+        RecordingStudioNotificationsEmail.mark_clicked!(
+          reference: params[:reference],
+          clicked_at: Time.current
+        )
+      RUBY
+    },
+    {
+      title: "RecordingStudioNotificationsEmail.mark_bounced!",
+      subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks and applies bounced callbacks on core delivery records.",
+      code: <<~'RUBY'
+        RecordingStudioNotificationsEmail.mark_bounced!(
+          reference: params[:reference],
+          bounced_at: Time.current
+        )
+      RUBY
+    },
+    {
+      title: "RecordingStudioNotificationsEmail.mark_complained!",
+      subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks and applies complained/spam-report callbacks on core delivery records.",
+      code: <<~'RUBY'
+        RecordingStudioNotificationsEmail.mark_complained!(
+          reference: params[:reference],
+          complained_at: Time.current
+        )
+      RUBY
+    },
+    {
+      title: "RecordingStudioNotificationsEmail.mark_unsubscribed!",
+      subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks and applies unsubscribed/opt-out callbacks on core delivery records.",
+      code: <<~'RUBY'
+        RecordingStudioNotificationsEmail.mark_unsubscribed!(
+          reference: params[:reference],
+          unsubscribed_at: Time.current
+        )
+      RUBY
+    },
+    {
+      title: "RecordingStudioNotificationsEmail.process_webhook_event!",
+      subtitle: "Core call: yes (via this gem). Main webhook processing entrypoint; normalizes WebhookEvent and dispatches to DeliveryCallbacks.",
+      code: <<~'RUBY'
+        event = RecordingStudioNotificationsEmail::WebhookEvent.new(
+          provider: :postmark,
+          event_type: :delivered,
+          reference: params[:reference],
+          occurred_at: Time.current,
+          external_event_id: "evt_123",
+          metadata: { "stream" => "outbound" }
+        )
+
+        result = RecordingStudioNotificationsEmail.process_webhook_event!(event: event)
+        puts result.updated_delivery_ids
+      RUBY
+    },
+    {
+      title: "RecordingStudioNotificationsEmail::DeliveryToken.sign",
+      subtitle: "Core call: no. Signs notification/delivery IDs into a tamper-resistant token for outbound headers and webhook callbacks.",
+      code: <<~'RUBY'
+        token = RecordingStudioNotificationsEmail::DeliveryToken.sign(
+          notification: notification,
+          delivery: delivery
+        )
+      RUBY
+    },
+    {
+      title: "RecordingStudioNotificationsEmail::DeliveryToken.verify",
+      subtitle: "Core call: no. Soft verifier returning DeliveryToken::Reference for valid tokens and nil for invalid/expired tokens.",
+      code: <<~'RUBY'
+        reference = RecordingStudioNotificationsEmail::DeliveryToken.verify(params[:reference])
+        return head :bad_request if reference.nil?
+
+        puts reference.delivery_ids
+      RUBY
+    },
+    {
+      title: "RecordingStudioNotificationsEmail::DeliveryToken.verify!",
+      subtitle: "Core call: no. Strict verifier returning DeliveryToken::Reference or raising ActiveSupport::MessageVerifier::InvalidSignature.",
+      code: <<~'RUBY'
+        reference = RecordingStudioNotificationsEmail::DeliveryToken.verify!(params[:reference])
+        puts reference.notification_id
+      RUBY
+    }
+  ] %>
+
+  <% sections.each do |section| %>
+    <div class="space-y-3">
+      <%= render FlatPack::SectionTitle::Component.new(
+        title: section[:title],
+        subtitle: section[:subtitle]
+      ) %>
+
+      <%= render FlatPack::CodeBlock::Component.new(
+        language: :ruby,
+        code: section[:code]
+      ) %>
+    </div>
+  <% end %>
 
   <p class="text-sm text-(--body-muted-content-color)">
-    Provide one section title and codeblock for each method
+    Notes: methods that accept reference tokens depend on DeliveryToken verification and may raise
+    ActiveSupport::MessageVerifier::InvalidSignature. Webhook ingest paths may also raise
+    RecordingStudioNotificationsEmail::InvalidWebhookPayloadError,
+    RecordingStudioNotificationsEmail::UnsupportedWebhookEventError for invalid input.
   </p>
 </div>

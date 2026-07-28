@@ -1,0 +1,174 @@
+<div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
+  <%= render FlatPack::PageTitle::Component.new(
+    title: "Webhook Lab",
+    subtitle: "Create a target notification, then fire dummy webhook events through RecordingStudioNotificationsEmail.",
+    variant: :h1
+  ) %>
+
+  <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+    <% card.header do %>
+      <%= render FlatPack::SectionTitle::Component.new(
+        title: "Step 1: Create target notification",
+        subtitle: "This creates an email-channel notification for the current user and stores its signed reference in session."
+      ) %>
+    <% end %>
+
+    <% card.body do %>
+      <div class="flex flex-col gap-4">
+        <%= form_with url: create_docs_webhook_lab_notification_path, method: :post do %>
+          <%= render FlatPack::Button::Component.new(
+            text: "Create notification target",
+            style: :primary,
+            size: :md,
+            type: :submit
+          ) %>
+        <% end %>
+
+        <% if @webhook_lab_target.present? %>
+          <div class="space-y-2 text-sm">
+            <p><strong>Notification ID:</strong> <code><%= @webhook_lab_target["notification_id"] %></code></p>
+            <p><strong>Delivery ID:</strong> <code><%= @webhook_lab_target["delivery_id"] %></code></p>
+            <p><strong>Signed reference:</strong></p>
+            <pre class="overflow-x-auto rounded-md border border-slate-200 bg-slate-50 p-3 text-xs leading-5"><%= @webhook_lab_reference %></pre>
+          </div>
+        <% else %>
+          <p class="text-sm text-(--body-muted-content-color)">No target yet. Create one first.</p>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+
+  <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+    <% card.header do %>
+      <%= render FlatPack::SectionTitle::Component.new(
+        title: "Step 2: Fire webhook event",
+        subtitle: "Events are processed through WebhookEvent + process_webhook_event! and use the stored reference."
+      ) %>
+    <% end %>
+
+    <% card.body do %>
+      <% if @webhook_lab_target.present? %>
+        <div class="flex flex-col gap-4">
+          <div class="grid gap-4 md:grid-cols-2">
+            <%= render FlatPack::TextInput::Component.new(
+              name: "webhook_lab[external_event_id]",
+              value: @webhook_lab_form_defaults["external_event_id"],
+              label: "External event id (optional)",
+              required: false,
+              placeholder: "evt_123"
+            ) %>
+          </div>
+
+          <div class="flex flex-wrap gap-3">
+            <% @webhook_lab_events.reject { |event_type| event_type == "clicked" }.each do |event_type| %>
+              <%= form_with url: fire_docs_webhook_lab_event_path, method: :post, class: "flex items-center gap-2" do %>
+                <%= hidden_field_tag :event_type, event_type %>
+                <%= hidden_field_tag :external_event_id, @webhook_lab_form_defaults["external_event_id"] %>
+                <%= render FlatPack::Button::Component.new(
+                  text: "Send #{event_type}",
+                  style: :secondary,
+                  size: :md,
+                  type: :submit
+                ) %>
+              <% end %>
+            <% end %>
+          </div>
+
+          <%= form_with url: docs_webhook_lab_path, method: :get, class: "grid gap-3 md:grid-cols-3" do %>
+            <%= hidden_field_tag :noop, true %>
+            <div>
+              <%= render FlatPack::TextInput::Component.new(
+                name: "external_event_id",
+                value: @webhook_lab_form_defaults["external_event_id"],
+                label: "Set external event id for next sends",
+                required: false,
+                placeholder: "evt_123"
+              ) %>
+            </div>
+            <div>
+              <%= render FlatPack::Button::Component.new(
+                text: "Update defaults",
+                style: :primary,
+                size: :md,
+                type: :submit
+              ) %>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-(--body-muted-content-color)">Create a target notification before firing events.</p>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+      <% card.header do %>
+        <%= render FlatPack::SectionTitle::Component.new(
+          title: "Notification Record",
+          subtitle: "Current target notification details from RecordingStudioNotifications::Notification."
+        ) %>
+      <% end %>
+
+      <% card.body do %>
+        <% if @webhook_lab_notification %>
+          <div class="space-y-2 text-sm">
+            <p><strong>ID:</strong> <code><%= @webhook_lab_notification.id %></code></p>
+            <p><strong>Type:</strong> <code><%= @webhook_lab_notification.notification_type %></code></p>
+            <p><strong>Recipient:</strong> <code><%= @webhook_lab_notification.recipient_type %>#<%= @webhook_lab_notification.recipient_id %></code></p>
+            <p><strong>Title:</strong> <%= @webhook_lab_notification.title %></p>
+            <p><strong>Created at:</strong> <%= @webhook_lab_notification.created_at %></p>
+            <p><strong>Read at:</strong> <%= @webhook_lab_notification.read_at || "-" %></p>
+          </div>
+        <% else %>
+          <p class="text-sm text-(--body-muted-content-color)">No notification loaded.</p>
+        <% end %>
+      <% end %>
+    <% end %>
+
+    <%= render FlatPack::Card::Component.new(style: :outlined) do |card| %>
+      <% card.header do %>
+        <%= render FlatPack::SectionTitle::Component.new(
+          title: "Delivery Record",
+          subtitle: "Current target delivery details from RecordingStudioNotifications::Delivery."
+        ) %>
+      <% end %>
+
+      <% card.body do %>
+        <% if @webhook_lab_delivery %>
+          <div class="space-y-2 text-sm">
+            <p><strong>ID:</strong> <code><%= @webhook_lab_delivery.id %></code></p>
+            <p><strong>Channel:</strong> <code><%= @webhook_lab_delivery.channel %></code></p>
+            <p><strong>Status:</strong> <code><%= @webhook_lab_delivery.status %></code></p>
+            <p><strong>Delivered at:</strong> <%= @webhook_lab_delivery.delivered_at || "-" %></p>
+            <p><strong>Error:</strong> <%= @webhook_lab_delivery.error_message.presence || "-" %></p>
+            <p><strong>Updated at:</strong> <%= @webhook_lab_delivery.updated_at %></p>
+          </div>
+        <% else %>
+          <p class="text-sm text-(--body-muted-content-color)">No delivery loaded.</p>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+    <% card.header do %>
+      <%= render FlatPack::SectionTitle::Component.new(
+        title: "Last Webhook Result",
+        subtitle: "Shows callback outcome and idempotency key for the most recent webhook submission."
+      ) %>
+    <% end %>
+
+    <% card.body do %>
+      <% if @webhook_lab_last_result.present? %>
+        <% if @webhook_lab_last_payload.present? %>
+          <p class="mb-2 text-sm font-medium">Last payload</p>
+          <pre class="mb-3 overflow-x-auto rounded-md border border-slate-200 bg-slate-50 p-3 text-xs leading-5"><%= JSON.pretty_generate(@webhook_lab_last_payload) %></pre>
+        <% end %>
+        <pre class="overflow-x-auto rounded-md border border-slate-200 bg-slate-50 p-3 text-xs leading-5"><%= JSON.pretty_generate(@webhook_lab_last_result) %></pre>
+      <% else %>
+        <p class="text-sm text-(--body-muted-content-color)">No webhook event has been fired yet.</p>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>
