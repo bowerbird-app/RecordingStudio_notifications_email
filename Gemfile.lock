@@ -17,10 +17,10 @@ GIT
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_notifications.git
-  revision: 933e98fe035dec1edbef12296229835f0414a949
-  branch: main
+  revision: ea0faa60a7962f76a4a70b699c991b70bc767dae
+  branch: cursor/otp-delivery-payload-78f4
   specs:
-    recording_studio_notifications (0.2.4)
+    recording_studio_notifications (0.3.0)
       flat_pack
       rails (~> 8.1.0)
       recording_studio
@@ -41,10 +41,10 @@ GIT
 PATH
   remote: .
   specs:
-    recording_studio_notifications_email (0.2.0)
+    recording_studio_notifications_email (0.3.0)
       rails (~> 8.1.0)
       recording_studio (~> 4.2)
-      recording_studio_notifications (>= 0.1.1, < 1)
+      recording_studio_notifications (>= 0.3.0, < 1)
 
 GEM
   remote: https://rubygems.org/
@@ -397,8 +397,8 @@ CHECKSUMS
   rdoc (8.0.0) sha256=03bf8c08a9639658855a0cfd77c0abca8325c227693f7f33f82957811348c469
   recording_studio (4.2.0)
   recording_studio_accessible (0.7.0)
-  recording_studio_notifications (0.2.4)
-  recording_studio_notifications_email (0.2.0)
+  recording_studio_notifications (0.3.0)
+  recording_studio_notifications_email (0.3.0)
   regexp_parser (2.12.0) sha256=35a916a1d63190ab5c9009457136ae5f3c0c7512d60291d0d1378ba18ce08ebb
   reline (0.6.3) sha256=1198b04973565b36ec0f11542ab3f5cfeeec34823f4e54cebde90968092b1835
   rubocop (1.88.2) sha256=8def251c90cd955feb4daa3edc0ab56893250c4ce90ef81e6c80c03f9a939bbf

@@ -24,5 +24,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "rails", "~> 8.1.0"
   spec.add_dependency "recording_studio", "~> 4.2"
-  spec.add_dependency "recording_studio_notifications", ">= 0.1.1", "< 1"
+  spec.add_dependency "recording_studio_notifications", ">= 0.3.0", "< 1"
 end
