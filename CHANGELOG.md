@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Development and dummy pins: RecordingStudio `v4.2.0`, RecordingStudioAccessible
   `v0.7.0`, RecordingStudioRootSwitchable `v0.5.0`, RecordingStudioCommentable
   `v0.3.0`.
+- Unit tests load `minitest/mock` and pass hash sources into `Event.new`.
 
 ### Upgrade notes
 

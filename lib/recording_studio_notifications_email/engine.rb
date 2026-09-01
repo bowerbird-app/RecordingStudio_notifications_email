@@ -10,8 +10,8 @@ module RecordingStudioNotificationsEmail
 
       options = app.config.x.recording_studio_notifications_email if app.config.respond_to?(:x)
       RecordingStudioNotificationsEmail.configuration.merge!(options.to_h) if options.respond_to?(:to_h)
-    rescue StandardError => error
-      Rails.logger&.warn("[RecordingStudioNotificationsEmail] configuration was not loaded: #{error.message}")
+    rescue StandardError => e
+      Rails.logger&.warn("[RecordingStudioNotificationsEmail] configuration was not loaded: #{e.message}")
     end
 
     initializer "recording_studio_notifications_email.register_channel",

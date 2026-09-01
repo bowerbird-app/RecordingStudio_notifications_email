@@ -28,6 +28,7 @@ class PublicApiTest < Minitest::Test
     registration = nil
     implementation = lambda do |channel, adapter|
       registration = [channel, adapter]
+      adapter
     end
 
     RecordingStudioNotifications.stub(:register_channel, implementation) do

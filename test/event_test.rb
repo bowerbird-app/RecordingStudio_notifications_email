@@ -37,7 +37,7 @@ class EventTest < Minitest::Test
     RecordingStudio.stub(:recordable_name, ->(value) { "Page" if value.equal?(notifiable) }) do
       RecordingStudio.stub(:recordable_type_label, ->(value) { "Document" if value.equal?(notifiable) }) do
         RecordingStudio.stub(:root_recording_or_self, ->(value) { root if value.equal?(recording) }) do
-          RecordingStudio.stub(:root_recording_id_for, ->(value) { value.id }) do
+          RecordingStudio.stub(:root_recording_id_for, lambda(&:id)) do
             event = RecordingStudioNotificationsEmail::Event.new(notification)
 
             assert_equal "Page", event.recordable_name
@@ -51,7 +51,7 @@ class EventTest < Minitest::Test
   end
 
   def test_missing_optional_attributes_are_safe
-    event = RecordingStudioNotificationsEmail::Event.new(notification_type: " ")
+    event = RecordingStudioNotificationsEmail::Event.new({ notification_type: " " })
 
     assert_equal :generic, event.notification_type
     assert_equal "Notification", event.title
@@ -70,8 +70,10 @@ class EventTest < Minitest::Test
 
   def test_metadata_is_deeply_read_only_and_title_cannot_inject_headers
     event = RecordingStudioNotificationsEmail::Event.new(
-      title: "Notice\nBcc: victim@example.test",
-      metadata: { "nested" => ["value"] }
+      {
+        title: "Notice\nBcc: victim@example.test",
+        metadata: { "nested" => ["value"] }
+      }
     )
 
     assert_equal "Notice Bcc: victim@example.test", event.title
@@ -81,7 +83,9 @@ class EventTest < Minitest::Test
 
   def test_fallback_title_cannot_inject_headers
     notifiable = Object.new
-    event = RecordingStudioNotificationsEmail::Event.new(notifiable: notifiable, action: "changed\nBcc: victim")
+    event = RecordingStudioNotificationsEmail::Event.new(
+      { notifiable: notifiable, action: "changed\nBcc: victim" }
+    )
 
     RecordingStudio.stub(:recordable_type_label, "Page\nCc: victim") do
       assert_equal "Page Cc: victim changed Bcc: victim", event.title
@@ -100,7 +104,7 @@ class EventTest < Minitest::Test
   def test_url_rejects_backslashes_before_parent_url_safety
     skip "RecordingStudioNotifications::UrlSafety unavailable" unless defined?(RecordingStudioNotifications::UrlSafety)
 
-    event = RecordingStudioNotificationsEmail::Event.new(url: "/notifications\\1")
+    event = RecordingStudioNotificationsEmail::Event.new({ url: "/notifications\\1" })
 
     RecordingStudioNotifications::UrlSafety.stub(:safe?, ->(*) { flunk("expected to reject before UrlSafety") }) do
       assert_nil event.url
@@ -108,7 +112,7 @@ class EventTest < Minitest::Test
   end
 
   def test_url_rejects_ascii_controls_before_fallback_url_safety
-    event = RecordingStudioNotificationsEmail::Event.new(url: "/notifications/\u0000control")
+    event = RecordingStudioNotificationsEmail::Event.new({ url: "/notifications/\u0000control" })
 
     with_url_safety_unavailable do
       event.stub(:fallback_url_safe?, ->(*) { flunk("expected to reject before fallback") }) do

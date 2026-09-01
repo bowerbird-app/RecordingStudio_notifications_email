@@ -149,7 +149,10 @@ module RecordingStudioNotificationsEmail
     def deep_freeze(value)
       case value
       when Hash
-        value.each { |key, nested| deep_freeze(key); deep_freeze(nested) }
+        value.each do |key, nested|
+          deep_freeze(key)
+          deep_freeze(nested)
+        end
       when Array
         value.each { |nested| deep_freeze(nested) }
       end
