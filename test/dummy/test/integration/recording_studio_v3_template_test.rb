@@ -15,13 +15,18 @@ class RecordingStudioV3TemplateTest < ActiveSupport::TestCase
     assert_equal [ "Workspace", "Folder" ], RecordingStudio.allowed_parent_types_for("Page")
   end
 
-  test "dummy app schema excludes removed access control tables" do
+  test "dummy app schema keeps root recording and restored access tables" do
     connection = ActiveRecord::Base.connection
 
     assert connection.column_exists?(:recording_studio_recordings, :root_recording_id)
-    refute connection.table_exists?(:recording_studio_accesses)
+    assert connection.table_exists?(:recording_studio_accesses)
     refute connection.table_exists?(:recording_studio_access_boundaries)
     refute connection.table_exists?(:recording_studio_device_sessions)
+    assert connection.index_exists?(
+      :recording_studio_recordings,
+      %i[recordable_type recordable_id],
+      name: "index_rs_unique_root_recording_per_recordable"
+    )
   end
 
   test "dummy seeds use v3 hierarchy idempotently and restore current actor" do

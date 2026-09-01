@@ -1,19 +1,19 @@
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio.git
-  revision: a2201ac47a6938472a64d17679256dbd7e0247ba
-  tag: recording_studio/v3.0.0
+  revision: fce33c603f8e57a2c0dd278ab901651f6d78c5d4
+  tag: v4.2.0
   specs:
-    recording_studio (3.0.0)
+    recording_studio (4.2.0)
       rails (>= 8.1.0)
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_accessible.git
-  revision: 861f3ab999831edf97314b43ddcb0dcb8abd9a06
-  tag: 0.3.1
+  revision: b76a6932918985aee56ffbc1b5230522a3820406
+  tag: v0.7.0
   specs:
-    recording_studio_accessible (0.3.1)
+    recording_studio_accessible (0.7.0)
       rails (~> 8.1.0)
-      recording_studio (~> 3.0)
+      recording_studio (~> 4.2)
 
 GIT
   remote: https://github.com/bowerbird-app/RecordingStudio_notifications.git
@@ -41,9 +41,9 @@ GIT
 PATH
   remote: .
   specs:
-    recording_studio_notifications_email (0.1.0)
+    recording_studio_notifications_email (0.2.0)
       rails (~> 8.1.0)
-      recording_studio (>= 3, < 4)
+      recording_studio (~> 4.2)
       recording_studio_notifications (>= 0.1.1, < 1)
 
 GEM
@@ -165,6 +165,7 @@ GEM
     minitest (6.0.6)
       drb (~> 2.0)
       prism (~> 1.5)
+    minitest-mock (5.27.0)
     net-imap (0.6.4.1)
       date
       net-protocol
@@ -312,6 +313,7 @@ PLATFORMS
 DEPENDENCIES
   debug
   flat_pack!
+  minitest-mock
   recording_studio!
   recording_studio_accessible!
   recording_studio_notifications!
@@ -360,6 +362,7 @@ CHECKSUMS
   marcel (1.2.1) sha256=1678e9360e32f9eafa917c80029e2f6d10b2715c66a4b87b6d0da9b9cd1f859f
   mini_mime (1.1.5) sha256=8681b7e2e4215f2a159f9400b5816d85e9d8c6c6b491e96a12797e798f8bccef
   minitest (6.0.6) sha256=153ea36d1d987a62942382b61075745042a2b3123b1cd48f4c3675af9cc7d6f1
+  minitest-mock (5.27.0) sha256=7040ed7185417a966920987eaa6eaf1be4ea1fc5b25bb03ff4703f98564a55b0
   net-imap (0.6.4.1) sha256=29f0360d75a7efd3539f16ac1957dea5c0a51ddeceb348db4553c3120914ea0d
   net-pop (0.1.2) sha256=848b4e982013c15b2f0382792268763b748cce91c9e91e36b0f27ed26420dff3
   net-protocol (0.2.2) sha256=aa73e0cba6a125369de9837b8d8ef82a61849360eba0521900e2c3713aa162a8
@@ -392,10 +395,10 @@ CHECKSUMS
   rake (13.4.2) sha256=cb825b2bd5f1f8e91ca37bddb4b9aaf345551b4731da62949be002fa89283701
   rbs (4.0.3) sha256=5a7bf70e2628549d9a1f44eae447b2cfe55968a9c60cfff52693a4bdcc020e14
   rdoc (8.0.0) sha256=03bf8c08a9639658855a0cfd77c0abca8325c227693f7f33f82957811348c469
-  recording_studio (3.0.0)
-  recording_studio_accessible (0.3.1)
+  recording_studio (4.2.0)
+  recording_studio_accessible (0.7.0)
   recording_studio_notifications (0.2.4)
-  recording_studio_notifications_email (0.1.0)
+  recording_studio_notifications_email (0.2.0)
   regexp_parser (2.12.0) sha256=35a916a1d63190ab5c9009457136ae5f3c0c7512d60291d0d1378ba18ce08ebb
   reline (0.6.3) sha256=1198b04973565b36ec0f11542ab3f5cfeeec34823f4e54cebde90968092b1835
   rubocop (1.88.2) sha256=8def251c90cd955feb4daa3edc0ab56893250c4ce90ef81e6c80c03f9a939bbf

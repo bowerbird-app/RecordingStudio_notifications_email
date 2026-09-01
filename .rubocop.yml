@@ -21,16 +21,54 @@ Metrics/ClassLength:
   Exclude:
     - 'test/**/*'
     - 'lib/recording_studio_notifications_email/event.rb'
+    - 'lib/recording_studio_notifications_email/delivery_callbacks.rb'
+    - 'lib/recording_studio_notifications_email/delivery_token.rb'
+    - 'lib/recording_studio_notifications_email/action_mailer_adapter.rb'
+
+Metrics/ModuleLength:
+  Exclude:
+    - 'lib/recording_studio_notifications_email/delivery_callbacks.rb'
+    - 'lib/recording_studio_notifications_email/delivery_token.rb'
 
 Metrics/MethodLength:
   Exclude:
     - 'test/**/*'
     - 'lib/generators/**/*'
+    - 'lib/recording_studio_notifications_email/action_mailer_adapter.rb'
+    - 'lib/recording_studio_notifications_email/delivery_callbacks.rb'
+    - 'lib/recording_studio_notifications_email/delivery_token.rb'
+    - 'lib/recording_studio_notifications_email/event.rb'
+    - 'lib/recording_studio_notifications_email/webhook_event.rb'
 
 Metrics/AbcSize:
   Exclude:
     - 'test/**/*'
     - 'lib/generators/**/*'
+    - 'app/mailers/**/*'
+    - 'lib/recording_studio_notifications_email/action_mailer_adapter.rb'
+    - 'lib/recording_studio_notifications_email/delivery_callbacks.rb'
+    - 'lib/recording_studio_notifications_email/event.rb'
+    - 'lib/recording_studio_notifications_email/webhook_event.rb'
+
+Metrics/ParameterLists:
+  Exclude:
+    - 'lib/recording_studio_notifications_email/action_mailer_adapter.rb'
+    - 'lib/recording_studio_notifications_email/delivery_token.rb'
+    - 'lib/recording_studio_notifications_email/webhook_event.rb'
+
+Metrics/CyclomaticComplexity:
+  Exclude:
+    - 'lib/recording_studio_notifications_email/action_mailer_adapter.rb'
+    - 'lib/recording_studio_notifications_email/delivery_callbacks.rb'
+
+Metrics/PerceivedComplexity:
+  Exclude:
+    - 'lib/recording_studio_notifications_email/action_mailer_adapter.rb'
+    - 'lib/recording_studio_notifications_email/delivery_callbacks.rb'
+
+Metrics/BlockLength:
+  Exclude:
+    - 'test/**/*'
 
 # Allow empty blocks in tests (common for stubs/mocks)
 Lint/EmptyBlock:

@@ -35,16 +35,14 @@ module RecordingStudioNotificationsEmail
       raise ArgumentError, "notifications are required" if notifications.empty?
       raise ArgumentError, "deliveries must match notifications" unless notifications.size == deliveries.size
 
-      events = notifications.zip(deliveries).map { |notification, delivery| Event.wrap(notification, delivery: delivery) }
-      recipient_identities = events.map { |event| recipient_identity_key(event.recipient) }
-      unless recipient_identities.uniq.one?
-        raise DeliveryError, "rollup notifications must resolve to one recipient"
+      events = notifications.zip(deliveries).map do |notification, delivery|
+        Event.wrap(notification, delivery: delivery)
       end
+      recipient_identities = events.map { |event| recipient_identity_key(event.recipient) }
+      raise DeliveryError, "rollup notifications must resolve to one recipient" unless recipient_identities.uniq.one?
 
       recipients = events.map { |event| recipient_for(event) }
-      unless recipients.uniq.one?
-        raise DeliveryError, "rollup notifications must resolve to one email address"
-      end
+      raise DeliveryError, "rollup notifications must resolve to one email address" unless recipients.uniq.one?
 
       template_path = rollup_template_path_for(events)
 
@@ -86,9 +84,7 @@ module RecordingStudioNotificationsEmail
 
     def rollup_template_path_for(events)
       notification_types = events.map(&:notification_type).uniq
-      unless notification_types.one?
-        raise DeliveryError, "rollup notifications must share one notification type"
-      end
+      raise DeliveryError, "rollup notifications must share one notification type" unless notification_types.one?
 
       template_path_for(
         notification_types.first,
@@ -123,7 +119,7 @@ module RecordingStudioNotificationsEmail
       return if @configuration.reply_to.blank?
 
       Array(@configuration.reply_to).map { |value| validate_mailbox!(value, "reply_to") }
-                                   .then { |values| values.one? ? values.first : values }
+                                    .then { |values| values.one? ? values.first : values }
     end
 
     def validate_mailbox!(value, label)

@@ -44,11 +44,9 @@ begin
   private_root_recording = RecordingStudio.root_recording_for(private_workspace)
 
   [root_recording, accessible_root_recording, private_root_recording].each do |workspace_root|
-    RecordingStudioAccessible.grant_access(
+    RecordingStudioAccessible.bootstrap_owner_access!(
       recording: workspace_root,
-      actor: user,
-      role: :admin,
-      manager_actor: user
+      actor: user
     )
 
     RecordingStudioAccessible.grant_access(

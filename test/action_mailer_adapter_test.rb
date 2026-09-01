@@ -74,7 +74,10 @@ class ActionMailerAdapterTest < Minitest::Test
   end
 
   def test_individual_delivery_uses_registered_template_path
-    with_notification_types(comment: NotificationType.new(individual_mailer: "notification_mailer/individual/comment")) do
+    notification_type = NotificationType.new(
+      individual_mailer: "notification_mailer/individual/comment"
+    )
+    with_notification_types(comment: notification_type) do
       @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
     end
 
@@ -99,9 +102,11 @@ class ActionMailerAdapterTest < Minitest::Test
     )
 
     assert_equal "notification_mailer/individual/adapter_template_paths",
-                 RecordingStudioNotificationsEmail.notification_type_mailers.fetch(:adapter_template_paths, :individual_mailer)
+                 RecordingStudioNotificationsEmail.notification_type_mailers.fetch(:adapter_template_paths,
+                                                                                   :individual_mailer)
     assert_equal "notification_mailer/rollup/adapter_template_paths",
-                 RecordingStudioNotificationsEmail.notification_type_mailers.fetch(:adapter_template_paths, :rollup_mailer)
+                 RecordingStudioNotificationsEmail.notification_type_mailers.fetch(:adapter_template_paths,
+                                                                                   :rollup_mailer)
 
     @adapter.deliver(
       notification: build_notification(notification_type: :adapter_template_paths),
@@ -239,7 +244,9 @@ class ActionMailerAdapterTest < Minitest::Test
     recipient = Recipient.new(id: "person-1", email: "person@example.test")
     notifications = [
       build_notification(id: "notification-1", recipient: recipient),
-      build_notification(id: "notification-2", recipient: recipient).tap { |notification| notification.notification_type = :page_created }
+      build_notification(id: "notification-2", recipient: recipient).tap do |notification|
+        notification.notification_type = :page_created
+      end
     ]
 
     error = assert_raises(RecordingStudioNotificationsEmail::DeliveryError) do
@@ -343,7 +350,7 @@ class ActionMailerAdapterTest < Minitest::Test
     configuration.instance_variable_set(:@notification_types, NotificationTypeRegistry.new(definitions))
     yield
   ensure
-    configuration.instance_variable_set(:@notification_types, original_registry) if configuration
+    configuration&.instance_variable_set(:@notification_types, original_registry)
   end
 
   def build_notification(id: "notification-1", notification_type: :comment,

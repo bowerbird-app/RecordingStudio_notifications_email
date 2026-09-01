@@ -4,7 +4,8 @@ require "test_helper"
 
 class RecipientRegistryTest < Minitest::Test
   Recipient = Struct.new(:email)
-  SpecialRecipient = Class.new(Recipient)
+  class SpecialRecipient < Recipient
+  end
 
   def setup
     @registry = RecordingStudioNotificationsEmail::RecipientRegistry.new

@@ -58,7 +58,7 @@ module RecordingStudioNotificationsEmail
 
     class << self
       def mark_delivered!(reference:, delivered_at: Time.current,
-              configuration: RecordingStudioNotificationsEmail.configuration)
+                          configuration: RecordingStudioNotificationsEmail.configuration)
         resolved_reference = resolve_reference!(reference, configuration: configuration)
         requested_ids = resolved_reference.delivery_ids.map(&:to_s).uniq
         deliveries = RecordingStudioNotifications::Delivery.where(id: requested_ids).to_a
@@ -215,7 +215,10 @@ module RecordingStudioNotificationsEmail
       def apply_delivered!(delivery, occurred_at:)
         return :already_applied if delivery.respond_to?(:delivered?) && delivery.delivered?
 
-        raise UnsupportedWebhookEventError, unsupported_event_message(:delivered) unless delivery.respond_to?(:mark_delivered!)
+        unless delivery.respond_to?(:mark_delivered!)
+          raise UnsupportedWebhookEventError,
+                unsupported_event_message(:delivered)
+        end
 
         delivery.mark_delivered!(at: occurred_at)
         :updated
