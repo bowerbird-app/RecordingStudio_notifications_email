@@ -30,7 +30,7 @@ module RecordingStudioNotificationsEmail
     end
 
     def title
-      value = attribute(:title)
+      value = presentation_attribute(:title)
       return sanitize_header_text(value) if value.present?
 
       fallback = [recordable_type_label, attribute(:action)].compact_blank.join(" ")
@@ -38,11 +38,11 @@ module RecordingStudioNotificationsEmail
     end
 
     def body
-      attribute(:body).to_s.presence
+      presentation_attribute(:body).to_s.presence
     end
 
     def url
-      value = attribute(:url).to_s.presence
+      value = presentation_attribute(:url).to_s.presence
       return unless value
       return if unsafe_url_characters?(value)
 
@@ -106,6 +106,30 @@ module RecordingStudioNotificationsEmail
     end
 
     private
+
+    def presentation_attribute(name)
+      return attribute(name) unless delivery
+
+      payload = resolved_delivery_payload
+      return attribute(name) unless payload.respond_to?(name)
+
+      payload.public_send(name)
+    end
+
+    def resolved_delivery_payload
+      return @resolved_delivery_payload if defined?(@resolved_delivery_payload)
+
+      @resolved_delivery_payload =
+        if delivery_payload_available?
+          RecordingStudioNotifications.delivery_payload_for(notification: source, delivery: delivery)
+        end
+    end
+
+    def delivery_payload_available?
+      delivery &&
+        defined?(RecordingStudioNotifications) &&
+        RecordingStudioNotifications.respond_to?(:delivery_payload_for)
+    end
 
     def attribute(name)
       return source.public_send(name) if source.respond_to?(name)

@@ -121,7 +121,52 @@ class EventTest < Minitest::Test
     end
   end
 
+  def test_title_body_and_url_use_delivery_payload_when_delivery_present
+    skip "RecordingStudioNotifications.delivery_payload_for unavailable" unless delivery_payload_available?
+
+    notification = Notification.new(
+      notification_type: :otp_sign_in,
+      title: "Stored title",
+      body: "Stored body",
+      url: "/stored"
+    )
+    delivery = Object.new
+    payload = RecordingStudioNotifications::DeliveryPayload.new(
+      title: "Your sign-in code",
+      body: "123456",
+      url: nil
+    )
+
+    RecordingStudioNotifications.stub(:delivery_payload_for, payload) do
+      event = RecordingStudioNotificationsEmail::Event.new(notification, delivery: delivery)
+
+      assert_equal "Your sign-in code", event.title
+      assert_equal "123456", event.body
+      assert_nil event.url
+    end
+  end
+
+  def test_without_delivery_reads_notification_attributes
+    notification = Notification.new(
+      notification_type: :otp_sign_in,
+      title: "Stored title",
+      body: "Stored body",
+      url: "/notifications/1"
+    )
+
+    event = RecordingStudioNotificationsEmail::Event.new(notification)
+
+    assert_equal "Stored title", event.title
+    assert_equal "Stored body", event.body
+    assert_equal "/notifications/1", event.url
+  end
+
   private
+
+  def delivery_payload_available?
+    defined?(RecordingStudioNotifications) &&
+      RecordingStudioNotifications.respond_to?(:delivery_payload_for)
+  end
 
   def with_url_safety_unavailable
     unless defined?(RecordingStudioNotifications::UrlSafety)

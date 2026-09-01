@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-01
+
+### Changed
+
+- `Event` uses `delivery_payload_for` when a delivery is present.
+- Require `recording_studio_notifications` `>= 0.3.0`.
+
+### Upgrade notes
+
+- Install `recording_studio_notifications` `0.3.0` first.
+
 ## [0.2.0] - 2026-09-01
 
 ### Changed
@@ -35,6 +46,7 @@ All notable changes to this project will be documented in this file.
 - Expiring signed correlation references.
 - Recording Studio-backed normalized event facade.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/releases/tag/v0.3.0
 [0.2.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/releases/tag/v0.2.0
 [0.1.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/releases/tag/v0.1.0
