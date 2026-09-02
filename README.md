@@ -250,6 +250,16 @@ notification fields and delegates recordable labels, names, and root
 resolution to public `RecordingStudio` APIs. This avoids coupling email
 presentation to Recording Studio tables or model internals.
 
+## Cloud Agent boot
+
+Cloud Agent Builds run `.cursor/install.sh`, then `.cursor/fetch-skills.sh`.
+The install hook provisions a cold image. On a warm snapshot it skips apt,
+ruby-build, db:prepare, and tailwind when Ruby, bundle, and Postgres are
+already usable. Fetch-skills always runs last. `.cursor/start.sh` starts
+PostgreSQL on each boot. Rebuild with Draft off to load a new pack. See
+[Cursor skills in Cloud Agents](docs/cursor-skills.md) and
+[Upgrading](docs/UPGRADING.md).
+
 ## Validation
 
 The standard suite is:

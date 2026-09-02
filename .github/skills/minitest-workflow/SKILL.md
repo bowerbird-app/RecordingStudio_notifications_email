@@ -28,3 +28,6 @@ user-invocable: false
 - Cover hook ordering, arguments, and error isolation.
 - Add regression coverage for rename and generator flows.
 - Keep tests fast, deterministic, and scoped to the change.
+- Cloud Agent boot coverage lives in `test/cursor_install_test.rb` (warm skip
+  and fetch-skills last) and `test/dummy/test/cursor_boot_files_test.rb`
+  (environment.json hooks and dummy terminals).

@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-02
+
+Cloud Agent Builds now boot like Billing 0.9.13. Email-as-notice behavior is
+unchanged.
+
+### Added
+
+- Tracked Cloud Agent boot files: `.cursor/environment.json` runs
+  `.cursor/install.sh`. `.cursor/start.sh` starts PostgreSQL on each boot.
+- `.cursor/install.sh` provisions a cold image. On a warm snapshot it skips
+  apt, ruby-build, db:prepare, and tailwind when Ruby, bundle, and Postgres
+  are already usable. A skippable provision failure does not fail the Build.
+  Fetch-skills always runs last, not `|| true`.
+- `.cursor/fetch-skills.sh` loads the skill pack into gitignored
+  `.cursor/skills/` and `.cursor/rules/`. Those directories are not vendored
+  and are not packaged in the gem.
+
+### Upgrade notes
+
+- No host or schema changes. Rebuild the Cloud Agent environment with Draft
+  off so Build loads the pack. See [Upgrading](docs/UPGRADING.md).
+
 ## [0.3.0] - 2026-09-01
 
 ### Changed
@@ -46,7 +68,8 @@ All notable changes to this project will be documented in this file.
 - Expiring signed correlation references.
 - Recording Studio-backed normalized event facade.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/releases/tag/v0.3.1
 [0.3.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/releases/tag/v0.3.0
 [0.2.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/releases/tag/v0.2.0
 [0.1.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/releases/tag/v0.1.0
