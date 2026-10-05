@@ -6,7 +6,7 @@ behavior is unchanged.
 When the dummy (or a host) follows the current development pins, Accessible
 `0.11` stores roles as strings. Run Accessible's migrations
 (`bin/rails generate recording_studio_accessible:migrations` then
-`bin/rails db:migrate`) and grant access through
+`bin/rails db:migrate`), set `access_actor_types`, and grant access through
 `bootstrap_owner_access!` / `grant_access`. Do not write
 `RecordingStudio::Access` rows directly.
 
