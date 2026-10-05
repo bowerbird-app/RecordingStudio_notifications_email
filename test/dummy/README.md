@@ -13,9 +13,14 @@ This Rails app is a legacy host-app sandbox for manually exercising Recording St
 
 ## Quick Start
 
+Dummy credentials (`config/credentials.yml.enc`) use the shared RecordingStudio_*
+development master key. Set `RAILS_MASTER_KEY` or write that value to
+`config/master.key` (gitignored). Do not mint a per-repo dummy key.
+
 ```bash
 cd test/dummy
 bundle install
+bin/rails credentials:show
 bin/rails db:setup
 bin/dev
 ```
