@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Development Gemfile pins Accessible to GitHub tag `v0.11.1` and notifications
+  to `v0.3.4` (was Accessible `v0.7.0` and notifications `main`).
+- Dummy Gemfile also pins Commentable `v0.3.3` and Root Switchable `v0.5.3`.
+- Dummy app copies Accessible 0.8–0.11 migrations: `depends_on_recording_id`,
+  access invitations, and string `role`. Dummy Accessible config allowlists
+  `User` as an access actor type. Dummy seeds grant through
+  `bootstrap_owner_access!` and `grant_access` and fail if those services do.
+- Dummy FlatPack sidebar items pass `text:` so host screens render against
+  the current FlatPack pin.
+
+### Upgrade notes
+
+- Point host and dummy Gemfiles at Accessible `v0.11.1` and notifications
+  `v0.3.4` when you follow this development pin set. Accessible `0.11` stores
+  roles as strings and ships a migration; in hosts that use Accessible run
+  `bin/rails generate recording_studio_accessible:migrations` then
+  `bin/rails db:migrate`. Set `access_actor_types` (dummy uses `User`).
+  Dummy and host grants must use Accessible public services. Do not
+  `update!` / `create!` `RecordingStudio::Access` rows.
+- This email channel gem version is unchanged. No email-channel migration.
+
 ## [0.3.1] - 2026-09-02
 
 Cloud Agent Builds now boot like Billing 0.9.13. Email-as-notice behavior is
