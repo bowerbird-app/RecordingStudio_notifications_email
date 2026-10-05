@@ -47,8 +47,11 @@ RecordingStudioNotifications.register_channel(
 ```
 
 For local development in this repository, parent gems are sourced from GitHub
-until published releases are available (`recording_studio` and
-`recording_studio_notifications` in `Gemfile`).
+until published releases are available. Current pins include Recording Studio
+`v4.2.2`, Accessible `v0.11.1`, and notifications `v0.3.4`. The dummy also
+pins Commentable `v0.3.3` and Root Switchable `v0.5.3`. Accessible `0.11`
+needs string roles and its 0.8–0.11 migrations; grants go through
+`bootstrap_owner_access!` / `grant_access`.
 
 ## Configuration
 

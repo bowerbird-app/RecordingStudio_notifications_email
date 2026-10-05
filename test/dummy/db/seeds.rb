@@ -52,7 +52,7 @@ begin
     RecordingStudioAccessible.grant_access(
       recording: workspace_root,
       actor: commenter,
-      role: :edit,
+      role: "edit",
       manager_actor: user
     )
   end
