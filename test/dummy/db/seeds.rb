@@ -44,17 +44,19 @@ begin
   private_root_recording = RecordingStudio.root_recording_for(private_workspace)
 
   [root_recording, accessible_root_recording, private_root_recording].each do |workspace_root|
-    RecordingStudioAccessible.bootstrap_owner_access!(
-      recording: workspace_root,
-      actor: user
-    )
+    unless RecordingStudioAccessible.authorized?(actor: user, recording: workspace_root, role: "admin")
+      RecordingStudioAccessible.bootstrap_owner_access!(
+        recording: workspace_root,
+        actor: user
+      ).value!
+    end
 
     RecordingStudioAccessible.grant_access(
       recording: workspace_root,
       actor: commenter,
       role: "edit",
       manager_actor: user
-    )
+    ).value!
   end
 
   folder_recording = find_or_record_child.call(folder, root_recording, root_recording)

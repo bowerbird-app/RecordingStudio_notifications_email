@@ -10,8 +10,9 @@ All notable changes to this project will be documented in this file.
   to `v0.3.4` (was Accessible `v0.7.0` and notifications `main`).
 - Dummy Gemfile also pins Commentable `v0.3.3` and Root Switchable `v0.5.3`.
 - Dummy app copies Accessible 0.8–0.11 migrations: `depends_on_recording_id`,
-  access invitations, and string `role`. Dummy seeds already grant through
-  `bootstrap_owner_access!` and `grant_access`.
+  access invitations, and string `role`. Dummy Accessible config allowlists
+  `User` as an access actor type. Dummy seeds grant through
+  `bootstrap_owner_access!` and `grant_access` and fail if those services do.
 
 ### Upgrade notes
 

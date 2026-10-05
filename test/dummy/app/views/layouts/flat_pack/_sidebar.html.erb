@@ -44,75 +44,75 @@
   <% sidebar.items do %>
     <nav class="py-4 space-y-1" aria-label="Main navigation">
       <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "Home",
+        text: "Home",
         href: main_app.root_path,
         icon: :home
       ) %>
 
       <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "Pages",
+        text: "Pages",
         href: main_app.pages_path,
         icon: :document_text
       ) %>
 
       <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "Install",
+        text: "Install",
         href: main_app.docs_install_path,
         icon: :arrow_down_tray
       ) %>
 
       <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "Config",
+        text: "Config",
         href: main_app.docs_config_path,
         icon: :settings
       ) %>
 
       <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "Methods",
+        text: "Methods",
         href: main_app.docs_methods_path,
         icon: :code_bracket
       ) %>
 
       <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "Webhook Lab",
+        text: "Webhook Lab",
         href: main_app.docs_webhook_lab_path,
         icon: :paper_airplane
       ) %>
 
       <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "Notifications",
+        text: "Notifications",
         href: "/recording_studio_notifications",
         icon: :bell_alert
       ) %>
 
       <% if Rails.env.development? %>
         <%= render FlatPack::Sidebar::Item::Component.new(
-          label: "Letter Opener",
+          text: "Letter Opener",
           href: "/letter_opener",
           icon: :envelope
         ) %>
       <% end %>
 
       <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "System alerts",
+        text: "System alerts",
         href: main_app.new_system_notifications_path,
         icon: :megaphone
       ) %>
 
       <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "Recordable types",
+        text: "Recordable types",
         href: main_app.docs_recordable_types_path,
         icon: :queue_list
       ) %>
 
       <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "Recordings tree",
+        text: "Recordings tree",
         href: main_app.docs_recordings_tree_path,
         icon: :folder
       ) %>
 
       <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "Gem Views",
+        text: "Gem Views",
         href: main_app.docs_gem_views_path,
         icon: :eye
       ) %>
@@ -123,7 +123,7 @@
   <% sidebar.footer do %>
     <%= render FlatPack::Sidebar::Footer::Component.new(class: "text-sm text-[var(--surface-muted-content-color)]") do %>
       <%= render FlatPack::Sidebar::Item::Component.new(
-        label: "Sign out",
+        text: "Sign out",
         href: main_app.destroy_user_session_path,
         icon: :lock,
         class: "mx-0",
