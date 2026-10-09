@@ -4,7 +4,7 @@ source "https://rubygems.org"
 gem "recording_studio_notifications_email", path: "../.."
 gem "recording_studio_notifications",
     github: "bowerbird-app/RecordingStudio_notifications",
-    tag: "v0.3.4"
+    tag: "v0.5.0"
 
 # RecordingStudio engine
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.4.0"
