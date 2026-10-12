@@ -10,6 +10,13 @@ When the dummy (or a host) follows the current development pins, Accessible
 `bootstrap_owner_access!` / `grant_access`. Do not write
 `RecordingStudio::Access` rows directly.
 
+Accessible `0.14` adds `recording_studio_access_constraints` and
+`recording_studio_access_rules` (install via the same generator). Existing
+apps do nothing until they set `config.action_audiences` and enable
+`:action_audiences` on the types that should hold rules. Accessible
+`0.15` is translation-only (i18n wave 2); no migration; English hosts
+need no change.
+
 Root Switchable `0.8.0` (i18n wave 2 for `page_copy`) needs Metrics `~> 0.2`
 (dummy pins `v0.2.0`). No host migrations for Root Switchable `0.7.0`/`0.8.0`.
 
