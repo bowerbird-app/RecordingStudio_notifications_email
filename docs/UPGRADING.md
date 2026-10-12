@@ -13,6 +13,10 @@ When the dummy (or a host) follows the current development pins, Accessible
 Root Switchable `0.8.0` (i18n wave 2 for `page_copy`) needs Metrics `~> 0.2`
 (dummy pins `v0.2.0`). No host migrations for Root Switchable `0.7.0`/`0.8.0`.
 
+Recording Studio `4.5.0` makes `Labels.empty_label` I18n-resolved (English
+unchanged). No host migration. Prefer `Labels.empty_label` over identity
+checks against `Labels::EMPTY_LABEL` when the locale may not be English.
+
 ## 0.3.1
 
 Rebuild the Cloud Agent environment with Draft off so Build loads the skill
