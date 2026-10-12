@@ -10,6 +10,9 @@ When the dummy (or a host) follows the current development pins, Accessible
 `bootstrap_owner_access!` / `grant_access`. Do not write
 `RecordingStudio::Access` rows directly.
 
+Root Switchable `0.8.0` (i18n wave 2 for `page_copy`) needs Metrics `~> 0.2`
+(dummy pins `v0.2.0`). No host migrations for Root Switchable `0.7.0`/`0.8.0`.
+
 ## 0.3.1
 
 Rebuild the Cloud Agent environment with Draft off so Build loads the skill
