@@ -11,9 +11,10 @@ gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.5.0"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.15.0"
 gem "recording_studio_commentable", github: "bowerbird-app/RecordingStudio_commentable", tag: "v0.5.0"
 
-# Root switcher for the top nav (0.7+ needs Metrics ~> 0.2; not on RubyGems)
+# Root switcher for the top nav (0.7+ needs Metrics ~> 0.2; 0.9+ needs Cache ~> 0.5)
+gem "recording_studio_cache", github: "bowerbird-app/RecordingStudio_cache", tag: "v0.5.0"
 gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.2.0"
-gem "recording_studio_root_switchable", github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.8.0"
+gem "recording_studio_root_switchable", github: "bowerbird-app/RecordingStudio_root_switchable", tag: "v0.9.0"
 
 # Devise authentication
 gem "devise"
