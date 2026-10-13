@@ -7,9 +7,9 @@ class PagesController < ApplicationController
     @pages = Page.order(created_at: :desc)
     @recordings_by_page_id = RecordingStudio::Recording.where(
       recordable_type: "Page",
-      recordable_id: @pages.map(&:id),
-      trashed_at: nil
-    ).index_by(&:recordable_id)
+      recordable_id: @pages.map(&:id)
+    ).where(RecordingStudio::Recording.recording_studio_trashable_kept_sql)
+      .index_by(&:recordable_id)
   end
 
   def create
@@ -40,10 +40,11 @@ class PagesController < ApplicationController
     return root_recording if folder_id.blank?
 
     folder = Folder.find(folder_id)
-    RecordingStudio::Recording.find_by!(
+    RecordingStudio::Recording.where(
+      RecordingStudio::Recording.recording_studio_trashable_kept_sql
+    ).find_by!(
       recordable: folder,
-      root_recording: root_recording,
-      trashed_at: nil
+      root_recording: root_recording
     )
   end
 end
