@@ -23,6 +23,11 @@ Root Switchable `0.8.0` (i18n wave 2 for `page_copy`) needs Metrics `~> 0.2`
 Commentable `0.5.0` is translation-only (i18n wave 2 for flashes, errors, and
 display labels). No migration; English hosts need no change.
 
+Notifications `0.6.0` adds a runtime dependency on Metrics `~> 0.2` (no
+migration). Notifications `0.7.0` is translation-only (i18n wave 2 for
+flashes, badge overflow, and Admin chrome defaults); no migration; English
+hosts need no change.
+
 Recording Studio `4.5.0` makes `Labels.empty_label` I18n-resolved (English
 unchanged). No host migration. Prefer `Labels.empty_label` over identity
 checks against `Labels::EMPTY_LABEL` when the locale may not be English.

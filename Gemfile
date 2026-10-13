@@ -9,9 +9,11 @@ gemspec
 gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.198"
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.5.0"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.15.0"
+# Notifications 0.6+ requires Metrics ~> 0.2 (not on RubyGems).
+gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.2.0"
 gem "recording_studio_notifications",
     github: "bowerbird-app/RecordingStudio_notifications",
-    tag: "v0.5.0"
+    tag: "v0.7.0"
 
 group :development, :test do
   gem "debug"
