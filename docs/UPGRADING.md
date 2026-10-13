@@ -18,7 +18,9 @@ apps do nothing until they set `config.action_audiences` and enable
 need no change.
 
 Root Switchable `0.8.0` (i18n wave 2 for `page_copy`) needs Metrics `~> 0.2`
-(dummy pins `v0.2.0`). No host migrations for Root Switchable `0.7.0`/`0.8.0`.
+(dummy pins `v0.2.0`). Root Switchable `0.9.0` switches rate limiting to
+`RecordingStudioCache::RateLimiter` and needs Cache `~> 0.5` (dummy pins
+`v0.5.0`). No host migrations for Root Switchable `0.7.0`/`0.8.0`/`0.9.0`.
 
 Commentable `0.5.0` is translation-only (i18n wave 2 for flashes, errors, and
 display labels). No migration; English hosts need no change.
