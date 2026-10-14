@@ -48,7 +48,7 @@ RecordingStudioNotifications.register_channel(
 
 For local development in this repository, parent gems are sourced from GitHub
 until published releases are available. Current pins include Recording Studio
-`v4.6.0`, Accessible `v0.17.0`, Trashable `v0.10.0` (`require: false`;
+`v4.6.0`, Accessible `v0.18.0`, Trashable `v0.10.0` (`require: false`;
 query-only for Accessible), notifications `v0.7.0`, and Metrics
 `v0.2.0` (required by Notifications `0.6+` and Trashable). The dummy also
 pins Commentable `v0.5.0`, Root Switchable `v0.9.0`, Metrics
