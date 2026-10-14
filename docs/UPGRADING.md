@@ -34,8 +34,11 @@ flashes, badge overflow, and Admin chrome defaults); no migration; English
 hosts need no change.
 
 Recording Studio `4.5.0` makes `Labels.empty_label` I18n-resolved (English
-unchanged). No host migration. Prefer `Labels.empty_label` over identity
-checks against `Labels::EMPTY_LABEL` when the locale may not be English.
+unchanged). Recording Studio `4.6.0` adds English fallback for shipped
+`recording_studio.*` keys via `RecordingStudio.t` when the active locale
+has no translation. No host migration for either. Prefer
+`Labels.empty_label` over identity checks against `Labels::EMPTY_LABEL`
+when the locale may not be English.
 
 ## 0.3.1
 
