@@ -58,7 +58,8 @@ needs string roles, its 0.8–0.11 migrations, and an
 `access_actor_types` allowlist (dummy uses `User`). Accessible `0.14`
 adds access constraint/rule tables (dummy installs those migrations);
 `0.15` is translation-only; `0.17` filters kept rows via Trashable query
-helpers (no Accessible migration). Grants go through
+helpers; `0.18` adds `ControllerAuth` for sibling engines (no Accessible
+migration). Grants go through
 `bootstrap_owner_access!` / `grant_access`. Accessible, Commentable,
 notifications, and Root Switchable ship English I18n keys for their own
 views; rendered English is unchanged.
