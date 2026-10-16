@@ -7,9 +7,9 @@ gem "recording_studio_notifications",
     tag: "v0.7.0"
 
 # RecordingStudio engine
-gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.6.0"
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v4.7.0"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.18.0"
-gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.10.0", require: false
+gem "recording_studio_trashable", github: "bowerbird-app/RecordingStudio_trashable", tag: "v0.11.0", require: false
 gem "recording_studio_commentable", github: "bowerbird-app/RecordingStudio_commentable", tag: "v0.5.0"
 
 # Root switcher for the top nav (0.7+ needs Metrics ~> 0.2; 0.9+ needs Cache ~> 0.5)
