@@ -16,7 +16,9 @@ apps do nothing until they set `config.action_audiences` and enable
 `:action_audiences` on the types that should hold rules. Accessible
 `0.15` is translation-only (i18n wave 2); no migration; English hosts
 need no change. Accessible `0.17` depends on Trashable `~> 0.10`
-(query-only; pin `v0.10.0` with `require: false`). Accessible `0.18`
+(query-only; pin with `require: false`). Trashable `0.11.0` requires
+Recording Studio `~> 4.7` (development pins `v0.11.0` and `v4.7.0`).
+Accessible `0.18`
 adds `ControllerAuth` for sibling engines; no Accessible migration.
 Prefer `recording_studio_trashable_kept_sql` over `trashed_at: nil` in
 host finders when Trashable query is available.
