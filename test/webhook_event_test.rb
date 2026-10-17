@@ -93,5 +93,6 @@ class WebhookEventTest < Minitest::Test
 
     refute_includes event.to_h.keys, :idempotency_key
     refute event.respond_to?(:idempotency_key)
+    assert_nil event.bounce_type
   end
 end

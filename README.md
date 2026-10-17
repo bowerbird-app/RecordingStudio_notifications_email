@@ -51,11 +51,10 @@ RecordingStudioNotifications.register_channel(
 
 For local development in this repository, parent gems are sourced from GitHub
 until published releases are available. Current pins include Recording Studio
-`v4.7.0`, Accessible `v0.18.0`, Trashable `v0.11.0` (`require: false`;
-query-only for Accessible), notifications `v0.7.0`, and Metrics
-`v0.2.0` (required by Notifications `0.6+` and Trashable). The dummy also
-pins Commentable `v0.5.0`, Root Switchable `v0.9.0`, Metrics
-`v0.2.0` (required by Root Switchable `0.7+`), and Cache `v0.5.0`
+`v4.7.0`, Accessible `v0.18.0`, Trashable `v0.11.1` (`require: false`;
+query-only for Accessible; metrics `>= 0.3`, `< 0.4`), notifications
+`v0.9.0`, and Metrics `v0.3.1` (`>= 0.3`, `< 0.4`). The dummy also pins
+Commentable `v0.5.0`, Root Switchable `v0.9.4`, and Cache `v0.5.0`
 (required by Root Switchable `0.9+`). Accessible `0.11+`
 needs string roles, its 0.8–0.11 migrations, and an
 `access_actor_types` allowlist (dummy uses `User`). Accessible `0.14`
@@ -114,8 +113,10 @@ RecordingStudioNotifications.register_notification_type(
 )
 ```
 
-`individual_mailer` and `rollup_mailer` are optional Rails template paths. Each
-path needs matching `.html.erb` and `.text.erb` files. When omitted, the email
+`individual_mailer` and `rollup_mailer` are optional Rails template paths
+stored by this gem. Notifications 0.9 rejects unknown register options, so
+these two are removed before the parent registry sees the call. Each path
+needs matching `.html.erb` and `.text.erb` files. When omitted, the email
 channel renders its bundled individual or rollup template.
 
 Then use the normal parent API:
@@ -227,14 +228,34 @@ Direct handlers:
 - `mark_delivered!`
 - `mark_opened!`
 - `mark_clicked!`
-- `mark_bounced!(provider:)`
+- `mark_bounced!(provider:, bounce_type:)`
 - `mark_complained!(provider:)`
-- `mark_unsubscribed!`
+- `mark_unsubscribed!(provider:)`
 
-Delivery updates for one reference run in a single transaction. Bounce and
-complaint first write an address suppression in their own transaction, using
-the address resolved from the delivery's recipient. That row remains if the
-delivery update raises.
+Delivery updates for one reference run in a single transaction. Hard bounces,
+complaints, and unsubscribes first write an address suppression in their own
+transaction, using the address resolved from the delivery's recipient. That
+row remains if the delivery update raises. A soft bounce still updates the
+delivery and does not write a suppression.
+
+### Bounce type
+
+The host maps the provider's bounce field onto `bounce_type` before this gem
+sees the event. Put it on the payload as `bounce_type` (or `bounceType`), or
+under `metadata` with the same key. `ApplyEvent` copies that value onto
+`WebhookEvent`. A blank type is treated as hard, which is also what
+`mark_bounced!` does when `bounce_type:` is omitted.
+
+| Provider value | Normalised | Suppression |
+| --- | --- | --- |
+| `hard`, `permanent`, `HardBounce`, `hard-bounce` | `:hard` | reason `bounce` |
+| `soft`, `transient`, `temporary`, `temp`, `SoftBounce`, `soft bounce` | `:soft` | none |
+| omitted | `:hard` | reason `bounce` |
+
+Anything else, including SES `Undetermined`, raises `InvalidWebhookPayloadError`.
+Map that provider value to `hard` or `soft` in the host before registering the
+action. Postmark `Type` and SES `bounceType` can be passed through when they
+are `HardBounce`, `SoftBounce`, `Permanent`, `Transient`, or `Temporary`.
 
 The delivery model must implement the canonical callbacks. Until
 `recording_studio_notifications` 0.10.0 ships those methods, opened, clicked,
@@ -252,7 +273,7 @@ bounced, complained, and unsubscribed raise
 ## Address suppression
 
 `recording_studio_notifications_email_suppressions` stores one normalised
-mailbox. `Suppression.suppress!` records a bounce or complaint.
+mailbox. `Suppression.suppress!` records a bounce, complaint, or unsubscribe.
 `Suppression.suppressed?` is true while `lifted_at` is nil.
 `Suppression.lift!` sets `lifted_at` and leaves the row in place so a later
 `suppress!` can clear it.

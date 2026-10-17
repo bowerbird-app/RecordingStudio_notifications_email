@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - `recording_studio_notifications_email_suppressions` stores one normalised
-  address, a bounce or complaint reason, the provider, and `lifted_at`.
+  address, a bounce, complaint, or unsubscribe reason, the provider, and `lifted_at`.
   `Suppression.suppress!`, `suppressed?`, and `lift!` are the public API.
 - `bin/rails generate recording_studio_notifications_email:migrations` copies
   that migration into the host. The dummy app includes it.
@@ -24,8 +24,16 @@ All notable changes to this project will be documented in this file.
 
 - Rollup delivery updates (`mark_delivered!` and the webhook loop) run in one
   transaction.
-- Bounce and complaint write the suppression in their own transaction first,
-  then update deliveries. The address comes from the delivery's recipient.
+- Hard bounces, complaints, and unsubscribes write the suppression in their
+  own transaction first, then update deliveries. The address comes from the
+  delivery's recipient. Soft or transient bounces update the delivery and do
+  not write a suppression. `bounce_type` is normalised from the payload.
+- Development pins: notifications `v0.9.0`, metrics `v0.3.1`
+  (`>= 0.3`, `< 0.4`), root_switchable `v0.9.4`, and trashable `v0.11.1`
+  so the metrics floor resolves.
+- `individual_mailer` and `rollup_mailer` stay on this gem's registration
+  wrapper. Notifications 0.9 rejects unknown register options, so a catch-all
+  `**options` is no longer treated as support for those paths.
 - Webhook callbacks call only `mark_delivered!(at:)` and `mark_email_*!(at:)`.
   Missing canonical methods raise `UnsupportedWebhookEventError`.
 - `WebhookEvent` no longer builds an idempotency key. Inbound dedupe stays in
@@ -48,8 +56,12 @@ All notable changes to this project will be documented in this file.
   this gem.
 - Opened, clicked, bounced, complained, and unsubscribed callbacks require
   `recording_studio_notifications` 0.10.0 `mark_email_*!` methods. Until then
-  they raise `UnsupportedWebhookEventError`. Bounce and complaint still
-  suppress the address.
+  they raise `UnsupportedWebhookEventError`. Hard bounces, complaints, and
+  unsubscribes still suppress the address. Map provider bounce types onto
+  `bounce_type` as described in the README. A blank type is a hard bounce.
+- Pin notifications `v0.9.0`, metrics `>= 0.3, < 0.4` (tag `v0.3.1`), and
+  root_switchable `v0.9.4`. Trashable moves to `v0.11.1` because `v0.11.0`
+  still requires metrics `~> 0.2`. No new migration for those gems.
 - See [Upgrading](docs/UPGRADING.md).
 
 ## [0.3.1] - 2026-09-02

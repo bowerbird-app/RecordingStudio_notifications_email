@@ -37,6 +37,27 @@ still records the suppression before that error.
 the webhooks engine applies the event again when the delivery predicate is
 still false.
 
+Unsubscribe events write a suppression with reason `unsubscribed`, in the
+same transaction split as bounce and complaint. Hard bounces suppress with
+reason `bounce`. Soft or transient bounces do not. Put the provider's bounce
+class on the payload as `bounce_type` (or `metadata.bounce_type`). Accepted
+hard values are `hard`, `permanent`, `HardBounce`, and `hard-bounce`. Accepted
+soft values are `soft`, `transient`, `temporary`, `temp`, `SoftBounce`, and
+`soft bounce`. A blank type is hard. Any other value, including SES
+`Undetermined`, raises `InvalidWebhookPayloadError`; map it in the host.
+
+Development pins for this version are notifications `v0.9.0`, metrics
+`v0.3.1` (`>= 0.3`, `< 0.4`), root_switchable `v0.9.4`, and trashable
+`v0.11.1`. Notifications 0.9 and root_switchable 0.9.4 need that metrics
+range. Trashable `v0.11.0` still requires metrics `~> 0.2`, so it cannot
+resolve beside them. None of those pin bumps adds a migration.
+
+Notifications 0.9 rejects unknown `register` options. Keep passing
+`individual_mailer:` and `rollup_mailer:` to `register_notification_type`.
+This gem records those paths and does not forward them. `notify` with no
+selected channels now returns `nil` instead of raising. Hosts that never
+defined an Accessible `:view` action get a default one from notifications.
+
 When the dummy (or a host) follows the current development pins, Accessible
 `0.11` stores roles as strings. Run Accessible's migrations
 (`bin/rails generate recording_studio_accessible:migrations` then
@@ -50,8 +71,8 @@ apps do nothing until they set `config.action_audiences` and enable
 `:action_audiences` on the types that should hold rules. Accessible
 `0.15` is translation-only (i18n wave 2); no migration; English hosts
 need no change. Accessible `0.17` depends on Trashable `~> 0.10`
-(query-only; pin with `require: false`). Trashable `0.11.0` requires
-Recording Studio `~> 4.7` (development pins `v0.11.0` and `v4.7.0`).
+(query-only; pin with `require: false`). Trashable `0.11` requires
+Recording Studio `~> 4.7` (development pins `v0.11.1` and `v4.7.0`).
 Accessible `0.18`
 adds `ControllerAuth` for sibling engines; no Accessible migration.
 Prefer `recording_studio_trashable_kept_sql` over `trashed_at: nil` in

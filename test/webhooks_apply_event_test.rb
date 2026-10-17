@@ -117,6 +117,60 @@ class WebhooksApplyEventTest < Minitest::Test
     assert_in_delta Time.current, event.occurred_at, 2
   end
 
+  def test_build_event_normalises_bounce_type_from_the_payload
+    context = Context.new(
+      inbound_event: Inbound.new(provider_name: "postmark", event_type: "bounced"),
+      payload: { "reference" => "signed-reference", "bounce_type" => "HardBounce" }
+    )
+
+    event = RecordingStudioNotificationsEmail::Webhooks::ApplyEvent.build_event(context)
+
+    assert_equal :hard, event.bounce_type
+  end
+
+  def test_build_event_reads_bounce_type_from_metadata
+    context = Context.new(
+      inbound_event: Inbound.new(provider_name: "ses", event_type: "bounced"),
+      payload: {
+        "reference" => "signed-reference",
+        "metadata" => { "bounceType" => "Transient" }
+      }
+    )
+
+    event = RecordingStudioNotificationsEmail::Webhooks::ApplyEvent.build_event(context)
+
+    assert_equal :soft, event.bounce_type
+  end
+
+  def test_build_event_prefers_camel_case_bounce_type_when_the_snake_case_value_is_blank
+    context = Context.new(
+      inbound_event: Inbound.new(provider_name: "ses", event_type: "bounced"),
+      payload: {
+        "reference" => "signed-reference",
+        "bounce_type" => "  ",
+        "bounceType" => "Temporary"
+      }
+    )
+
+    event = RecordingStudioNotificationsEmail::Webhooks::ApplyEvent.build_event(context)
+
+    assert_equal :soft, event.bounce_type
+  end
+
+  def test_build_event_reads_a_symbol_bounce_type_from_metadata
+    context = Context.new(
+      inbound_event: Inbound.new(provider_name: "ses", event_type: "bounced"),
+      payload: {
+        "reference" => "signed-reference",
+        "metadata" => { bounce_type: "permanent" }
+      }
+    )
+
+    event = RecordingStudioNotificationsEmail::Webhooks::ApplyEvent.build_event(context)
+
+    assert_equal :hard, event.bounce_type
+  end
+
   def test_missing_reference_is_rejected
     context = Context.new(
       inbound_event: Inbound.new(provider_name: "postmark", event_type: "delivered"),

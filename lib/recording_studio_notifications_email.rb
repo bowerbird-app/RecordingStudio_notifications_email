@@ -15,6 +15,7 @@ require "recording_studio_notifications_email/delivery_token"
 require "recording_studio_notifications_email/delivery_callbacks"
 require "recording_studio_notifications_email/webhook_errors"
 require "recording_studio_notifications_email/webhook_event"
+require "recording_studio_notifications_email/bounce_type"
 require "recording_studio_notifications_email/suppression"
 require "recording_studio_notifications_email/webhooks/apply_event"
 require "recording_studio_notifications_email/action_mailer_adapter"
@@ -85,11 +86,12 @@ module RecordingStudioNotificationsEmail
       )
     end
 
-    def mark_bounced!(reference:, bounced_at: Time.current, provider: nil)
+    def mark_bounced!(reference:, bounced_at: Time.current, provider: nil, bounce_type: nil)
       DeliveryCallbacks.mark_bounced!(
         reference: reference,
         bounced_at: bounced_at,
         provider: provider,
+        bounce_type: bounce_type,
         configuration: configuration
       )
     end
@@ -103,10 +105,11 @@ module RecordingStudioNotificationsEmail
       )
     end
 
-    def mark_unsubscribed!(reference:, unsubscribed_at: Time.current)
+    def mark_unsubscribed!(reference:, unsubscribed_at: Time.current, provider: nil)
       DeliveryCallbacks.mark_unsubscribed!(
         reference: reference,
         unsubscribed_at: unsubscribed_at,
+        provider: provider,
         configuration: configuration
       )
     end

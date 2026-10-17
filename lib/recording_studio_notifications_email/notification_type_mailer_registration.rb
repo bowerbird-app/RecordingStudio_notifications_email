@@ -16,8 +16,9 @@ end
 
 registry = RecordingStudioNotifications::NotificationTypeRegistry
 parameters = registry.instance_method(:register).parameters
-supports_mailer_paths = parameters.any? { |kind, _name| kind == :keyrest } ||
-                        %i[individual_mailer rollup_mailer].all? do |attribute|
-                          parameters.any? { |_kind, name| name == attribute }
-                        end
+# Named keywords only. Notifications 0.9's **options rejects unknown keys,
+# so a catch-all is not support for these template paths.
+supports_mailer_paths = %i[individual_mailer rollup_mailer].all? do |attribute|
+  parameters.any? { |_kind, name| name == attribute }
+end
 registry.prepend(RecordingStudioNotificationsEmail::NotificationTypeMailerRegistration) unless supports_mailer_paths

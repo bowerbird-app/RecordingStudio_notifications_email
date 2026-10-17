@@ -31,7 +31,8 @@ module RecordingStudioNotificationsEmail
 
     SUPPRESSION_REASONS = {
       bounced: "bounce",
-      complained: "complaint"
+      complained: "complaint",
+      unsubscribed: "unsubscribed"
     }.freeze
 
     DeliveryUpdateResult = Data.define(
@@ -101,13 +102,13 @@ module RecordingStudioNotificationsEmail
         )
       end
 
-      def mark_bounced!(reference:, bounced_at: Time.current, provider: nil,
+      def mark_bounced!(reference:, bounced_at: Time.current, provider: nil, bounce_type: nil,
                         configuration: RecordingStudioNotificationsEmail.configuration)
         mark_event_from_reference!(
           event_type: :bounced,
           reference: reference,
           occurred_at: bounced_at,
-          provider: provider,
+          suppression: suppression_for(provider, bounce_type),
           configuration: configuration
         )
       end
@@ -118,22 +119,24 @@ module RecordingStudioNotificationsEmail
           event_type: :complained,
           reference: reference,
           occurred_at: complained_at,
-          provider: provider,
+          suppression: suppression_for(provider),
           configuration: configuration
         )
       end
 
-      def mark_unsubscribed!(reference:, unsubscribed_at: Time.current,
+      def mark_unsubscribed!(reference:, unsubscribed_at: Time.current, provider: nil,
                              configuration: RecordingStudioNotificationsEmail.configuration)
         mark_event_from_reference!(
           event_type: :unsubscribed,
           reference: reference,
           occurred_at: unsubscribed_at,
+          suppression: suppression_for(provider),
           configuration: configuration
         )
       end
 
-      def mark_event_from_reference!(event_type:, reference:, occurred_at: Time.current, provider: nil,
+      def mark_event_from_reference!(event_type:, reference:, occurred_at: Time.current,
+                                     suppression: nil,
                                      configuration: RecordingStudioNotificationsEmail.configuration)
         resolved_reference = resolve_reference!(reference, configuration: configuration)
         requested_ids = resolved_reference.delivery_ids.map(&:to_s).uniq
@@ -144,11 +147,14 @@ module RecordingStudioNotificationsEmail
         normalized_event = event_type.to_sym
 
         # Commit suppressions before the delivery transaction. A later raise
-        # from mark_email_*! must leave the address suppressed.
-        if SUPPRESSION_REASONS.key?(normalized_event)
+        # from mark_email_*! must leave the address suppressed. Soft bounces
+        # still update the delivery and do not write a row.
+        provider, bounce_type = suppression_fields(suppression)
+        reason = suppression_reason_for(normalized_event, bounce_type)
+        if reason
           suppress_deliveries!(
             found_by_id.values,
-            reason: SUPPRESSION_REASONS.fetch(normalized_event),
+            reason: reason,
             provider: provider,
             configuration: configuration
           )
@@ -184,7 +190,7 @@ module RecordingStudioNotificationsEmail
           event_type: webhook_event.event_type,
           reference: webhook_event.reference,
           occurred_at: webhook_event.occurred_at,
-          provider: webhook_event.provider,
+          suppression: suppression_for(webhook_event.provider, webhook_event.bounce_type),
           configuration: configuration
         )
       end
@@ -227,6 +233,23 @@ module RecordingStudioNotificationsEmail
 
         delivery.mark_delivered!(at: occurred_at)
         :updated
+      end
+
+      def suppression_for(provider, bounce_type = nil)
+        { provider: provider, bounce_type: bounce_type }
+      end
+
+      def suppression_fields(suppression)
+        return [nil, nil] if suppression.nil?
+
+        [suppression[:provider], suppression[:bounce_type]]
+      end
+
+      def suppression_reason_for(event_type, bounce_type)
+        return unless SUPPRESSION_REASONS.key?(event_type)
+        return if event_type == :bounced && !BounceType.permanent?(bounce_type)
+
+        SUPPRESSION_REASONS.fetch(event_type)
       end
 
       def unsupported_event_message(event_type)

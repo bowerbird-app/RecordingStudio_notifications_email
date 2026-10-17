@@ -11,7 +11,7 @@ module RecordingStudioNotificationsEmail
   class Suppression < ActiveRecord::Base
     self.table_name = "recording_studio_notifications_email_suppressions"
 
-    REASONS = %w[bounce complaint].freeze
+    REASONS = %w[bounce complaint unsubscribed].freeze
 
     validates :address, :reason, :provider, presence: true
     validates :address, uniqueness: true

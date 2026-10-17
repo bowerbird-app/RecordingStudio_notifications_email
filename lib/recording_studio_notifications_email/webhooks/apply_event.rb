@@ -40,7 +40,8 @@ module RecordingStudioNotificationsEmail
             occurred_at: occurred_at_for(payload, inbound),
             external_event_id: external_event_id_for(inbound),
             external_message_id: payload["external_message_id"] || payload["message_id"],
-            metadata: hash_metadata(payload["metadata"])
+            metadata: hash_metadata(payload["metadata"]),
+            bounce_type: bounce_type_for(payload)
           }
         end
 
@@ -55,6 +56,29 @@ module RecordingStudioNotificationsEmail
           return unless inbound.respond_to?(:provider_event_id)
 
           inbound.provider_event_id
+        end
+
+        def bounce_type_for(payload)
+          direct = first_present_value(payload, "bounce_type", "bounceType")
+          return direct if direct
+
+          metadata = payload["metadata"]
+          return unless metadata.is_a?(Hash)
+
+          first_present_value(metadata, "bounce_type", "bounceType", :bounce_type)
+        end
+
+        def first_present_value(hash, *keys)
+          keys.each do |key|
+            value = hash[key]
+            return value if present_value?(value)
+          end
+
+          nil
+        end
+
+        def present_value?(value)
+          !value.nil? && !value.to_s.strip.empty?
         end
 
         def hash_metadata(value)

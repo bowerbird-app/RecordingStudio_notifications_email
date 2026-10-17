@@ -386,6 +386,105 @@ class DeliveryCallbacksTest < Minitest::Test
     assert_equal 1, calls
   end
 
+  def test_soft_bounce_updates_the_delivery_without_a_suppression
+    reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
+    recipient = Struct.new(:email).new("person@example.test")
+    notification = FakeNotification.new("notification-1", nil)
+    notification.define_singleton_method(:recipient) { recipient }
+    delivery = FakeDelivery.new(id: "delivery-1", notification: notification)
+
+    with_stubbed_delivery_where([delivery]) do
+      with_recorded_suppressions do |calls|
+        result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_bounced!(
+          reference: reference,
+          bounced_at: @delivered_at,
+          provider: :postmark,
+          bounce_type: "Transient",
+          configuration: @configuration
+        )
+
+        assert_equal %w[delivery-1], result.updated_delivery_ids
+        assert_equal @delivered_at, delivery.bounced_at
+        assert_empty calls
+      end
+    end
+  end
+
+  def test_hard_bounce_alias_from_a_webhook_suppresses
+    reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
+    recipient = Struct.new(:email).new("person@example.test")
+    notification = FakeNotification.new("notification-1", nil)
+    notification.define_singleton_method(:recipient) { recipient }
+    delivery = FakeDelivery.new(id: "delivery-1", notification: notification)
+
+    with_stubbed_delivery_where([delivery]) do
+      with_recorded_suppressions do |calls|
+        RecordingStudioNotificationsEmail::DeliveryCallbacks.process_webhook_event!(
+          event: {
+            provider: :postmark,
+            event_type: :bounced,
+            reference: reference,
+            occurred_at: @delivered_at,
+            bounce_type: "HardBounce",
+            metadata: {}
+          },
+          configuration: @configuration
+        )
+
+        assert_equal "bounce", calls.first.fetch(:reason)
+      end
+    end
+  end
+
+  def test_unknown_bounce_type_is_rejected_before_suppression
+    reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
+    recipient = Struct.new(:email).new("person@example.test")
+    notification = FakeNotification.new("notification-1", nil)
+    notification.define_singleton_method(:recipient) { recipient }
+    delivery = FakeDelivery.new(id: "delivery-1", notification: notification)
+
+    with_stubbed_delivery_where([delivery]) do
+      with_recorded_suppressions do |calls|
+        error = assert_raises(RecordingStudioNotificationsEmail::InvalidWebhookPayloadError) do
+          RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_bounced!(
+            reference: reference,
+            bounced_at: @delivered_at,
+            bounce_type: "undetermined",
+            configuration: @configuration
+          )
+        end
+
+        assert_includes error.message, "undetermined"
+        assert_empty calls
+        assert_nil delivery.bounced_at
+      end
+    end
+  end
+
+  def test_unsubscribe_suppression_is_written_when_the_mutator_is_missing
+    reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
+    recipient = Struct.new(:email).new("person@example.test")
+    notification = FakeNotification.new("notification-1", nil)
+    notification.define_singleton_method(:recipient) { recipient }
+    delivery = LegacyDelivery.new(id: "delivery-1", notification: notification)
+
+    with_stubbed_delivery_where([delivery]) do
+      with_recorded_suppressions do |calls|
+        assert_raises(RecordingStudioNotificationsEmail::UnsupportedWebhookEventError) do
+          RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_unsubscribed!(
+            reference: reference,
+            unsubscribed_at: @delivered_at,
+            provider: :postmark,
+            configuration: @configuration
+          )
+        end
+
+        assert_equal [{ address: "person@example.test", reason: "unsubscribed", provider: "postmark" }], calls
+        assert_nil delivery.opened_at
+      end
+    end
+  end
+
   def test_blank_provider_is_stored_as_email
     reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
     recipient = Struct.new(:email).new("person@example.test")
@@ -586,13 +685,15 @@ class DeliveryCallbacksTest < Minitest::Test
       )
       assert_equal :clicked, clicked_result.event_type
 
-      unsubscribed_result = RecordingStudioNotificationsEmail.mark_unsubscribed!(
-        reference: reference,
-        unsubscribed_at: @delivered_at
-      )
-      assert_equal :unsubscribed, unsubscribed_result.event_type
+      with_recorded_suppressions do |calls|
+        unsubscribed_result = RecordingStudioNotificationsEmail.mark_unsubscribed!(
+          reference: reference,
+          unsubscribed_at: @delivered_at,
+          provider: :postmark
+        )
+        assert_equal :unsubscribed, unsubscribed_result.event_type
+        assert_equal "unsubscribed", calls.last.fetch(:reason)
 
-      with_recorded_suppressions do
         bounced_result = RecordingStudioNotificationsEmail.mark_bounced!(
           reference: reference,
           bounced_at: @delivered_at,
@@ -606,31 +707,31 @@ class DeliveryCallbacksTest < Minitest::Test
           provider: :postmark
         )
         assert_equal :complained, complained_result.event_type
+
+        process_result = RecordingStudioNotificationsEmail.process_webhook_event!(
+          event: {
+            provider: :postmark,
+            event_type: :unsubscribed,
+            reference: reference,
+            occurred_at: @delivered_at,
+            metadata: {}
+          }
+        )
+        assert_equal :unsubscribed, process_result.event_type
+        assert_equal @delivered_at, delivery.unsubscribed_at
+
+        process_result = RecordingStudioNotificationsEmail.process_webhook_event!(
+          event: {
+            provider: :postmark,
+            event_type: :unsubscribed,
+            reference: reference,
+            occurred_at: @delivered_at,
+            metadata: {}
+          }
+        )
+        assert_equal :unsubscribed, process_result.event_type
+        assert_equal @delivered_at, delivery.unsubscribed_at
       end
-
-      process_result = RecordingStudioNotificationsEmail.process_webhook_event!(
-        event: {
-          provider: :postmark,
-          event_type: :unsubscribed,
-          reference: reference,
-          occurred_at: @delivered_at,
-          metadata: {}
-        }
-      )
-      assert_equal :unsubscribed, process_result.event_type
-      assert_equal @delivered_at, delivery.unsubscribed_at
-
-      process_result = RecordingStudioNotificationsEmail.process_webhook_event!(
-        event: {
-          provider: :postmark,
-          event_type: :unsubscribed,
-          reference: reference,
-          occurred_at: @delivered_at,
-          metadata: {}
-        }
-      )
-      assert_equal :unsubscribed, process_result.event_type
-      assert_equal @delivered_at, delivery.unsubscribed_at
     end
   ensure
     RecordingStudioNotificationsEmail.instance_variable_set(:@configuration, original_configuration)
