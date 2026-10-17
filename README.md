@@ -53,7 +53,7 @@ For local development in this repository, parent gems are sourced from GitHub
 until published releases are available. Current pins include Recording Studio
 `v4.7.0`, Accessible `v0.18.0`, Trashable `v0.11.1` (`require: false`;
 query-only for Accessible; metrics `>= 0.3`, `< 0.4`), notifications
-`v0.9.0`, and Metrics `v0.3.1` (`>= 0.3`, `< 0.4`). The dummy also pins
+`v0.10.0`, and Metrics `v0.3.1` (`>= 0.3`, `< 0.4`). The dummy also pins
 Commentable `v0.5.0`, Root Switchable `v0.9.4`, and Cache `v0.5.0`
 (required by Root Switchable `0.9+`). Accessible `0.11+`
 needs string roles, its 0.8–0.11 migrations, and an
@@ -258,18 +258,24 @@ Postmark `Type` and SES `bounceType` can be passed through. `HardBounce` and
 `Permanent` suppress. `SoftBounce`, `Transient`, `Temporary`, and
 `Undetermined` do not.
 
-The delivery model must implement the canonical callbacks. Until
-`recording_studio_notifications` 0.10.0 ships those methods, opened, clicked,
-bounced, complained, and unsubscribed raise
-`UnsupportedWebhookEventError`. Delivered uses the existing
-`mark_delivered!(at:)`.
+Delivered uses `delivered?` and `mark_delivered!(at:)`. The other events call
+the notifications 0.10.0 mutators. A repeat is already applied when the
+predicate is true. That release stores the timestamp in delivery metadata
+and does not define `email_opened?` and the other predicates, so a present
+`email_opened_at` (and the matching keys) counts as already applied.
 
 - Delivered: `delivered?`, `mark_delivered!(at:)`
-- Opened: `email_opened?`, `mark_email_opened!(at:)`
-- Clicked: `email_clicked?`, `mark_email_clicked!(at:)`
-- Bounced: `email_bounced?`, `mark_email_bounced!(at:)`
-- Complained: `email_complained?`, `mark_email_complained!(at:)`
-- Unsubscribed: `email_unsubscribed?`, `mark_email_unsubscribed!(at:)`
+- Opened: `email_opened?`, `mark_email_opened!(at:)`, metadata `email_opened_at`
+- Clicked: `email_clicked?`, `mark_email_clicked!(at:)`, metadata `email_clicked_at`
+- Bounced: `email_bounced?`, `mark_email_bounced!(at:)`, metadata `email_bounced_at`
+- Complained: `email_complained?`, `mark_email_complained!(at:)`, metadata `email_complained_at`
+- Unsubscribed: `email_unsubscribed?`, `mark_email_unsubscribed!(at:)`, metadata `email_unsubscribed_at`
+
+Individual and rollup messages add `List-Unsubscribe` and
+`List-Unsubscribe-Post` from
+`RecordingStudioNotifications.list_unsubscribe_headers`, and an unsubscribe
+link from `RecordingStudioNotifications.unsubscribe_url`, in both HTML and
+text. The host `default_url_options` makes that link absolute.
 
 ## Address suppression
 

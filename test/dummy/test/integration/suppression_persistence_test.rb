@@ -29,11 +29,13 @@ class SuppressionPersistenceTest < ActiveSupport::TestCase
       delivery: @delivery
     )
     @original_status = @delivery.status
+    @mark_email_bounced = RecordingStudioNotifications::Delivery.instance_method(:mark_email_bounced!)
   end
 
   teardown do
     delivery_class = RecordingStudioNotifications::Delivery
     delivery_class.send(:remove_method, :mark_email_bounced!) if delivery_class.method_defined?(:mark_email_bounced!)
+    delivery_class.define_method(:mark_email_bounced!, @mark_email_bounced)
   end
 
   test "schema has the address suppression table" do
@@ -91,16 +93,15 @@ class SuppressionPersistenceTest < ActiveSupport::TestCase
     assert_nil record.lifted_at
   end
 
-  test "complaint suppression persists when the delivery mutator is missing" do
-    assert_raises(RecordingStudioNotificationsEmail::UnsupportedWebhookEventError) do
-      RecordingStudioNotificationsEmail.mark_complained!(
-        reference: @reference,
-        provider: "mailgun"
-      )
-    end
+  test "complaint suppression persists and the delivery records the complaint" do
+    RecordingStudioNotificationsEmail.mark_complained!(
+      reference: @reference,
+      provider: "mailgun"
+    )
 
     @delivery.reload
     assert_equal @original_status, @delivery.status
+    assert @delivery.metadata["email_complained_at"].present?
     record = RecordingStudioNotificationsEmail::Suppression.find_by!(address: ADDRESS)
     assert_equal "complaint", record.reason
     assert_equal "mailgun", record.provider

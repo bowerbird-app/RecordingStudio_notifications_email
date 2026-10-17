@@ -1,5 +1,41 @@
 # Upgrading
 
+## 0.3.15
+
+This version requires `recording_studio_notifications` `0.10.0`. From the
+host application:
+
+```bash
+bin/rails generate recording_studio_notifications:migrations
+bin/rails db:migrate
+```
+
+The notifications migration adds `inbox` (boolean, null false, default
+true). Existing rows stay in the inbox. Metrics stays `>= 0.3, < 0.4`.
+Notifications 0.10.0 does not require another dependency pin.
+
+Opened, clicked, bounced, complained, and unsubscribed callbacks call
+`Delivery#mark_email_opened!`, `mark_email_clicked!`, `mark_email_bounced!`,
+`mark_email_complained!`, and `mark_email_unsubscribed!`. They no longer
+raise `UnsupportedWebhookEventError` when those methods exist. A second
+event for the same delivery is already applied when the matching predicate
+is true. Notifications 0.10.0 does not define `email_opened?` and the other
+predicates; it stores `email_opened_at` and the matching keys in delivery
+metadata, and this gem treats a present timestamp as already applied.
+`mark_email_unsubscribed!` also turns that type's email preference off. A
+bounce still does not change delivery status.
+
+Hard bounces, complaints, and unsubscribes still write the address
+suppression in their own transaction before the delivery update. A missing,
+blank, or unknown bounce type, including SES `Undetermined`, stays soft.
+
+Mail uses `RecordingStudioNotifications.list_unsubscribe_headers` for
+`List-Unsubscribe` and `List-Unsubscribe-Post`, and
+`RecordingStudioNotifications.unsubscribe_url` for the link in the HTML and
+text templates, including rollups. Set the host `default_url_options` (the
+same host mailers already use) so that link is absolute. This gem does not
+sign its own unsubscribe token.
+
 ## 0.3.14
 
 This version adds `recording_studio_notifications_email_suppressions`. From

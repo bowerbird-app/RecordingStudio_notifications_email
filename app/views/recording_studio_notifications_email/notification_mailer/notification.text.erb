@@ -3,4 +3,5 @@
 <% if @event.body.present? %><%= @event.body %>
 
 <% end %><% if @tracked_notification_destination.present? %>View notification: <%= @tracked_notification_destination %>
+<% end %><% if @unsubscribe_url.present? %>Unsubscribe: <%= @unsubscribe_url %>
 <% end %>

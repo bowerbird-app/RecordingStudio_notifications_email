@@ -88,4 +88,62 @@ class NotificationMailerTest < Minitest::Test
     assert_includes message.text_part.body.to_s, "First"
     assert_includes message.text_part.body.to_s, "Second"
   end
+
+  def test_messages_include_list_unsubscribe_headers_and_a_link
+    recipient = Object.new
+    source = Struct.new(:id, :notification_type, :title, :body, :url, :recipient, keyword_init: true)
+    event = RecordingStudioNotificationsEmail::Event.new(
+      source.new(
+        id: "notification-1",
+        notification_type: :generic,
+        title: "Account notice",
+        body: "A useful update",
+        recipient: recipient
+      )
+    )
+    headers = {
+      "List-Unsubscribe" => "<http://example.test/unsub>",
+      "List-Unsubscribe-Post" => "List-Unsubscribe=One-Click"
+    }
+
+    message = with_unsubscribe_helpers(headers) do
+      RecordingStudioNotificationsEmail::NotificationMailer.with(
+        event: event,
+        to: "person@example.test",
+        from: "notifications@example.test",
+        template_path: RecordingStudioNotificationsEmail::Configuration::DEFAULT_TEMPLATE,
+        correlation_reference: "signed-reference"
+      ).notification.message
+    end
+
+    assert_equal "<http://example.test/unsub>", message["List-Unsubscribe"].value
+    assert_equal "List-Unsubscribe=One-Click", message["List-Unsubscribe-Post"].value
+    assert_includes message.html_part.body.to_s, "http://example.test/unsub"
+    assert_includes message.text_part.body.to_s, "Unsubscribe: http://example.test/unsub"
+
+    rollup = with_unsubscribe_helpers(headers) do
+      RecordingStudioNotificationsEmail::NotificationMailer.with(
+        events: [event],
+        to: "person@example.test",
+        from: "notifications@example.test",
+        template_path: RecordingStudioNotificationsEmail::Configuration::DEFAULT_ROLLUP_TEMPLATE,
+        correlation_reference: "signed-reference",
+        cadence: :weekly,
+        period_starts_at: Time.now - 1.week,
+        period_ends_at: Time.now
+      ).rollup.message
+    end
+
+    assert_equal "<http://example.test/unsub>", rollup["List-Unsubscribe"].value
+    assert_includes rollup.html_part.body.to_s, "http://example.test/unsub"
+    assert_includes rollup.text_part.body.to_s, "Unsubscribe: http://example.test/unsub"
+  end
+
+  private
+
+  def with_unsubscribe_helpers(headers, &block)
+    RecordingStudioNotifications.stub(:list_unsubscribe_headers, headers) do
+      RecordingStudioNotifications.stub(:unsubscribe_url, "http://example.test/unsub", &block)
+    end
+  end
 end

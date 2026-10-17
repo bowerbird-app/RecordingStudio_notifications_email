@@ -5,4 +5,5 @@
 <% end %>Notification type: <%= @event.notification_type.to_s.humanize %>
 
 <% if @tracked_notification_destination.present? %>Open page: <%= @tracked_notification_destination %>
+<% end %><% if @unsubscribe_url.present? %>Unsubscribe: <%= @unsubscribe_url %>
 <% end %>
