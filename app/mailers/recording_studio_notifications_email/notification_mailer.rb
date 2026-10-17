@@ -42,8 +42,35 @@ module RecordingStudioNotificationsEmail
     end
 
     def prepare_headers
+      @unsubscribe_url = unsubscribe_url_for(unsubscribe_event)
       headers[DeliveryToken::HEADER] = @correlation_reference
       headers["Message-ID"] = params[:message_id] if params[:message_id]
+      unsubscribe_headers.each { |name, value| headers[name] = value }
+    end
+
+    def unsubscribe_headers
+      event = unsubscribe_event
+      return {} unless event&.recipient
+
+      RecordingStudioNotifications.list_unsubscribe_headers(
+        recipient: event.recipient,
+        notification_type: event.notification_type,
+        channel: :email
+      )
+    end
+
+    def unsubscribe_url_for(event)
+      return unless event&.recipient
+
+      RecordingStudioNotifications.unsubscribe_url(
+        recipient: event.recipient,
+        notification_type: event.notification_type,
+        channel: :email
+      )
+    end
+
+    def unsubscribe_event
+      @event || Array(@events).first
     end
   end
 end

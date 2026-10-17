@@ -15,5 +15,8 @@
     <% if @tracked_notification_destination.present? %>
       <p><%= link_to "Open page", @tracked_notification_destination %></p>
     <% end %>
+    <% if @unsubscribe_url.present? %>
+      <p><%= link_to "Unsubscribe", @unsubscribe_url %></p>
+    <% end %>
   </body>
 </html>

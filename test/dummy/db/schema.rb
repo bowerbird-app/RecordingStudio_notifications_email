@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_17_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_17_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -149,6 +149,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_17_000000) do
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.string "url"
+    t.boolean "inbox", default: true, null: false
     t.index ["recipient_type", "recipient_id", "idempotency_key"], name: "idx_rsn_notifications_idempotency", unique: true, where: "(idempotency_key IS NOT NULL)"
     t.index ["recipient_type", "recipient_id", "notification_type"], name: "idx_rsn_notifications_recipient_type"
     t.index ["recording_id"], name: "idx_rsn_notifications_recording"

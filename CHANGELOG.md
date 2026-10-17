@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.15] - 2026-10-17
+
+### Changed
+
+- Pin `recording_studio_notifications` to `v0.10.0`. The runtime dependency is
+  now `>= 0.10.0, < 1`. Metrics stays `>= 0.3, < 0.4`; 0.10.0 does not
+  require another pin bump.
+- Opened, clicked, bounced, complained, and unsubscribed callbacks call
+  `Delivery#mark_email_*!(at:)`. A repeated event is already applied when the
+  delivery predicate is true, or when that method's metadata timestamp is
+  already set. Those events no longer raise `UnsupportedWebhookEventError`.
+- Hard bounces, complaints, and unsubscribes still write the address
+  suppression in their own transaction first. Soft, missing, and unknown
+  bounce types still update the delivery and do not suppress.
+- Individual and rollup mail includes `List-Unsubscribe` and
+  `List-Unsubscribe-Post` from `RecordingStudioNotifications.list_unsubscribe_headers`,
+  and an unsubscribe link from `RecordingStudioNotifications.unsubscribe_url`,
+  in the HTML and text templates.
+
+### Upgrade notes
+
+- Bump notifications to `v0.10.0` and run
+  `bin/rails generate recording_studio_notifications:migrations` then
+  `bin/rails db:migrate`. That migration adds `inbox`.
+- Set `default_url_options` so the unsubscribe link is absolute.
+- See [Upgrading](docs/UPGRADING.md).
+
 ## [0.3.14] - 2026-10-16
 
 ### Added
@@ -132,7 +159,8 @@ unchanged.
 - Expiring signed correlation references.
 - Recording Studio-backed normalized event facade.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.14...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.15...HEAD
+[0.3.15]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.14...v0.3.15
 [0.3.14]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.1...v0.3.14
 [0.3.1]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/releases/tag/v0.3.1
 [0.3.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/releases/tag/v0.3.0

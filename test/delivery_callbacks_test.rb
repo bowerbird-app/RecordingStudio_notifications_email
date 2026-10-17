@@ -278,21 +278,20 @@ class DeliveryCallbacksTest < Minitest::Test
     end
   end
 
-  def test_opened_without_canonical_mutator_raises_and_does_not_mark_notification_read
+  def test_opened_callback_calls_mark_email_opened_and_does_not_mark_notification_read
     reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
     notification = FakeNotification.new("notification-1", nil)
-    delivery = DeliveryWithoutOpenedCallbacks.new(id: "delivery-1", notification: notification)
+    delivery = FakeDelivery.new(id: "delivery-1", notification: notification)
 
     with_stubbed_delivery_where([delivery]) do
-      error = assert_raises(RecordingStudioNotificationsEmail::UnsupportedWebhookEventError) do
-        RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_opened!(
-          reference: reference,
-          opened_at: @delivered_at,
-          configuration: @configuration
-        )
-      end
+      result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_opened!(
+        reference: reference,
+        opened_at: @delivered_at,
+        configuration: @configuration
+      )
 
-      assert_includes error.message, "opened"
+      assert_equal %w[delivery-1], result.updated_delivery_ids
+      assert_equal @delivered_at, delivery.opened_at
       assert_nil notification.read_at
       refute notification.saved?
     end
@@ -304,36 +303,38 @@ class DeliveryCallbacksTest < Minitest::Test
     notification = FakeNotification.new("notification-1", nil)
     notification.define_singleton_method(:recipient) { recipient }
     delivery = LegacyDelivery.new(id: "delivery-1", notification: notification)
+    called = []
+    delivery.define_singleton_method(:email_bounced?) { false }
+    delivery.define_singleton_method(:mark_email_bounced!) { |at:| called << [:mark_email_bounced!, at] }
+    delivery.define_singleton_method(:email_opened?) { false }
+    delivery.define_singleton_method(:mark_email_opened!) { |at:| called << [:mark_email_opened!, at] }
 
     with_stubbed_delivery_where([delivery]) do
       with_recorded_suppressions do |calls|
-        error = assert_raises(RecordingStudioNotificationsEmail::UnsupportedWebhookEventError) do
-          RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_bounced!(
-            reference: reference,
-            bounced_at: @delivered_at,
-            provider: :postmark,
-            bounce_type: "permanent",
-            configuration: @configuration
-          )
-        end
+        result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_bounced!(
+          reference: reference,
+          bounced_at: @delivered_at,
+          provider: :postmark,
+          bounce_type: "permanent",
+          configuration: @configuration
+        )
 
-        assert_includes error.message, "bounced"
+        assert_equal %w[delivery-1], result.updated_delivery_ids
         assert_equal "delivered", delivery.status
         assert_nil delivery.error_message
         assert_equal [{ address: "Person <person@example.test>", reason: "bounce", provider: "postmark" }], calls
       end
 
-      error = assert_raises(RecordingStudioNotificationsEmail::UnsupportedWebhookEventError) do
-        RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_opened!(
-          reference: reference,
-          opened_at: @delivered_at,
-          configuration: @configuration
-        )
-      end
+      RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_opened!(
+        reference: reference,
+        opened_at: @delivered_at,
+        configuration: @configuration
+      )
 
-      assert_includes error.message, "opened"
       assert_nil delivery.opened_at
     end
+
+    assert_equal [[:mark_email_bounced!, @delivered_at], [:mark_email_opened!, @delivered_at]], called
   end
 
   def test_complaint_suppression_is_committed_before_the_delivery_transaction
@@ -342,11 +343,13 @@ class DeliveryCallbacksTest < Minitest::Test
     notification = FakeNotification.new("notification-1", nil)
     notification.define_singleton_method(:recipient) { recipient }
     delivery = LegacyDelivery.new(id: "delivery-1", status: "pending", notification: notification)
+    delivery.define_singleton_method(:email_complained?) { false }
+    delivery.define_singleton_method(:mark_email_complained!) { |**| raise "mutator failed" }
     order = []
 
     with_stubbed_delivery_where([delivery], on_transaction: -> { order << :delivery }) do
       with_recorded_suppressions(on_transaction: -> { order << :suppression }) do
-        assert_raises(RecordingStudioNotificationsEmail::UnsupportedWebhookEventError) do
+        assert_raises(RuntimeError) do
           RecordingStudioNotificationsEmail::DeliveryCallbacks.process_webhook_event!(
             event: {
               provider: :postmark,
@@ -461,26 +464,25 @@ class DeliveryCallbacksTest < Minitest::Test
     end
   end
 
-  def test_unsubscribe_suppression_is_written_when_the_mutator_is_missing
+  def test_unsubscribe_suppression_is_written_before_mark_email_unsubscribed
     reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
     recipient = Struct.new(:email).new("person@example.test")
     notification = FakeNotification.new("notification-1", nil)
     notification.define_singleton_method(:recipient) { recipient }
-    delivery = LegacyDelivery.new(id: "delivery-1", notification: notification)
+    delivery = FakeDelivery.new(id: "delivery-1", notification: notification)
 
     with_stubbed_delivery_where([delivery]) do
       with_recorded_suppressions do |calls|
-        assert_raises(RecordingStudioNotificationsEmail::UnsupportedWebhookEventError) do
-          RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_unsubscribed!(
-            reference: reference,
-            unsubscribed_at: @delivered_at,
-            provider: :postmark,
-            configuration: @configuration
-          )
-        end
+        result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_unsubscribed!(
+          reference: reference,
+          unsubscribed_at: @delivered_at,
+          provider: :postmark,
+          configuration: @configuration
+        )
 
+        assert_equal %w[delivery-1], result.updated_delivery_ids
+        assert_equal @delivered_at, delivery.unsubscribed_at
         assert_equal [{ address: "person@example.test", reason: "unsubscribed", provider: "postmark" }], calls
-        assert_nil delivery.opened_at
       end
     end
   end
@@ -527,22 +529,35 @@ class DeliveryCallbacksTest < Minitest::Test
     end
   end
 
-  def test_unsupported_non_opened_event_for_delivery_model_raises
+  def test_email_mark_reads_metadata_when_the_predicate_is_absent
     reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
+    metadata = {}
+    calls = 0
     delivery = Object.new
     delivery.define_singleton_method(:id) { "delivery-1" }
+    delivery.define_singleton_method(:metadata) { metadata }
+    delivery.define_singleton_method(:mark_email_clicked!) do |at:|
+      calls += 1
+      metadata["email_clicked_at"] = at.iso8601
+    end
 
     with_stubbed_delivery_where([delivery]) do
-      error = assert_raises(RecordingStudioNotificationsEmail::UnsupportedWebhookEventError) do
-        RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_clicked!(
-          reference: reference,
-          clicked_at: @delivered_at,
-          configuration: @configuration
-        )
-      end
+      first = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_clicked!(
+        reference: reference,
+        clicked_at: @delivered_at,
+        configuration: @configuration
+      )
+      second = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_clicked!(
+        reference: reference,
+        clicked_at: @delivered_at,
+        configuration: @configuration
+      )
 
-      assert_includes error.message, "clicked"
+      assert_equal %w[delivery-1], first.updated_delivery_ids
+      assert_equal %w[delivery-1], second.already_applied_delivery_ids
     end
+
+    assert_equal 1, calls
   end
 
   def test_prefers_canonical_contract_methods_over_aliases

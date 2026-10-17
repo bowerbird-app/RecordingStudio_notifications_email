@@ -4,4 +4,5 @@
 <% if event.body.present? %><%= event.body %>
 <% end %><% if event.url.present? %>View: <%= event.url %>
 <% end %>
+<% end %><% if @unsubscribe_url.present? %>Unsubscribe: <%= @unsubscribe_url %>
 <% end %>

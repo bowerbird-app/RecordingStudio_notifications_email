@@ -35,6 +35,17 @@ module RecordingStudioNotificationsEmail
       unsubscribed: "unsubscribed"
     }.freeze
 
+    # Notifications 0.10 stores these in delivery metadata and does not define
+    # email_opened? and the other predicates. Use the predicate when a delivery
+    # implements it, otherwise the timestamp the mutator writes.
+    EMAIL_TIMESTAMP_KEYS = {
+      opened: "email_opened_at",
+      clicked: "email_clicked_at",
+      bounced: "email_bounced_at",
+      complained: "email_complained_at",
+      unsubscribed: "email_unsubscribed_at"
+    }.freeze
+
     DeliveryUpdateResult = Data.define(
       :reference,
       :updated_delivery_ids,
@@ -212,15 +223,9 @@ module RecordingStudioNotificationsEmail
         return apply_delivered!(delivery, occurred_at: occurred_at) if normalized_event == :delivered
 
         contract = EVENT_METHOD_CONTRACT.fetch(normalized_event)
-        predicate = contract.fetch(:predicate)
-        return :already_applied if delivery.respond_to?(predicate) && delivery.public_send(predicate)
+        return :already_applied if email_event_applied?(delivery, normalized_event, contract)
 
-        mutator = contract.fetch(:mutator)
-        unless delivery.respond_to?(mutator)
-          raise UnsupportedWebhookEventError, unsupported_event_message(normalized_event)
-        end
-
-        delivery.public_send(mutator, at: occurred_at)
+        delivery.public_send(contract.fetch(:mutator), at: occurred_at)
         :updated
       end
 
@@ -233,6 +238,16 @@ module RecordingStudioNotificationsEmail
 
         delivery.mark_delivered!(at: occurred_at)
         :updated
+      end
+
+      def email_event_applied?(delivery, event_type, contract)
+        predicate = contract.fetch(:predicate)
+        return delivery.public_send(predicate) if delivery.respond_to?(predicate)
+
+        metadata = delivery.metadata if delivery.respond_to?(:metadata)
+        return false unless metadata.respond_to?(:[])
+
+        metadata[EMAIL_TIMESTAMP_KEYS.fetch(event_type)].present?
       end
 
       def suppression_for(provider, bounce_type = nil)
