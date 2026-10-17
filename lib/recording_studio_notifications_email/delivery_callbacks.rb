@@ -5,40 +5,33 @@ module RecordingStudioNotificationsEmail
     EVENT_METHOD_CONTRACT = {
       delivered: {
         predicate: :delivered?,
-        predicate_aliases: [],
-        mutator: :mark_delivered!,
-        mutator_aliases: []
+        mutator: :mark_delivered!
       },
       opened: {
         predicate: :email_opened?,
-        predicate_aliases: %i[opened? read?],
-        mutator: :mark_email_opened!,
-        mutator_aliases: %i[mark_opened! mark_read!]
+        mutator: :mark_email_opened!
       },
       clicked: {
         predicate: :email_clicked?,
-        predicate_aliases: %i[clicked?],
-        mutator: :mark_email_clicked!,
-        mutator_aliases: %i[mark_clicked!]
+        mutator: :mark_email_clicked!
       },
       bounced: {
         predicate: :email_bounced?,
-        predicate_aliases: %i[bounced? failed?],
-        mutator: :mark_email_bounced!,
-        mutator_aliases: %i[mark_bounced! mark_failed!]
+        mutator: :mark_email_bounced!
       },
       complained: {
         predicate: :email_complained?,
-        predicate_aliases: %i[complained? spam_reported?],
-        mutator: :mark_email_complained!,
-        mutator_aliases: %i[mark_complained! mark_spam_reported!]
+        mutator: :mark_email_complained!
       },
       unsubscribed: {
         predicate: :email_unsubscribed?,
-        predicate_aliases: %i[unsubscribed? opted_out?],
-        mutator: :mark_email_unsubscribed!,
-        mutator_aliases: %i[mark_unsubscribed! mark_opted_out!]
+        mutator: :mark_email_unsubscribed!
       }
+    }.freeze
+
+    SUPPRESSION_REASONS = {
+      bounced: "bounce",
+      complained: "complaint"
     }.freeze
 
     DeliveryUpdateResult = Data.define(
@@ -65,24 +58,27 @@ module RecordingStudioNotificationsEmail
 
         found_by_id = deliveries.index_by { |delivery| delivery.id.to_s }
         missing_delivery_ids = requested_ids - found_by_id.keys
-        updated_delivery_ids = []
-        already_delivered_ids = []
 
-        found_by_id.each_value do |delivery|
-          if delivery.delivered?
-            already_delivered_ids << delivery.id.to_s
-          else
-            delivery.mark_delivered!(at: delivered_at)
-            updated_delivery_ids << delivery.id.to_s
+        RecordingStudioNotifications::Delivery.transaction(requires_new: true) do
+          updated_delivery_ids = []
+          already_delivered_ids = []
+
+          found_by_id.each_value do |delivery|
+            if delivery.delivered?
+              already_delivered_ids << delivery.id.to_s
+            else
+              delivery.mark_delivered!(at: delivered_at)
+              updated_delivery_ids << delivery.id.to_s
+            end
           end
-        end
 
-        DeliveryUpdateResult.new(
-          reference: resolved_reference,
-          updated_delivery_ids: updated_delivery_ids.freeze,
-          already_delivered_ids: already_delivered_ids.freeze,
-          missing_delivery_ids: missing_delivery_ids.freeze
-        )
+          DeliveryUpdateResult.new(
+            reference: resolved_reference,
+            updated_delivery_ids: updated_delivery_ids.freeze,
+            already_delivered_ids: already_delivered_ids.freeze,
+            missing_delivery_ids: missing_delivery_ids.freeze
+          )
+        end
       end
 
       def mark_opened!(reference:, opened_at: Time.current,
@@ -105,22 +101,24 @@ module RecordingStudioNotificationsEmail
         )
       end
 
-      def mark_bounced!(reference:, bounced_at: Time.current,
+      def mark_bounced!(reference:, bounced_at: Time.current, provider: nil,
                         configuration: RecordingStudioNotificationsEmail.configuration)
         mark_event_from_reference!(
           event_type: :bounced,
           reference: reference,
           occurred_at: bounced_at,
+          provider: provider,
           configuration: configuration
         )
       end
 
-      def mark_complained!(reference:, complained_at: Time.current,
+      def mark_complained!(reference:, complained_at: Time.current, provider: nil,
                            configuration: RecordingStudioNotificationsEmail.configuration)
         mark_event_from_reference!(
           event_type: :complained,
           reference: reference,
           occurred_at: complained_at,
+          provider: provider,
           configuration: configuration
         )
       end
@@ -135,7 +133,7 @@ module RecordingStudioNotificationsEmail
         )
       end
 
-      def mark_event_from_reference!(event_type:, reference:, occurred_at: Time.current,
+      def mark_event_from_reference!(event_type:, reference:, occurred_at: Time.current, provider: nil,
                                      configuration: RecordingStudioNotificationsEmail.configuration)
         resolved_reference = resolve_reference!(reference, configuration: configuration)
         requested_ids = resolved_reference.delivery_ids.map(&:to_s).uniq
@@ -143,25 +141,40 @@ module RecordingStudioNotificationsEmail
 
         found_by_id = deliveries.index_by { |delivery| delivery.id.to_s }
         missing_delivery_ids = requested_ids - found_by_id.keys
-        updated_delivery_ids = []
-        already_applied_delivery_ids = []
+        normalized_event = event_type.to_sym
 
-        found_by_id.each_value do |delivery|
-          case apply_event!(delivery, event_type: event_type, occurred_at: occurred_at)
-          when :updated
-            updated_delivery_ids << delivery.id.to_s
-          when :already_applied
-            already_applied_delivery_ids << delivery.id.to_s
-          end
+        # Commit suppressions before the delivery transaction. A later raise
+        # from mark_email_*! must leave the address suppressed.
+        if SUPPRESSION_REASONS.key?(normalized_event)
+          suppress_deliveries!(
+            found_by_id.values,
+            reason: SUPPRESSION_REASONS.fetch(normalized_event),
+            provider: provider,
+            configuration: configuration
+          )
         end
 
-        WebhookUpdateResult.new(
-          event_type: event_type.to_sym,
-          reference: resolved_reference,
-          updated_delivery_ids: updated_delivery_ids.freeze,
-          already_applied_delivery_ids: already_applied_delivery_ids.freeze,
-          missing_delivery_ids: missing_delivery_ids.freeze
-        )
+        RecordingStudioNotifications::Delivery.transaction(requires_new: true) do
+          updated_delivery_ids = []
+          already_applied_delivery_ids = []
+
+          found_by_id.each_value do |delivery|
+            case apply_event!(delivery, event_type: normalized_event, occurred_at: occurred_at)
+            when :updated
+              updated_delivery_ids << delivery.id.to_s
+            when :already_applied
+              already_applied_delivery_ids << delivery.id.to_s
+            end
+          end
+
+          WebhookUpdateResult.new(
+            event_type: normalized_event,
+            reference: resolved_reference,
+            updated_delivery_ids: updated_delivery_ids.freeze,
+            already_applied_delivery_ids: already_applied_delivery_ids.freeze,
+            missing_delivery_ids: missing_delivery_ids.freeze
+          )
+        end
       end
 
       def process_webhook_event!(event:, configuration: RecordingStudioNotificationsEmail.configuration)
@@ -171,6 +184,7 @@ module RecordingStudioNotificationsEmail
           event_type: webhook_event.event_type,
           reference: webhook_event.reference,
           occurred_at: webhook_event.occurred_at,
+          provider: webhook_event.provider,
           configuration: configuration
         )
       end
@@ -191,24 +205,16 @@ module RecordingStudioNotificationsEmail
         normalized_event = event_type.to_sym
         return apply_delivered!(delivery, occurred_at: occurred_at) if normalized_event == :delivered
 
-        predicate = predicate_for(normalized_event).find { |name| delivery.respond_to?(name) }
-        if predicate && delivery.public_send(predicate)
-          mark_notification_as_read!(delivery, occurred_at: occurred_at) if normalized_event == :opened
-          return :already_applied
-        end
+        contract = EVENT_METHOD_CONTRACT.fetch(normalized_event)
+        predicate = contract.fetch(:predicate)
+        return :already_applied if delivery.respond_to?(predicate) && delivery.public_send(predicate)
 
-        mutator = mutator_for(normalized_event).find { |name| delivery.respond_to?(name) }
-        unless mutator
-          if normalized_event == :opened
-            read_result = mark_notification_as_read!(delivery, occurred_at: occurred_at)
-            return read_result if read_result
-          end
-
+        mutator = contract.fetch(:mutator)
+        unless delivery.respond_to?(mutator)
           raise UnsupportedWebhookEventError, unsupported_event_message(normalized_event)
         end
 
         delivery.public_send(mutator, at: occurred_at)
-        mark_notification_as_read!(delivery, occurred_at: occurred_at) if normalized_event == :opened
         :updated
       end
 
@@ -216,46 +222,41 @@ module RecordingStudioNotificationsEmail
         return :already_applied if delivery.respond_to?(:delivered?) && delivery.delivered?
 
         unless delivery.respond_to?(:mark_delivered!)
-          raise UnsupportedWebhookEventError,
-                unsupported_event_message(:delivered)
+          raise UnsupportedWebhookEventError, unsupported_event_message(:delivered)
         end
 
         delivery.mark_delivered!(at: occurred_at)
         :updated
       end
 
-      def predicate_for(event_type)
-        callback_methods_for(event_type, type: :predicate)
-      end
-
-      def mutator_for(event_type)
-        callback_methods_for(event_type, type: :mutator)
-      end
-
-      def callback_methods_for(event_type, type:)
-        contract = EVENT_METHOD_CONTRACT[event_type.to_sym]
-        return [] unless contract
-
-        primary_key = type == :predicate ? :predicate : :mutator
-        alias_key = type == :predicate ? :predicate_aliases : :mutator_aliases
-
-        [contract.fetch(primary_key), *Array(contract.fetch(alias_key))].freeze
-      end
-
       def unsupported_event_message(event_type)
         "delivery model does not support #{event_type} callbacks"
       end
 
-      def mark_notification_as_read!(delivery, occurred_at:)
+      def suppress_deliveries!(deliveries, reason:, provider:, configuration:)
+        normalized_provider = provider.to_s.strip
+        normalized_provider = "email" if normalized_provider.empty?
+        addresses = deliveries.flat_map do |delivery|
+          addresses_for_delivery(delivery, configuration: configuration)
+        end
+
+        Suppression.transaction(requires_new: true) do
+          addresses.each do |address|
+            Suppression.suppress!(
+              address: address,
+              reason: reason,
+              provider: normalized_provider
+            )
+          end
+        end
+      end
+
+      def addresses_for_delivery(delivery, configuration:)
         notification = notification_for_delivery(delivery)
-        return unless notification
-        return unless notification.respond_to?(:read_at) && notification.respond_to?(:read_at=)
+        recipient = notification.recipient if notification.respond_to?(:recipient)
+        raise DeliveryError, "delivery recipient could not be resolved" if recipient.nil?
 
-        return :already_applied unless notification.read_at.nil?
-
-        notification.read_at = occurred_at
-        notification.save! if notification.respond_to?(:save!)
-        :updated
+        Array(configuration.recipients.resolve(recipient))
       end
 
       def notification_for_delivery(delivery)

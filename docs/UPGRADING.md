@@ -1,7 +1,41 @@
 # Upgrading
 
-This email channel still has no migration of its own. Email-as-notice
-behavior is unchanged.
+## 0.3.14
+
+This version adds `recording_studio_notifications_email_suppressions`. From
+the host application:
+
+```bash
+bin/rails generate recording_studio_notifications_email:migrations
+bin/rails db:migrate
+```
+
+Bounce and complaint callbacks write that table before they update the
+delivery. A suppressed address raises `SuppressedRecipientError` from both
+adapter paths and is not mailed.
+
+Webhook ingestion no longer computes or stores `WebhookEvent#idempotency_key`.
+Dedupe belongs to `recording_studio_webhooks`. Register the action from the
+host:
+
+```ruby
+RecordingStudioNotificationsEmail::Webhooks::ApplyEvent.register!(provider: "postmark")
+```
+
+The host provider still verifies the signature and puts the correlation
+header on the payload as `"reference"`. There is no
+`webhook_event_transformer`.
+
+Legacy delivery aliases are gone, including `failed?`, `mark_failed!`, and
+the opened-to-`read_at` fallback. This gem calls only
+`mark_delivered!(at:)` and the canonical `mark_email_*!(at:)` names. Until
+`recording_studio_notifications` 0.10.0 adds `mark_email_*!`, the other
+event types raise `UnsupportedWebhookEventError`. A bounce or complaint
+still records the suppression before that error.
+
+`process_webhook_event!` is not idempotent on its own. Replaying it outside
+the webhooks engine applies the event again when the delivery predicate is
+still false.
 
 When the dummy (or a host) follows the current development pins, Accessible
 `0.11` stores roles as strings. Run Accessible's migrations

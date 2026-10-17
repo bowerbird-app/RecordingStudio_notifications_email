@@ -29,7 +29,7 @@ class WebhookLabTest < ActionDispatch::IntegrationTest
     assert_includes unescaped_response_body, "Signed reference"
   end
 
-  test "firing delivered event updates delivery and shows idempotency key" do
+  test "firing delivered event updates delivery and shows the result" do
     user = create_user("webhook-lab-delivered@example.com")
     sign_in user
 
@@ -45,7 +45,8 @@ class WebhookLabTest < ActionDispatch::IntegrationTest
     delivery.reload
     assert delivery.delivered?
     assert_includes unescaped_response_body, "\"event_type\": \"delivered\""
-    assert_includes unescaped_response_body, "\"idempotency_key\": \"dummy:evt-delivered-001\""
+    assert_includes unescaped_response_body, delivery.id
+    refute_includes unescaped_response_body, "idempotency_key"
   end
 
   test "replay last payload marks request as replayed" do
@@ -67,7 +68,31 @@ class WebhookLabTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes unescaped_response_body, "\"replayed\": true"
-    assert_includes unescaped_response_body, "\"idempotency_key\": \"dummy:evt-replay-001\""
+    assert_includes unescaped_response_body, "\"event_type\": \"delivered\""
+    refute_includes unescaped_response_body, "idempotency_key"
+  end
+
+  test "bounced event suppresses the recipient and reports the missing delivery callback" do
+    user = create_user("bounce-lab@example.com")
+    sign_in user
+
+    _notification, delivery = create_target_notification_for(user)
+
+    post fire_docs_webhook_lab_event_path, params: {
+      event_type: "bounced",
+      external_event_id: "evt-bounced-001"
+    }
+    follow_redirect!
+
+    assert_response :success
+    assert_includes unescaped_response_body, "UnsupportedWebhookEventError"
+    refute_includes unescaped_response_body, "idempotency_key"
+    delivery.reload
+    assert_equal "pending", delivery.status
+    assert RecordingStudioNotificationsEmail::Suppression.suppressed?("bounce-lab@example.com")
+    record = RecordingStudioNotificationsEmail::Suppression.find_by!(address: "bounce-lab@example.com")
+    assert_equal "bounce", record.reason
+    assert_equal "dummy", record.provider
   end
 
   private

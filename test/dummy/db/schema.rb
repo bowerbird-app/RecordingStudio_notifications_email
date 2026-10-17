@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_12_044507) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_17_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -117,6 +117,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_12_044507) do
     t.index ["channel", "status"], name: "idx_rsn_deliveries_channel_status"
     t.index ["notification_id", "channel"], name: "idx_rsn_deliveries_notification_channel", unique: true
     t.index ["status", "rollup_reserved_at"], name: "idx_rsn_deliveries_rollup_reservation"
+  end
+
+  create_table "recording_studio_notifications_email_suppressions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "address", null: false
+    t.datetime "created_at", null: false
+    t.datetime "lifted_at"
+    t.string "provider", null: false
+    t.string "reason", null: false
+    t.datetime "updated_at", null: false
+    t.index ["address"], name: "idx_rsne_suppressions_address", unique: true
   end
 
   create_table "recording_studio_notifications_notifications", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

@@ -4,28 +4,53 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.14] - 2026-10-16
+
+### Added
+
+- `recording_studio_notifications_email_suppressions` stores one normalised
+  address, a bounce or complaint reason, the provider, and `lifted_at`.
+  `Suppression.suppress!`, `suppressed?`, and `lift!` are the public API.
+- `bin/rails generate recording_studio_notifications_email:migrations` copies
+  that migration into the host. The dummy app includes it.
+- `Webhooks::ApplyEvent.register!(provider:)` registers a
+  `recording_studio_webhooks` action that calls `process_webhook_event!`.
+- Both adapter paths raise `SuppressedRecipientError` before `deliver_now`
+  when the resolved address is suppressed.
+- CI runs the dummy app tests against PostgreSQL and fails when merged line
+  coverage is below 94%.
+
 ### Changed
 
-- Development Gemfile pins Accessible to GitHub tag `v0.11.1` and notifications
-  to `v0.3.4` (was Accessible `v0.7.0` and notifications `main`).
-- Dummy Gemfile also pins Commentable `v0.3.3` and Root Switchable `v0.5.3`.
-- Dummy app copies Accessible 0.8–0.11 migrations: `depends_on_recording_id`,
-  access invitations, and string `role`. Dummy Accessible config allowlists
-  `User` as an access actor type. Dummy seeds grant through
-  `bootstrap_owner_access!` and `grant_access` and fail if those services do.
-- Dummy FlatPack sidebar items pass `text:` so host screens render against
-  the current FlatPack pin.
+- Rollup delivery updates (`mark_delivered!` and the webhook loop) run in one
+  transaction.
+- Bounce and complaint write the suppression in their own transaction first,
+  then update deliveries. The address comes from the delivery's recipient.
+- Webhook callbacks call only `mark_delivered!(at:)` and `mark_email_*!(at:)`.
+  Missing canonical methods raise `UnsupportedWebhookEventError`.
+- `WebhookEvent` no longer builds an idempotency key. Inbound dedupe stays in
+  `recording_studio_webhooks`.
+
+### Removed
+
+- Legacy delivery aliases, including `failed?` / `mark_failed!` and the
+  opened-to-`read_at` fallback.
+- The undocumented `webhook_event_transformer` configuration, which had no
+  implementation.
+- Committed `coverage/` directories. They are gitignored.
 
 ### Upgrade notes
 
-- Point host and dummy Gemfiles at Accessible `v0.11.1` and notifications
-  `v0.3.4` when you follow this development pin set. Accessible `0.11` stores
-  roles as strings and ships a migration; in hosts that use Accessible run
-  `bin/rails generate recording_studio_accessible:migrations` then
-  `bin/rails db:migrate`. Set `access_actor_types` (dummy uses `User`).
-  Dummy and host grants must use Accessible public services. Do not
-  `update!` / `create!` `RecordingStudio::Access` rows.
-- This email channel gem version is unchanged. No email-channel migration.
+- Run `bin/rails generate recording_studio_notifications_email:migrations`
+  and `bin/rails db:migrate`.
+- Register `Webhooks::ApplyEvent` with `recording_studio_webhooks` from the
+  host. Do not add an inbound-event table, signature verifier, or route in
+  this gem.
+- Opened, clicked, bounced, complained, and unsubscribed callbacks require
+  `recording_studio_notifications` 0.10.0 `mark_email_*!` methods. Until then
+  they raise `UnsupportedWebhookEventError`. Bounce and complaint still
+  suppress the address.
+- See [Upgrading](docs/UPGRADING.md).
 
 ## [0.3.1] - 2026-09-02
 
@@ -91,7 +116,8 @@ unchanged.
 - Expiring signed correlation references.
 - Recording Studio-backed normalized event facade.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.14...HEAD
+[0.3.14]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.1...v0.3.14
 [0.3.1]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/releases/tag/v0.3.1
 [0.3.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/releases/tag/v0.3.0
 [0.2.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/releases/tag/v0.2.0

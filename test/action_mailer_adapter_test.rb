@@ -55,6 +55,18 @@ class ActionMailerAdapterTest < Minitest::Test
     @configuration.message_verifier = ActiveSupport::MessageVerifier.new("b" * 64, serializer: JSON)
     @configuration.message_id_domain = "mail.example.test"
     @adapter = RecordingStudioNotificationsEmail::ActionMailerAdapter.new(configuration: @configuration)
+    FakeMailer.instance_variable_set(:@action, nil)
+    FakeMailer.instance_variable_set(:@params, nil)
+    @suppression_singleton = class << RecordingStudioNotificationsEmail::Suppression; self; end
+    @original_suppressed = RecordingStudioNotificationsEmail::Suppression.method(:suppressed?)
+    @suppression_singleton.send(:define_method, :suppressed?) { |_address| false }
+  end
+
+  def teardown
+    return unless @suppression_singleton
+
+    @suppression_singleton.send(:remove_method, :suppressed?)
+    @suppression_singleton.send(:define_method, :suppressed?, @original_suppressed)
   end
 
   def test_delivers_with_normalized_event_and_signed_reference
@@ -124,6 +136,47 @@ class ActionMailerAdapterTest < Minitest::Test
       idempotency_key: "weekly/person/adapter-template-paths"
     )
     assert_equal "notification_mailer/rollup/adapter_template_paths", FakeMailer.params.fetch(:template_path)
+  end
+
+  def test_suppressed_recipient_is_not_delivered
+    suppressor = RecordingStudioNotificationsEmail::Suppression
+    singleton = class << suppressor; self; end
+    singleton.send(:define_method, :suppressed?) { |address| address == "person@example.test" }
+
+    error = assert_raises(RecordingStudioNotificationsEmail::SuppressedRecipientError) do
+      @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
+    end
+
+    assert_equal "email recipient is suppressed", error.message
+    assert_nil FakeMailer.action
+  end
+
+  def test_suppressed_rollup_recipient_is_not_delivered
+    recipient = Recipient.new(id: "person-1", email: "person@example.test")
+    suppressor = RecordingStudioNotificationsEmail::Suppression
+    singleton = class << suppressor; self; end
+    singleton.send(:define_method, :suppressed?) { |_address| true }
+
+    assert_raises(RecordingStudioNotificationsEmail::SuppressedRecipientError) do
+      @adapter.deliver_rollup(
+        notifications: [build_notification(recipient: recipient)],
+        deliveries: [Delivery.new("delivery-1")],
+        rollup_key: "weekly/person",
+        cadence: :weekly,
+        period_starts_at: Time.now,
+        period_ends_at: Time.now
+      )
+    end
+
+    assert_nil FakeMailer.action
+  end
+
+  def test_multiple_reply_to_addresses_are_preserved
+    @configuration.reply_to = ["one@example.test", "two@example.test"]
+
+    @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
+
+    assert_equal ["one@example.test", "two@example.test"], FakeMailer.params.fetch(:reply_to)
   end
 
   def test_missing_from_fails_before_sending

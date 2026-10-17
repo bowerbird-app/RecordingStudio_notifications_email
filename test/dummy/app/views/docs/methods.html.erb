@@ -42,17 +42,18 @@
     },
     {
       title: "RecordingStudioNotificationsEmail.mark_bounced!",
-      subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks and applies bounced callbacks on core delivery records.",
+      subtitle: "Core call: yes (via this gem). Suppresses the resolved address, then calls mark_email_bounced!(at:) on the delivery.",
       code: <<~'RUBY'
         RecordingStudioNotificationsEmail.mark_bounced!(
           reference: params[:reference],
-          bounced_at: Time.current
+          bounced_at: Time.current,
+          provider: :postmark
         )
       RUBY
     },
     {
       title: "RecordingStudioNotificationsEmail.mark_complained!",
-      subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks and applies complained/spam-report callbacks on core delivery records.",
+      subtitle: "Core call: yes (via this gem). Suppresses the resolved address, then calls mark_email_complained!(at:) on the delivery.",
       code: <<~'RUBY'
         RecordingStudioNotificationsEmail.mark_complained!(
           reference: params[:reference],

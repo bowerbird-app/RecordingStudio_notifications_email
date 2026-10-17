@@ -33,6 +33,7 @@ Metrics/ModuleLength:
 Metrics/MethodLength:
   Exclude:
     - 'test/**/*'
+    - 'db/migrate/**/*'
     - 'lib/generators/**/*'
     - 'lib/recording_studio_notifications_email/action_mailer_adapter.rb'
     - 'lib/recording_studio_notifications_email/delivery_callbacks.rb'

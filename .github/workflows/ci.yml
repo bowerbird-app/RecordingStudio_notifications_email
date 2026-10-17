@@ -9,10 +9,29 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     strategy:
       fail-fast: false
       matrix:
         ruby-version: ["3.3"]
+    env:
+      DB_HOST: localhost
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      BUNDLE_GITHUB__COM: x-access-token:${{ secrets.BOWERBIRD_ORG_CI_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Ruby ${{ matrix.ruby-version }}
@@ -20,9 +39,25 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
-        env:
-          BUNDLE_GITHUB__COM: x-access-token:${{ secrets.BOWERBIRD_ORG_CI_TOKEN }}
       - name: Run RuboCop
         run: bundle exec rubocop
-      - name: Run tests
+      - name: Run gem tests
         run: bundle exec rake test
+      - name: Install dummy dependencies
+        working-directory: test/dummy
+        run: bundle install
+      - name: Build dummy CSS
+        working-directory: test/dummy
+        run: bundle exec rails tailwindcss:build
+      - name: Prepare dummy database
+        working-directory: test/dummy
+        run: bundle exec rails db:test:prepare
+        env:
+          RAILS_ENV: test
+      - name: Run dummy tests
+        working-directory: test/dummy
+        run: bundle exec rails test
+        env:
+          RAILS_ENV: test
+      - name: Require 94% line coverage
+        run: ruby -e 'require "json"; path = "coverage/.last_run.json"; abort("missing #{path}") unless File.exist?(path); percent = JSON.parse(File.read(path)).dig("result", "line"); puts "line coverage #{percent}"; abort("line coverage #{percent} is below 94") if percent.nil? || percent < 94'
