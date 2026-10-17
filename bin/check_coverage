@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "json"
+
+path = "coverage/.last_run.json"
+abort("missing #{path}") unless File.exist?(path)
+
+percent = JSON.parse(File.read(path)).dig("result", "line")
+puts "line coverage #{percent}"
+abort("line coverage #{percent} is below 94") if percent.nil? || percent < 94

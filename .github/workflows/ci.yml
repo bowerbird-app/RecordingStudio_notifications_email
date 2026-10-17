@@ -60,4 +60,4 @@ jobs:
         env:
           RAILS_ENV: test
       - name: Require 94% line coverage
-        run: ruby -e 'require "json"; path = "coverage/.last_run.json"; abort("missing #{path}") unless File.exist?(path); percent = JSON.parse(File.read(path)).dig("result", "line"); puts "line coverage #{percent}"; abort("line coverage #{percent} is below 94") if percent.nil? || percent < 94'
+        run: bin/check_coverage
