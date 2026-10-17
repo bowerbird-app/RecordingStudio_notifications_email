@@ -1,7 +1,64 @@
 # Upgrading
 
-This email channel still has no migration of its own. Email-as-notice
-behavior is unchanged.
+## 0.3.14
+
+This version adds `recording_studio_notifications_email_suppressions`. From
+the host application:
+
+```bash
+bin/rails generate recording_studio_notifications_email:migrations
+bin/rails db:migrate
+```
+
+Bounce and complaint callbacks write that table before they update the
+delivery. A suppressed address raises `SuppressedRecipientError` from both
+adapter paths and is not mailed.
+
+Webhook ingestion no longer computes or stores `WebhookEvent#idempotency_key`.
+Dedupe belongs to `recording_studio_webhooks`. Register the action from the
+host:
+
+```ruby
+RecordingStudioNotificationsEmail::Webhooks::ApplyEvent.register!(provider: "postmark")
+```
+
+The host provider still verifies the signature and puts the correlation
+header on the payload as `"reference"`. There is no
+`webhook_event_transformer`.
+
+Legacy delivery aliases are gone, including `failed?`, `mark_failed!`, and
+the opened-to-`read_at` fallback. This gem calls only
+`mark_delivered!(at:)` and the canonical `mark_email_*!(at:)` names. Until
+`recording_studio_notifications` 0.10.0 adds `mark_email_*!`, the other
+event types raise `UnsupportedWebhookEventError`. An explicit hard bounce,
+a complaint, or an unsubscribe still records the suppression before that
+error. A bounce without an explicit hard or permanent type does not.
+
+`process_webhook_event!` is not idempotent on its own. Replaying it outside
+the webhooks engine applies the event again when the delivery predicate is
+still false.
+
+Unsubscribe events write a suppression with reason `unsubscribed`, in the
+same transaction split as bounce and complaint. Only an explicit hard or
+permanent bounce suppresses, with reason `bounce`. Put the provider's bounce
+class on the payload as `bounce_type` (or `metadata.bounce_type`). Hard
+values are `hard`, `permanent`, `HardBounce`, and `hard-bounce`. Everything
+else is soft and writes no suppression, including a missing or blank type,
+`soft`, `transient`, `temporary`, `temp`, `SoftBounce`, `soft bounce`, and
+SES `Undetermined`. The delivery is still updated, and the unknown value
+raises no error.
+
+Development pins for this version are notifications `v0.9.0`, metrics
+`v0.3.1` (`>= 0.3`, `< 0.4`), root_switchable `v0.9.4`, and trashable
+`v0.11.1`. Notifications 0.9 and root_switchable 0.9.4 need that metrics
+range. Trashable `v0.11.0` still requires metrics `~> 0.2`, so it cannot
+resolve beside them. None of those pin bumps adds a migration.
+
+Notifications 0.9 rejects unknown `register` options. Keep passing
+`individual_mailer:` and `rollup_mailer:` to `register_notification_type`.
+This gem records those paths and does not forward them. `notify` with no
+selected channels now returns `nil` instead of raising. Hosts that never
+defined an Accessible `:view` action get a default one from notifications.
 
 When the dummy (or a host) follows the current development pins, Accessible
 `0.11` stores roles as strings. Run Accessible's migrations
@@ -16,8 +73,8 @@ apps do nothing until they set `config.action_audiences` and enable
 `:action_audiences` on the types that should hold rules. Accessible
 `0.15` is translation-only (i18n wave 2); no migration; English hosts
 need no change. Accessible `0.17` depends on Trashable `~> 0.10`
-(query-only; pin with `require: false`). Trashable `0.11.0` requires
-Recording Studio `~> 4.7` (development pins `v0.11.0` and `v4.7.0`).
+(query-only; pin with `require: false`). Trashable `0.11` requires
+Recording Studio `~> 4.7` (development pins `v0.11.1` and `v4.7.0`).
 Accessible `0.18`
 adds `ControllerAuth` for sibling engines; no Accessible migration.
 Prefer `recording_studio_trashable_kept_sql` over `trashed_at: nil` in

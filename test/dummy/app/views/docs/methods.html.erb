@@ -42,17 +42,19 @@
     },
     {
       title: "RecordingStudioNotificationsEmail.mark_bounced!",
-      subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks and applies bounced callbacks on core delivery records.",
+      subtitle: "Core call: yes (via this gem). An explicit hard or permanent bounce_type suppresses the resolved address, then calls mark_email_bounced!(at:). A missing or unknown type updates the delivery and writes no suppression.",
       code: <<~'RUBY'
         RecordingStudioNotificationsEmail.mark_bounced!(
           reference: params[:reference],
-          bounced_at: Time.current
+          bounced_at: Time.current,
+          provider: :postmark,
+          bounce_type: "hard"
         )
       RUBY
     },
     {
       title: "RecordingStudioNotificationsEmail.mark_complained!",
-      subtitle: "Core call: yes (via this gem). Delegates to DeliveryCallbacks and applies complained/spam-report callbacks on core delivery records.",
+      subtitle: "Core call: yes (via this gem). Suppresses the resolved address, then calls mark_email_complained!(at:) on the delivery.",
       code: <<~'RUBY'
         RecordingStudioNotificationsEmail.mark_complained!(
           reference: params[:reference],

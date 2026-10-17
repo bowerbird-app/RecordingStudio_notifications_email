@@ -156,7 +156,6 @@ class DocsController < ApplicationController
       replayed: replay,
       event_type: result.event_type.to_s,
       payload: payload,
-      idempotency_key: event.idempotency_key,
       updated_delivery_ids: result.updated_delivery_ids,
       already_applied_delivery_ids: result.already_applied_delivery_ids,
       missing_delivery_ids: result.missing_delivery_ids,
@@ -171,7 +170,6 @@ class DocsController < ApplicationController
     session[:webhook_lab_last_result] = {
       event_type: event_type,
       payload: payload,
-      idempotency_key: nil,
       updated_delivery_ids: [],
       already_applied_delivery_ids: [],
       missing_delivery_ids: [],

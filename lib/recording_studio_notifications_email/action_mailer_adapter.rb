@@ -14,9 +14,11 @@ module RecordingStudioNotificationsEmail
     def deliver(notification:, delivery:)
       event = Event.wrap(notification, delivery: delivery)
       reference = DeliveryToken.sign(notification: notification, delivery: delivery, configuration: @configuration)
+      to = recipient_for(event)
+      raise_if_suppressed!(to)
       message = mailer.with(
         event: event,
-        to: recipient_for(event),
+        to: to,
         from: configured_from,
         reply_to: configured_reply_to,
         template_path: individual_template_path_for(event),
@@ -44,6 +46,7 @@ module RecordingStudioNotificationsEmail
       recipients = events.map { |event| recipient_for(event) }
       raise DeliveryError, "rollup notifications must resolve to one email address" unless recipients.uniq.one?
 
+      raise_if_suppressed!(recipients.first)
       template_path = rollup_template_path_for(events)
 
       reference = DeliveryToken.sign(
@@ -101,6 +104,14 @@ module RecordingStudioNotificationsEmail
       path.presence || default
     rescue KeyError
       default
+    end
+
+    def raise_if_suppressed!(addresses)
+      Array(addresses).each do |address|
+        next unless Suppression.suppressed?(address)
+
+        raise SuppressedRecipientError, "email recipient is suppressed"
+      end
     end
 
     def recipient_for(event)

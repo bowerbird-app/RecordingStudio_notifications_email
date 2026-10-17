@@ -4,9 +4,11 @@
 [`recording_studio_notifications`](https://github.com/bowerbird-app/RecordingStudio_notifications).
 It is a standalone Rails engine under `RecordingStudioNotificationsEmail`.
 
-The gem stores no data, mounts no endpoints, and processes no webhooks. The
-parent notifications engine owns persistence, background delivery, retries,
-idempotency, preferences, and delivery status.
+The gem stores address suppressions, mounts no endpoints, and does not
+receive provider webhooks itself. The parent notifications engine owns
+notification records, background delivery, retries, notification idempotency,
+preferences, and delivery status. `recording_studio_webhooks` owns the inbound
+route, signature check, and event dedupe.
 
 ## Installation
 
@@ -22,22 +24,23 @@ gem "recording_studio_notifications_email"
 ```
 
 Install the bundle, complete the core gem's installation and migrations, then
-generate this channel's initializer:
+generate this channel's initializer and suppression migration:
 
 ```bash
 bundle install
 bin/rails generate recording_studio_notifications:install
 bin/rails db:migrate
 bin/rails generate recording_studio_notifications_email:install
+bin/rails generate recording_studio_notifications_email:migrations
+bin/rails db:migrate
 ```
 
-The email generator creates
+The install generator creates
 `config/initializers/recording_studio_notifications_email.rb`; set its required
-`config.from` value before delivering mail. This channel has no migration or
-routes of its own.
+`config.from` value before delivering mail. The migrations generator copies
+the address-suppression table. This channel mounts no routes.
 
-No migration or route is required. During Rails preparation the engine
-registers an `:email` channel equivalent to:
+During Rails preparation the engine registers an `:email` channel equivalent to:
 
 ```ruby
 RecordingStudioNotifications.register_channel(
@@ -48,11 +51,10 @@ RecordingStudioNotifications.register_channel(
 
 For local development in this repository, parent gems are sourced from GitHub
 until published releases are available. Current pins include Recording Studio
-`v4.7.0`, Accessible `v0.18.0`, Trashable `v0.11.0` (`require: false`;
-query-only for Accessible), notifications `v0.7.0`, and Metrics
-`v0.2.0` (required by Notifications `0.6+` and Trashable). The dummy also
-pins Commentable `v0.5.0`, Root Switchable `v0.9.0`, Metrics
-`v0.2.0` (required by Root Switchable `0.7+`), and Cache `v0.5.0`
+`v4.7.0`, Accessible `v0.18.0`, Trashable `v0.11.1` (`require: false`;
+query-only for Accessible; metrics `>= 0.3`, `< 0.4`), notifications
+`v0.9.0`, and Metrics `v0.3.1` (`>= 0.3`, `< 0.4`). The dummy also pins
+Commentable `v0.5.0`, Root Switchable `v0.9.4`, and Cache `v0.5.0`
 (required by Root Switchable `0.9+`). Accessible `0.11+`
 needs string roles, its 0.8–0.11 migrations, and an
 `access_actor_types` allowlist (dummy uses `User`). Accessible `0.14`
@@ -111,8 +113,10 @@ RecordingStudioNotifications.register_notification_type(
 )
 ```
 
-`individual_mailer` and `rollup_mailer` are optional Rails template paths. Each
-path needs matching `.html.erb` and `.text.erb` files. When omitted, the email
+`individual_mailer` and `rollup_mailer` are optional Rails template paths
+stored by this gem. Notifications 0.9 rejects unknown register options, so
+these two are removed before the parent registry sees the call. Each path
+needs matching `.html.erb` and `.text.erb` files. When omitted, the email
 channel renders its bundled individual or rollup template.
 
 Then use the normal parent API:
@@ -180,11 +184,21 @@ config.signed_reference_expires_in = 7.days
 
 ## Webhook integration contract
 
-This gem intentionally does not mount inbound webhook routes, but it exposes a
-provider-agnostic callback surface so a separate webhook gem (for example,
-Postmark) can plug in without adapter rewrites.
+This gem does not mount inbound webhook routes, verify signatures, or store
+inbound events. Register an action with
+[`recording_studio_webhooks`](https://github.com/bowerbird-app/RecordingStudio_webhooks)
+from the host. The host provider parses the payload, checks the signature, and
+puts the correlation header value on the payload as `"reference"`.
 
-Build and ingest normalized webhook events:
+```ruby
+RecordingStudioNotificationsEmail::Webhooks::ApplyEvent.register!(provider: "postmark")
+```
+
+`ApplyEvent` builds a `WebhookEvent` and calls `process_webhook_event!`.
+Dedupe stays on the webhooks engine's inbound event. This gem does not keep
+an idempotency key of its own.
+
+You can also build the event yourself:
 
 ```ruby
 event = RecordingStudioNotificationsEmail::WebhookEvent.new(
@@ -200,20 +214,6 @@ event = RecordingStudioNotificationsEmail::WebhookEvent.new(
 RecordingStudioNotificationsEmail.process_webhook_event!(event: event)
 ```
 
-Optional provider-specific normalization hook:
-
-```ruby
-RecordingStudioNotificationsEmail.configure do |config|
-  config.webhook_event_transformer = lambda do |event|
-    # Return a WebhookEvent or Hash payload compatible with WebhookEvent.new
-    # Example: map provider-specific event naming before callback dispatch
-    event
-  end
-end
-```
-
-The transformer must return a valid event payload and cannot return `nil`.
-
 Supported event types are:
 
 - `:delivered`
@@ -223,25 +223,46 @@ Supported event types are:
 - `:complained`
 - `:unsubscribed`
 
-Idempotency convention for webhook ingestion:
-
-- `WebhookEvent#idempotency_key` is always present.
-- Default key uses `"#{provider}:#{external_event_id}"` when provider supplies a stable event id.
-- Without an external event id, a deterministic synthetic key is generated from provider,
-  event type, reference token, external message id, and occurred-at timestamp.
-- A webhook gem may pass an explicit `idempotency_key:` when provider semantics require
-  a custom dedupe strategy.
-
-If your webhook pipeline prefers explicit handlers, call these directly:
+Direct handlers:
 
 - `mark_delivered!`
 - `mark_opened!`
 - `mark_clicked!`
-- `mark_bounced!`
-- `mark_complained!`
-- `mark_unsubscribed!`
+- `mark_bounced!(provider:, bounce_type:)`
+- `mark_complained!(provider:)`
+- `mark_unsubscribed!(provider:)`
 
-Preferred delivery callback contract in the parent delivery model:
+Delivery updates for one reference run in a single transaction. Hard bounces,
+complaints, and unsubscribes first write an address suppression in their own
+transaction, using the address resolved from the delivery's recipient. That
+row remains if the delivery update raises. A soft bounce still updates the
+delivery and does not write a suppression.
+
+### Bounce type
+
+The host maps the provider's bounce field onto `bounce_type` before this gem
+sees the event. Put it on the payload as `bounce_type` (or `bounceType`), or
+under `metadata` with the same key. `ApplyEvent` copies that value onto
+`WebhookEvent`, which stores `:hard` or `:soft` for a bounced event. Only an
+explicit hard or permanent value suppresses. A missing, blank, or
+unrecognised value is soft, including when `mark_bounced!` omits
+`bounce_type:`. The delivery is still updated, and nothing is raised.
+
+| Provider value | Normalised | Suppression |
+| --- | --- | --- |
+| `hard`, `permanent`, `HardBounce`, `hard-bounce` | `:hard` | reason `bounce` |
+| `soft`, `transient`, `temporary`, `temp`, `SoftBounce`, `soft bounce` | `:soft` | none |
+| omitted, blank, SES `Undetermined`, or any other value | `:soft` | none |
+
+Postmark `Type` and SES `bounceType` can be passed through. `HardBounce` and
+`Permanent` suppress. `SoftBounce`, `Transient`, `Temporary`, and
+`Undetermined` do not.
+
+The delivery model must implement the canonical callbacks. Until
+`recording_studio_notifications` 0.10.0 ships those methods, opened, clicked,
+bounced, complained, and unsubscribed raise
+`UnsupportedWebhookEventError`. Delivered uses the existing
+`mark_delivered!(at:)`.
 
 - Delivered: `delivered?`, `mark_delivered!(at:)`
 - Opened: `email_opened?`, `mark_email_opened!(at:)`
@@ -250,14 +271,24 @@ Preferred delivery callback contract in the parent delivery model:
 - Complained: `email_complained?`, `mark_email_complained!(at:)`
 - Unsubscribed: `email_unsubscribed?`, `mark_email_unsubscribed!(at:)`
 
-For backward compatibility this gem accepts a small alias set (for example
-`opened?`/`mark_opened!`), but new integrations should implement the canonical
-`email_*` callback names.
+## Address suppression
+
+`recording_studio_notifications_email_suppressions` stores one normalised
+mailbox. `Suppression.suppress!` records a bounce, complaint, or unsubscribe.
+`Suppression.suppressed?` is true while `lifted_at` is nil.
+`Suppression.lift!` sets `lifted_at` and leaves the row in place so a later
+`suppress!` can clear it.
+
+Both the individual and rollup adapter paths check the table before
+`deliver_now` and raise `SuppressedRecipientError` when the address is
+suppressed. The error message does not include the address.
 
 Failures raise typed errors:
 
 - `RecordingStudioNotificationsEmail::InvalidWebhookPayloadError`
 - `RecordingStudioNotificationsEmail::UnsupportedWebhookEventError`
+- `RecordingStudioNotificationsEmail::SuppressedRecipientError`
+- `RecordingStudioNotificationsEmail::DeliveryError`
 - `ActiveSupport::MessageVerifier::InvalidSignature`
 
 This gem deliberately does not provide inbound email or webhook endpoints.
@@ -284,10 +315,14 @@ with Draft off to load a new pack. See
 
 ## Validation
 
-The standard suite is:
+The standard suite is the gem tests, then the dummy app tests. CI runs both
+and fails when merged line coverage is below 94%.
 
 ```bash
+bundle exec rubocop
 bundle exec rake test
+cd test/dummy && bundle exec rails db:test:prepare && bundle exec rails test
 ```
 
-The gem requires Ruby 3.3+ and Rails 8.1.
+The gem requires Ruby 3.3+ and Rails 8.1. Dummy mail uses Action Mailer's
+`:test` delivery method. Do not point it at a real mailbox.

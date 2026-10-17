@@ -35,4 +35,21 @@ class ConfigurationTest < Minitest::Test
 
     assert_equal ConfigurationTest::FakeMailer, @configuration.resolve_mailer_class
   end
+
+  def test_resolve_mailer_class_accepts_a_mailer_class
+    @configuration.mailer_class = Integer
+
+    assert_equal Integer, @configuration.resolve_mailer_class
+  end
+
+  def test_to_h_reports_the_public_settings
+    @configuration.from = "notifications@example.test"
+    @configuration.mailer_class = ConfigurationTest::FakeMailer
+
+    snapshot = @configuration.to_h
+
+    assert_equal :email, snapshot[:channel]
+    assert_equal "notifications@example.test", snapshot[:from]
+    assert_equal "ConfigurationTest::FakeMailer", snapshot[:mailer_class]
+  end
 end

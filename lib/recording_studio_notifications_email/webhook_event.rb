@@ -5,11 +5,11 @@ module RecordingStudioNotificationsEmail
     EVENT_TYPES = %i[delivered opened clicked bounced complained unsubscribed].freeze
 
     attr_reader :provider, :event_type, :occurred_at, :external_event_id,
-                :external_message_id, :reference, :metadata, :idempotency_key
+                :external_message_id, :reference, :metadata, :bounce_type
 
     def initialize(provider:, event_type:, reference:, occurred_at: Time.current,
                    external_event_id: nil, external_message_id: nil, metadata: {},
-                   idempotency_key: nil)
+                   bounce_type: nil)
       @provider = normalize_provider(provider)
       @event_type = normalize_event_type(event_type)
       @reference = normalize_reference(reference)
@@ -17,7 +17,7 @@ module RecordingStudioNotificationsEmail
       @external_event_id = normalize_optional_string(external_event_id)
       @external_message_id = normalize_optional_string(external_message_id)
       @metadata = normalize_metadata(metadata)
-      @idempotency_key = normalize_idempotency_key(idempotency_key)
+      @bounce_type = normalize_bounce_type(bounce_type)
     end
 
     def to_h
@@ -29,7 +29,7 @@ module RecordingStudioNotificationsEmail
         external_message_id: external_message_id,
         reference: reference,
         metadata: metadata,
-        idempotency_key: idempotency_key
+        bounce_type: bounce_type
       }
     end
 
@@ -73,31 +73,16 @@ module RecordingStudioNotificationsEmail
       normalized.empty? ? nil : normalized
     end
 
+    def normalize_bounce_type(value)
+      return nil unless event_type == :bounced
+
+      BounceType.normalize(value)
+    end
+
     def normalize_metadata(value)
       raise InvalidWebhookPayloadError, "metadata must be a Hash" unless value.is_a?(Hash)
 
       value.deep_dup.freeze
-    end
-
-    def normalize_idempotency_key(value)
-      unless value.nil?
-        normalized = value.to_s.strip
-        raise InvalidWebhookPayloadError, "idempotency_key cannot be blank" if normalized.empty?
-
-        return normalized
-      end
-
-      return "#{provider}:#{external_event_id}" if external_event_id
-
-      fingerprint = [
-        provider,
-        event_type,
-        reference,
-        external_message_id,
-        occurred_at.utc.strftime("%Y-%m-%dT%H:%M:%S.%6NZ")
-      ].join("|")
-      digest = OpenSSL::Digest::SHA256.hexdigest(fingerprint)
-      "#{provider}:synthetic:#{digest}"
     end
   end
 end

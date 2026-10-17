@@ -457,7 +457,9 @@ The integration follows several practical rules:
 2. HTML templates use normal Rails escaping for interpolated event fields.
 3. A signed correlation header supports safe delivery traceability.
 4. Core owns authorization when the recipient opens a notification link.
-5. Core owns delivery status, retries, and idempotency.
+5. Core owns delivery status, retries, and notification idempotency. This gem
+   stores address suppressions and refuses `deliver_now` when that mailbox is
+   suppressed.
 6. The email channel sends through Action Mailer rather than coupling to a
    specific commercial provider.
 7. The application should not use email links as proof that a person owns an
