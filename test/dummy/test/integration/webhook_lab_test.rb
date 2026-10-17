@@ -72,7 +72,7 @@ class WebhookLabTest < ActionDispatch::IntegrationTest
     refute_includes unescaped_response_body, "idempotency_key"
   end
 
-  test "bounced event suppresses the recipient and reports the missing delivery callback" do
+  test "bounced event without a type does not suppress and reports the missing delivery callback" do
     user = create_user("bounce-lab@example.com")
     sign_in user
 
@@ -89,10 +89,8 @@ class WebhookLabTest < ActionDispatch::IntegrationTest
     refute_includes unescaped_response_body, "idempotency_key"
     delivery.reload
     assert_equal "pending", delivery.status
-    assert RecordingStudioNotificationsEmail::Suppression.suppressed?("bounce-lab@example.com")
-    record = RecordingStudioNotificationsEmail::Suppression.find_by!(address: "bounce-lab@example.com")
-    assert_equal "bounce", record.reason
-    assert_equal "dummy", record.provider
+    refute RecordingStudioNotificationsEmail::Suppression.suppressed?("bounce-lab@example.com")
+    assert_nil RecordingStudioNotificationsEmail::Suppression.find_by(address: "bounce-lab@example.com")
   end
 
   private

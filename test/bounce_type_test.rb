@@ -3,24 +3,24 @@
 require "test_helper"
 
 class BounceTypeTest < Minitest::Test
-  def test_blank_and_hard_aliases_are_permanent
-    [nil, "", "  ", "hard", "Permanent", "HardBounce", "hard-bounce"].each do |value|
+  def test_explicit_hard_aliases_are_permanent
+    ["hard", "Permanent", "HardBounce", "hard-bounce", "HARD BOUNCE"].each do |value|
+      assert_equal :hard, RecordingStudioNotificationsEmail::BounceType.normalize(value)
       assert RecordingStudioNotificationsEmail::BounceType.permanent?(value), value.inspect
     end
   end
 
   def test_soft_aliases_are_not_permanent
-    ["soft", "Transient", "temporary", "temp", "Soft Bounce"].each do |value|
+    ["soft", "Transient", "temporary", "temp", "Soft Bounce", "SoftBounce"].each do |value|
       assert_equal :soft, RecordingStudioNotificationsEmail::BounceType.normalize(value)
       refute RecordingStudioNotificationsEmail::BounceType.permanent?(value)
     end
   end
 
-  def test_unknown_bounce_type_is_rejected
-    error = assert_raises(RecordingStudioNotificationsEmail::InvalidWebhookPayloadError) do
-      RecordingStudioNotificationsEmail::BounceType.normalize("undetermined")
+  def test_missing_blank_and_unknown_values_are_soft
+    [nil, "", "  ", "undetermined", "Undetermined", "PermanentFailure"].each do |value|
+      assert_equal :soft, RecordingStudioNotificationsEmail::BounceType.normalize(value)
+      refute RecordingStudioNotificationsEmail::BounceType.permanent?(value), value.inspect
     end
-
-    assert_includes error.message, "undetermined"
   end
 end

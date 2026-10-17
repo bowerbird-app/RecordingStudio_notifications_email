@@ -26,8 +26,11 @@ All notable changes to this project will be documented in this file.
   transaction.
 - Hard bounces, complaints, and unsubscribes write the suppression in their
   own transaction first, then update deliveries. The address comes from the
-  delivery's recipient. Soft or transient bounces update the delivery and do
-  not write a suppression. `bounce_type` is normalised from the payload.
+  delivery's recipient. Only explicit hard or permanent bounce values
+  suppress. A missing, blank, or unrecognised type, including SES
+  `Undetermined`, is soft: the delivery is updated, no suppression is
+  written, and no error is raised. `bounce_type` is normalised from the
+  payload.
 - Development pins: notifications `v0.9.0`, metrics `v0.3.1`
   (`>= 0.3`, `< 0.4`), root_switchable `v0.9.4`, and trashable `v0.11.1`
   so the metrics floor resolves.
@@ -56,9 +59,10 @@ All notable changes to this project will be documented in this file.
   this gem.
 - Opened, clicked, bounced, complained, and unsubscribed callbacks require
   `recording_studio_notifications` 0.10.0 `mark_email_*!` methods. Until then
-  they raise `UnsupportedWebhookEventError`. Hard bounces, complaints, and
-  unsubscribes still suppress the address. Map provider bounce types onto
-  `bounce_type` as described in the README. A blank type is a hard bounce.
+  they raise `UnsupportedWebhookEventError`. Explicit hard bounces,
+  complaints, and unsubscribes still suppress the address. Map the provider
+  bounce field onto `bounce_type` as described in the README. A missing,
+  blank, or unknown type is a soft bounce and does not suppress.
 - Pin notifications `v0.9.0`, metrics `>= 0.3, < 0.4` (tag `v0.3.1`), and
   root_switchable `v0.9.4`. Trashable moves to `v0.11.1` because `v0.11.0`
   still requires metrics `~> 0.2`. No new migration for those gems.

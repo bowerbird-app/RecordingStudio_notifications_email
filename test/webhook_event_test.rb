@@ -95,4 +95,18 @@ class WebhookEventTest < Minitest::Test
     refute event.respond_to?(:idempotency_key)
     assert_nil event.bounce_type
   end
+
+  def test_bounced_events_treat_a_missing_or_unknown_type_as_soft
+    [nil, "", "Undetermined"].each do |bounce_type|
+      event = RecordingStudioNotificationsEmail::WebhookEvent.new(
+        provider: :ses,
+        event_type: :bounced,
+        reference: "signed-reference",
+        bounce_type: bounce_type
+      )
+
+      assert_equal :soft, event.bounce_type
+      assert_equal :soft, event.to_h.fetch(:bounce_type)
+    end
+  end
 end

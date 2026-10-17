@@ -57,7 +57,8 @@ class SuppressionPersistenceTest < ActiveSupport::TestCase
     assert_raises(RuntimeError) do
       RecordingStudioNotificationsEmail.mark_bounced!(
         reference: @reference,
-        provider: "postmark"
+        provider: "postmark",
+        bounce_type: "permanent"
       )
     end
 

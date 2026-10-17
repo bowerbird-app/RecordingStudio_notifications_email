@@ -269,10 +269,11 @@ class DeliveryCallbacksTest < Minitest::Test
           configuration: @configuration
         )
 
+        assert_equal :soft, event.bounce_type
         assert_equal :bounced, result.event_type
         assert_equal %w[delivery-1], result.updated_delivery_ids
         assert_equal @delivered_at, delivery.bounced_at
-        assert_equal [{ address: "person@example.test", reason: "bounce", provider: "postmark" }], calls
+        assert_empty calls
       end
     end
   end
@@ -311,6 +312,7 @@ class DeliveryCallbacksTest < Minitest::Test
             reference: reference,
             bounced_at: @delivered_at,
             provider: :postmark,
+            bounce_type: "permanent",
             configuration: @configuration
           )
         end
@@ -436,7 +438,7 @@ class DeliveryCallbacksTest < Minitest::Test
     end
   end
 
-  def test_unknown_bounce_type_is_rejected_before_suppression
+  def test_undetermined_bounce_updates_the_delivery_without_a_suppression
     reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
     recipient = Struct.new(:email).new("person@example.test")
     notification = FakeNotification.new("notification-1", nil)
@@ -445,18 +447,16 @@ class DeliveryCallbacksTest < Minitest::Test
 
     with_stubbed_delivery_where([delivery]) do
       with_recorded_suppressions do |calls|
-        error = assert_raises(RecordingStudioNotificationsEmail::InvalidWebhookPayloadError) do
-          RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_bounced!(
-            reference: reference,
-            bounced_at: @delivered_at,
-            bounce_type: "undetermined",
-            configuration: @configuration
-          )
-        end
+        result = RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_bounced!(
+          reference: reference,
+          bounced_at: @delivered_at,
+          bounce_type: "Undetermined",
+          configuration: @configuration
+        )
 
-        assert_includes error.message, "undetermined"
+        assert_equal %w[delivery-1], result.updated_delivery_ids
+        assert_equal @delivered_at, delivery.bounced_at
         assert_empty calls
-        assert_nil delivery.bounced_at
       end
     end
   end
@@ -497,6 +497,7 @@ class DeliveryCallbacksTest < Minitest::Test
         RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_bounced!(
           reference: reference,
           bounced_at: @delivered_at,
+          bounce_type: "hard",
           configuration: @configuration
         )
 
@@ -516,6 +517,7 @@ class DeliveryCallbacksTest < Minitest::Test
           reference: reference,
           bounced_at: @delivered_at,
           provider: :postmark,
+          bounce_type: "permanent",
           configuration: @configuration
         )
       end
@@ -628,6 +630,7 @@ class DeliveryCallbacksTest < Minitest::Test
           reference: reference,
           bounced_at: @delivered_at,
           provider: :postmark,
+          bounce_type: "HardBounce",
           configuration: @configuration
         )
 
@@ -700,6 +703,8 @@ class DeliveryCallbacksTest < Minitest::Test
           provider: :postmark
         )
         assert_equal :bounced, bounced_result.event_type
+        assert_equal @delivered_at, delivery.bounced_at
+        assert_equal 1, calls.size
 
         complained_result = RecordingStudioNotificationsEmail.mark_complained!(
           reference: reference,

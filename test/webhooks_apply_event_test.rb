@@ -171,6 +171,17 @@ class WebhooksApplyEventTest < Minitest::Test
     assert_equal :hard, event.bounce_type
   end
 
+  def test_build_event_treats_an_undetermined_bounce_type_as_soft
+    context = Context.new(
+      inbound_event: Inbound.new(provider_name: "ses", event_type: "bounced"),
+      payload: { "reference" => "signed-reference", "bounceType" => "Undetermined" }
+    )
+
+    event = RecordingStudioNotificationsEmail::Webhooks::ApplyEvent.build_event(context)
+
+    assert_equal :soft, event.bounce_type
+  end
+
   def test_missing_reference_is_rejected
     context = Context.new(
       inbound_event: Inbound.new(provider_name: "postmark", event_type: "delivered"),

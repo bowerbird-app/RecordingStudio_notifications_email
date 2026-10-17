@@ -243,19 +243,20 @@ delivery and does not write a suppression.
 The host maps the provider's bounce field onto `bounce_type` before this gem
 sees the event. Put it on the payload as `bounce_type` (or `bounceType`), or
 under `metadata` with the same key. `ApplyEvent` copies that value onto
-`WebhookEvent`. A blank type is treated as hard, which is also what
-`mark_bounced!` does when `bounce_type:` is omitted.
+`WebhookEvent`, which stores `:hard` or `:soft` for a bounced event. Only an
+explicit hard or permanent value suppresses. A missing, blank, or
+unrecognised value is soft, including when `mark_bounced!` omits
+`bounce_type:`. The delivery is still updated, and nothing is raised.
 
 | Provider value | Normalised | Suppression |
 | --- | --- | --- |
 | `hard`, `permanent`, `HardBounce`, `hard-bounce` | `:hard` | reason `bounce` |
 | `soft`, `transient`, `temporary`, `temp`, `SoftBounce`, `soft bounce` | `:soft` | none |
-| omitted | `:hard` | reason `bounce` |
+| omitted, blank, SES `Undetermined`, or any other value | `:soft` | none |
 
-Anything else, including SES `Undetermined`, raises `InvalidWebhookPayloadError`.
-Map that provider value to `hard` or `soft` in the host before registering the
-action. Postmark `Type` and SES `bounceType` can be passed through when they
-are `HardBounce`, `SoftBounce`, `Permanent`, `Transient`, or `Temporary`.
+Postmark `Type` and SES `bounceType` can be passed through. `HardBounce` and
+`Permanent` suppress. `SoftBounce`, `Transient`, `Temporary`, and
+`Undetermined` do not.
 
 The delivery model must implement the canonical callbacks. Until
 `recording_studio_notifications` 0.10.0 ships those methods, opened, clicked,

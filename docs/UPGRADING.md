@@ -30,21 +30,23 @@ Legacy delivery aliases are gone, including `failed?`, `mark_failed!`, and
 the opened-to-`read_at` fallback. This gem calls only
 `mark_delivered!(at:)` and the canonical `mark_email_*!(at:)` names. Until
 `recording_studio_notifications` 0.10.0 adds `mark_email_*!`, the other
-event types raise `UnsupportedWebhookEventError`. A bounce or complaint
-still records the suppression before that error.
+event types raise `UnsupportedWebhookEventError`. An explicit hard bounce,
+a complaint, or an unsubscribe still records the suppression before that
+error. A bounce without an explicit hard or permanent type does not.
 
 `process_webhook_event!` is not idempotent on its own. Replaying it outside
 the webhooks engine applies the event again when the delivery predicate is
 still false.
 
 Unsubscribe events write a suppression with reason `unsubscribed`, in the
-same transaction split as bounce and complaint. Hard bounces suppress with
-reason `bounce`. Soft or transient bounces do not. Put the provider's bounce
-class on the payload as `bounce_type` (or `metadata.bounce_type`). Accepted
-hard values are `hard`, `permanent`, `HardBounce`, and `hard-bounce`. Accepted
-soft values are `soft`, `transient`, `temporary`, `temp`, `SoftBounce`, and
-`soft bounce`. A blank type is hard. Any other value, including SES
-`Undetermined`, raises `InvalidWebhookPayloadError`; map it in the host.
+same transaction split as bounce and complaint. Only an explicit hard or
+permanent bounce suppresses, with reason `bounce`. Put the provider's bounce
+class on the payload as `bounce_type` (or `metadata.bounce_type`). Hard
+values are `hard`, `permanent`, `HardBounce`, and `hard-bounce`. Everything
+else is soft and writes no suppression, including a missing or blank type,
+`soft`, `transient`, `temporary`, `temp`, `SoftBounce`, `soft bounce`, and
+SES `Undetermined`. The delivery is still updated, and the unknown value
+raises no error.
 
 Development pins for this version are notifications `v0.9.0`, metrics
 `v0.3.1` (`>= 0.3`, `< 0.4`), root_switchable `v0.9.4`, and trashable
