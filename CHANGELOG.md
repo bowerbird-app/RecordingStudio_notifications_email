@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-29
+
+### Changed
+
+- Runtime dependency `recording_studio` is now `>= 6.1.0`. Development and dummy
+  apps pin core tag `v6.3.0` and FlatPack tag `v0.1.329`.
+- Companion dummy pins: notifications `v0.14.1`, Commentable `v0.7.0`,
+  Accessible `v0.24.0`, Trashable `v0.12.0`, Metrics `v0.7.0`, Cache `v0.6.0`,
+  and Root Switchable `v0.11.2`.
+- Dummy chrome follows core 6 layout: `recording_studio_layout`, a String
+  Root Switchable `config.layout`, and FlatPack Card `border:` / `shadow:`
+  instead of `style:`.
+
+### Upgrade notes
+
+- Bump to `0.4.0`. Requires Recording Studio `>= 6.1.0`. Stay on `0.3.15` if
+  you are still on Recording Studio 4.
+- Pin notifications to a 6.1-capable release (`v0.14.1` in this dummy).
+- No migration for this gem. See [Upgrading](docs/UPGRADING.md).
+
 ## [0.3.15] - 2026-10-17
 
 ### Changed
@@ -159,7 +179,8 @@ unchanged.
 - Expiring signed correlation references.
 - Recording Studio-backed normalized event facade.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.15...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.15...v0.4.0
 [0.3.15]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.14...v0.3.15
 [0.3.14]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.1...v0.3.14
 [0.3.1]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/releases/tag/v0.3.1

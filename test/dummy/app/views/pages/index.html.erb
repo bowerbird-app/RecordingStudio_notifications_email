@@ -5,7 +5,7 @@
     variant: :h1
   ) %>
 
-  <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+  <%= render FlatPack::Card::Component.new(border: :default, shadow: :none) do |card| %>
     <% card.header do %>
       <%= render FlatPack::PageTitle::Component.new(
         title: "Create page",
@@ -51,7 +51,7 @@
     <% end %>
   <% end %>
 
-  <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+  <%= render FlatPack::Card::Component.new(border: :default, shadow: :none) do |card| %>
     <% card.header do %>
       <%= render FlatPack::PageTitle::Component.new(
         title: "Existing pages",

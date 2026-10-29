@@ -1,5 +1,24 @@
 # Upgrading
 
+## 0.4.0
+
+This version requires Recording Studio `>= 6.1.0`. From a host Gemfile that
+still pins core from GitHub:
+
+```ruby
+gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"
+```
+
+Stay on `0.3.15` until the host is on Recording Studio 6.1 or newer. There is
+no migration in this gem.
+
+Dummy and development pins in this repository: core `v6.3.0`, FlatPack
+`v0.1.329`, notifications `v0.14.1`, Commentable `v0.7.0`, Accessible
+`v0.24.0`, Trashable `v0.12.0`, Metrics `v0.7.0`, Cache `v0.6.0`, Root
+Switchable `v0.11.2`. Root Switchable `config.layout` must be a layout name,
+`nil`, `false`, or a callable invoked as `call(controller:)` — not a method
+Symbol.
+
 ## 0.3.15
 
 This version requires `recording_studio_notifications` `0.10.0`. From the
