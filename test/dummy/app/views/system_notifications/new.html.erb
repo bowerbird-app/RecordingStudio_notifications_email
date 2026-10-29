@@ -5,7 +5,7 @@
     variant: :h2
   ) %>
 
-  <%= render FlatPack::Card::Component.new(style: :default) do |card| %>
+  <%= render FlatPack::Card::Component.new(border: :default, shadow: :none) do |card| %>
     <% card.body do %>
       <%= form_with url: system_notifications_path, scope: :system_notification, method: :post, class: "space-y-4" do |f| %>
         <%= render FlatPack::TextInput::Component.new(
