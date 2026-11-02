@@ -46,11 +46,20 @@ class WorkspaceAccessTest < ActionDispatch::IntegrationTest
     admin = sign_in_user("notice-admin@example.com")
     workspace = Workspace.create!(name: "Notice Workspace")
     grant_workspace(admin, workspace)
+    outsider = User.create!(
+      email: "notice-outsider@example.com",
+      password: "Password123!",
+      password_confirmation: "Password123!"
+    )
+    other_workspace = Workspace.create!(name: "Elsewhere Workspace")
+    grant_workspace(outsider, other_workspace)
 
-    assert_difference -> { RecordingStudioNotifications::Notification.count }, 1 do
-      post system_notifications_path, params: {
-        system_notification: { title: "Tonight", body: "We will be back at 10." }
-      }
+    assert_difference -> { RecordingStudioNotifications::Notification.where(recipient: admin).count }, 1 do
+      assert_no_difference -> { RecordingStudioNotifications::Notification.where(recipient: outsider).count } do
+        post system_notifications_path, params: {
+          system_notification: { title: "Tonight", body: "We will be back at 10." }
+        }
+      end
     end
     assert_redirected_to new_system_notifications_path
     assert_equal "Notice sent to 1 person in this workspace.", flash[:notice]

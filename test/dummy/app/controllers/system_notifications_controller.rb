@@ -41,7 +41,7 @@ class SystemNotificationsController < ApplicationController
   end
 
   def people_in_the_current_workspace
-    RecordingStudioAccessible.access_recordings_for(current_root_recording).filter_map do |access_recording|
+    RecordingStudioAccessible.access_recordings_for(current_root_recording).includes(recordable: :actor).filter_map do |access_recording|
       access = access_recording.recordable
       actor = access.actor if access.respond_to?(:actor)
       actor if actor.is_a?(User)
