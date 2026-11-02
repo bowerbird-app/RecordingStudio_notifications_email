@@ -2,6 +2,31 @@
 
 require "test_helper"
 
+# The gem suite does not boot the notifications engine, so these models are
+# not loaded. The stand-ins exist so tests can stub where, transaction, and
+# find_by for one block.
+module RecordingStudioNotifications
+  unless const_defined?(:Delivery, false)
+    class Delivery
+      def self.where(*_args, **_kwargs)
+        []
+      end
+
+      def self.transaction(**)
+        yield
+      end
+    end
+  end
+
+  unless const_defined?(:Notification, false)
+    class Notification
+      def self.find_by(*)
+        nil
+      end
+    end
+  end
+end
+
 class DeliveryCallbacksTest < Minitest::Test
   Record = Struct.new(:id)
   FakeNotification = Struct.new(:id, :read_at) do
@@ -141,23 +166,10 @@ class DeliveryCallbacksTest < Minitest::Test
     end
   end
 
-  # Stub class scaffolding. Notifications autoloads Delivery from the engine,
-  # which the gem suite does not boot. Remove only the stand-in this file added.
   def setup
-    unless RecordingStudioNotifications.const_defined?(:Delivery, false)
-      @installed_delivery_stub = true
-      RecordingStudioNotifications.const_set(:Delivery, Class.new)
-    end
-
     @configuration = RecordingStudioNotificationsEmail::Configuration.new
     @configuration.message_verifier = ActiveSupport::MessageVerifier.new("c" * 64, serializer: JSON)
     @delivered_at = Time.utc(2026, 7, 17, 12, 0, 0)
-  end
-
-  def teardown
-    return unless @installed_delivery_stub
-
-    RecordingStudioNotifications.send(:remove_const, :Delivery)
   end
 
   def test_marks_pending_deliveries_from_signed_reference
@@ -760,60 +772,17 @@ class DeliveryCallbacksTest < Minitest::Test
     RecordingStudioNotificationsEmail.reset_configuration!
   end
 
-  # Stub class scaffolding. Notification is an engine autoload, same as Delivery.
-  def with_notification_lookup(notification, &body)
-    installed = false
-    unless RecordingStudioNotifications.const_defined?(:Notification, false)
-      RecordingStudioNotifications.const_set(:Notification, Class.new)
-      installed = true
-    end
-
-    lookup = nil
-    existed = false
-    original = nil
-    lookup = RecordingStudioNotifications::Notification.singleton_class
-    existed = lookup.method_defined?(:find_by)
-    original = RecordingStudioNotifications::Notification.method(:find_by) if existed
-    lookup.define_method(:find_by) { |id:| notification if id == "notification-1" }
-    body.call
-  ensure
-    if installed
-      RecordingStudioNotifications.send(:remove_const, :Notification)
-    elsif existed
-      lookup&.define_method(:find_by, original)
-    end
+  def with_notification_lookup(notification, &)
+    RecordingStudioNotifications::Notification.stub(:find_by, ->(id:) { notification if id == "notification-1" }, &)
   end
 
   def with_stubbed_delivery_where(result, on_transaction: nil, &body)
     delivery_class = RecordingStudioNotifications::Delivery
-    singleton = delivery_class.singleton_class
-    where_existed = false
-    original_where = nil
-    transaction_existed = false
-    original_transaction = nil
-    where_existed = singleton.method_defined?(:where)
-    original_where = delivery_class.method(:where) if where_existed
-    transaction_existed = singleton.method_defined?(:transaction)
-    original_transaction = delivery_class.method(:transaction) if transaction_existed
-
-    singleton.define_method(:where) { |*, **| result }
-    singleton.define_method(:transaction) do |**, &block|
-      on_transaction&.call
-      block.call
-    end
-    body.call
-  ensure
-    restore_singleton_method(singleton, :where, where_existed, original_where)
-    restore_singleton_method(singleton, :transaction, transaction_existed, original_transaction)
-  end
-
-  def restore_singleton_method(singleton, name, existed, original)
-    return unless singleton
-
-    if existed
-      singleton.define_method(name, original)
-    elsif singleton.method_defined?(name)
-      singleton.send(:remove_method, name)
+    delivery_class.stub(:where, ->(*_args, **_kwargs) { result }) do
+      delivery_class.stub(:transaction, lambda { |**, &block|
+        on_transaction&.call
+        block.call
+      }, &body)
     end
   end
 

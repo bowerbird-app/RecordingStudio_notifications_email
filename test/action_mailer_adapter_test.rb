@@ -50,15 +50,13 @@ class ActionMailerAdapterTest < Minitest::Test
     @configuration.message_id_domain = "mail.example.test"
     @adapter = RecordingStudioNotificationsEmail::ActionMailerAdapter.new(configuration: @configuration)
     FakeMailer.reset!
-    @suppression = class << RecordingStudioNotificationsEmail::Suppression; self; end
-    @original_suppressed = RecordingStudioNotificationsEmail::Suppression.method(:suppressed?)
-    @suppression.define_method(:suppressed?) { |_address| false }
+    @suppressed = ->(_address) { false }
   end
 
-  def teardown
-    return unless @suppression && @original_suppressed
-
-    @suppression.define_method(:suppressed?, @original_suppressed)
+  def run
+    RecordingStudioNotificationsEmail::Suppression.stub(:suppressed?, ->(address) { @suppressed.call(address) }) do
+      super
+    end
   end
 
   def test_delivers_with_normalized_event_and_signed_reference
@@ -132,7 +130,7 @@ class ActionMailerAdapterTest < Minitest::Test
   end
 
   def test_suppressed_recipient_is_not_delivered
-    @suppression.define_method(:suppressed?) { |address| address == "person@example.test" }
+    @suppressed = ->(address) { address == "person@example.test" }
 
     error = assert_raises(RecordingStudioNotificationsEmail::SuppressedRecipientError) do
       @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
@@ -144,7 +142,7 @@ class ActionMailerAdapterTest < Minitest::Test
 
   def test_suppressed_rollup_recipient_is_not_delivered
     recipient = Recipient.new(id: "person-1", email: "person@example.test")
-    @suppression.define_method(:suppressed?) { |_address| true }
+    @suppressed = ->(_address) { true }
 
     assert_raises(RecordingStudioNotificationsEmail::SuppressedRecipientError) do
       @adapter.deliver_rollup(
