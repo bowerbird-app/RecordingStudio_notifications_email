@@ -12,6 +12,7 @@
 
   <%= render FlatPack::CodeBlock::Component.new(
     language: :ruby,
+    title: "Gemfile",
     code: <<~CODE
       # Host app Gemfile
       gem "recording_studio_notifications"
@@ -26,6 +27,7 @@
 
   <%= render FlatPack::CodeBlock::Component.new(
     language: :bash,
+    title: "Terminal",
     code: <<~CODE
       bundle install
       bin/rails generate recording_studio_notifications_email:install
@@ -34,6 +36,7 @@
 
   <%= render FlatPack::CodeBlock::Component.new(
     language: :ruby,
+    title: "Ruby",
     code: <<~CODE
       # config/initializers/recording_studio_notifications_email.rb
       RecordingStudioNotificationsEmail.configure do |config|
@@ -85,7 +88,7 @@
 
   <%= render FlatPack::SectionTitle::Component.new(
     title: "Parent Notification Setup",
-    subtitle: "Enable :email and optionally set individual and rollup template paths on each notification type.",
+    subtitle: "Enable :email on each notification type. individual_mailer and rollup_mailer are deprecated.",
   ) %>
 
   <%= render FlatPack::CodeBlock::Component.new(
@@ -99,6 +102,7 @@
           available_channels: %i[in_app email],
           scope: :root,
           allowed_cadences: %i[individual daily weekly],
+          # Deprecated. Removed in 0.5.0. Use notifications 0.14.3 channel_options.
           individual_mailer: "notification_mailer/individual/page_comment",
           rollup_mailer: "notification_mailer/rollup/page_comment"
         )
@@ -120,8 +124,8 @@
     ["allowed_cadences", "No", ":individual, :daily, :every_other_day, :weekly, :biweekly, or :monthly; default [:individual]", "Non-empty cadence choices available to recipients."],
     ["default_cadence", "No", "One allowed cadence; default :individual", "Cadence assigned when the recipient has not selected one."],
     ["required_cadence", "No", "One allowed cadence or nil; default nil", "Locks delivery to a cadence for all recipients."],
-    ["individual_mailer", "No", "Template path String or nil", "Email-channel template for :individual deliveries. Falls back to the bundled template."],
-    ["rollup_mailer", "No", "Template path String or nil", "Email-channel template for daily, weekly, and other rollup deliveries. Falls back to the bundled rollup template."]
+    ["individual_mailer", "No", "Deprecated. Removed in 0.5.0.", "Replaced by notifications 0.14.3 channel_options. Template path for :individual deliveries until then."],
+    ["rollup_mailer", "No", "Deprecated. Removed in 0.5.0.", "Replaced by notifications 0.14.3 channel_options. Template path for rollup deliveries until then."]
 ], min_width: :none) do |table| %>
   <% table.column(title: "Parameter") { |row| row[0] } %>
   <% table.column(title: "Required") { |row| row[1] } %>
@@ -136,6 +140,7 @@
 
   <%= render FlatPack::CodeBlock::Component.new(
     language: :ruby,
+    title: "Ruby",
     code: <<~CODE
       RecordingStudioNotifications.notify(
         notification_type: :page_comment,

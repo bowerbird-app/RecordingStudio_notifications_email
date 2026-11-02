@@ -63,16 +63,17 @@
       <% end %>
 
       <% card.body do %>
-        <%= render FlatPack::List::Component.new do %>
+        <%= render FlatPack::List::Component.new(ordered: true, spacing: :dense) do %>
           <% [
-            "Add the gem to your host app and run bundle install.",
-            "Run rails generate recording_studio_notifications_email:install to add configuration.",
-            "Run rails generate recording_studio_notifications_email:migrations, then migrate. That adds the address suppression table.",
-            "Register Webhooks::ApplyEvent with your webhook provider. This gem mounts no inbound route of its own.",
-            "Rebuild styles if needed with bin/rails tailwindcss:build."
-          ].each do |step| %>
+            ["Add the gem to the host app.", "bundle install"],
+            ["Add configuration.", "bin/rails generate recording_studio_notifications_email:install"],
+            ["Add the address suppression table, then migrate.", "bin/rails generate recording_studio_notifications_email:migrations"],
+            ["Register the webhook action. This gem mounts no inbound route.", "RecordingStudioNotificationsEmail::Webhooks::ApplyEvent.register!"],
+            ["Rebuild styles when the host serves its own CSS.", "bin/rails tailwindcss:build"]
+          ].each do |step, command| %>
             <%= render FlatPack::List::Item.new do %>
-              <%= step %>
+              <p><%= step %></p>
+              <%= render FlatPack::CodeBlock::Component.new(language: :bash, title: "Terminal", code: command) %>
             <% end %>
           <% end %>
         <% end %>

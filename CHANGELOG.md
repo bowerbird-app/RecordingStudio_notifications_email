@@ -14,6 +14,9 @@ All notable changes to this project will be documented in this file.
   Recording Studio labels and only the current workspace.
 - The dummy Tailwind build also scans FlatPack, core, and notifications
   when those gems are installed under `lib/ruby`.
+- The workspace outline lists pages and folders. The config sample marks
+  `individual_mailer` and `rollup_mailer` as deprecated. `0.5.0` removes
+  them in favor of notifications `0.14.3` `channel_options`.
 
 ### Upgrade notes
 

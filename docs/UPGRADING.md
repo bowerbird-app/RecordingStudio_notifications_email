@@ -6,9 +6,10 @@ The dummy app resolves its layout only through `recording_studio_layout`.
 Signed-in screens use `flat_pack_sidebar`. Devise uses `application`.
 The old `layout :application_layout` override is gone.
 
-Page forms use FlatPack select fields. The workspace outline lists the
-current workspace and labels each row with `RecordingStudio.recordable_type_label`
-and `recordable_name`.
+Page forms use FlatPack select fields. The workspace outline lists pages
+and folders in the current workspace. `individual_mailer` and
+`rollup_mailer` in the config sample are deprecated and go away in
+`0.5.0`, replaced by notifications `0.14.3` `channel_options`.
 
 The dummy Tailwind file also scans gems installed under
 `/usr/local/lib/ruby/gems`. Rebuild styles with `bin/rails tailwindcss:build`

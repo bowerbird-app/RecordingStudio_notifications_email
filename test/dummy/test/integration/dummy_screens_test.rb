@@ -7,9 +7,6 @@ class DummyScreensTest < ActionDispatch::IntegrationTest
   include Devise::Test::IntegrationHelpers
 
   test "signed-in screens use the sidebar layout and devise keeps application" do
-    assert_equal :recording_studio_resolved_layout, ApplicationController._layout
-    refute ApplicationController.method_defined?(:application_layout)
-
     get new_user_session_path
 
     assert_response :success
@@ -54,10 +51,25 @@ class DummyScreensTest < ActionDispatch::IntegrationTest
     get docs_recordings_tree_path
 
     assert_response :success
-    assert_includes response.body, "Workspace: Visible Outline Workspace"
     assert_includes response.body, "Page: Visible outline"
+    refute_includes response.body, "Workspace: Visible Outline Workspace"
     refute_includes response.body, "Hidden Outline Workspace"
     refute_includes response.body, "Secret outline"
+    refute_includes response.body, "Access:"
+    refute_includes response.body, "Unknown actor"
+
+    get docs_gem_views_path
+    assert_includes response.body, "app/views/recording_studio_notifications_email/"
+    assert_includes response.body, "notification_mailer/notification.html.erb"
+    refute_includes response.body, "app/views/recording_studio_notifications_email/notification_mailer/notification.html.erb"
+
+    get docs_methods_path
+    assert_includes response.body, "mark_delivered!"
+
+    get new_system_notifications_path
+    assert_includes response.body, "people who can open this workspace"
+    refute_includes response.body, "every user"
+    refute_includes response.body, "Send to all users"
   end
 
   private

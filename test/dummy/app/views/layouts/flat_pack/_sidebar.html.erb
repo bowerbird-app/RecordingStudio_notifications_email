@@ -1,14 +1,15 @@
 <%= render FlatPack::Sidebar::Component.new(side: sidebar_side) do |sidebar| %>
   <% sidebar.header do %>
+    <% version_badge = render FlatPack::Sidebar::Badge::Component.new(
+      value: "v#{RecordingStudioNotificationsEmail::VERSION}",
+      style: :muted,
+      class: "ml-2"
+    ) %>
     <%= render FlatPack::Sidebar::Header::Component.new(
       brand_abbr: "RS",
-      title: "Mail",
+      title: safe_join(["Mail", version_badge]),
       collapsible: true,
       show_version: false
-    ) %>
-    <%= render FlatPack::Sidebar::Badge::Component.new(
-      value: "v#{RecordingStudioNotificationsEmail::VERSION}",
-      style: :muted
     ) %>
   <% end %>
 
@@ -60,7 +61,9 @@
         <%= render FlatPack::Sidebar::Item::Component.new(
           text: "Letter Opener",
           href: "/letter_opener",
-          icon: :envelope
+          icon: :envelope,
+          target: "_blank",
+          rel: "noopener"
         ) %>
       <% end %>
 
