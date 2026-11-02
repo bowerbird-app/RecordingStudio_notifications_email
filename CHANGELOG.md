@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
 - Runtime dependencies are Recording Studio `>= 6.1.0` and `< 7`, and
   notifications `>= 0.14.0` and `< 1`.
 - Development pins are FlatPack `v0.1.332` and Root Switchable `v0.11.3`.
+- Lock updates that came with those pins: `rack` `3.2.8`, `rack-test`
+  `2.3.0`, `loofah` `2.25.3`, `nokogiri` `1.19.5`, and `io-console` `0.9.5`.
 
 ### Upgrade notes
 
