@@ -14,6 +14,8 @@ All notable changes to this project will be documented in this file.
 - Gem tests call `reset_configuration!`, notification-type registration, and
   public suppression checks. They no longer swap private configuration state
   or remove parent constants.
+- The dummy app depends on `minitest-mock` so a test can stub one delivery
+  for the length of a block.
 
 ### Upgrade notes
 
