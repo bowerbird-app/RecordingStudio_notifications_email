@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-02
+
+### Changed
+
+- The dummy home page and install docs describe this email channel. Template
+  leftovers are gone: the dumped install page, the unused Stimulus hello
+  controller, the empty makeup-artist example, and the nested dummy GitHub
+  workflow files.
+- Dummy Tailwind no longer scans one hardcoded notifications checkout. The
+  dummy test database no longer shares `DB_NAME` with development.
+- The README lists the current GitHub tag pins. Copilot guidance matches the
+  suppression migration and webhook action this gem already ships.
+
 ## [0.4.0] - 2026-10-29
 
 ### Changed

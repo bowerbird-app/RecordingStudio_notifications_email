@@ -26,14 +26,15 @@ default: &default
 
 development:
   <<: *default
-  database: <%= ENV.fetch("DB_NAME") { "app_development" } %>
+  database: <%= ENV.fetch("DB_NAME") { "recording_studio_notifications_email_development" } %>
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
+# TEST_DB_NAME is separate so a development DB_NAME cannot point tests at it.
 test:
   <<: *default
-  database: <%= ENV.fetch("DB_NAME") { "app_test" } %>
+  database: <%= ENV.fetch("TEST_DB_NAME") { "recording_studio_notifications_email_test" } %>
 
 # As with config/credentials.yml, you never want to store sensitive information,
 # like your database password, in your source code. If your source code is

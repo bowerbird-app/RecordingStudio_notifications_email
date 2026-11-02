@@ -50,20 +50,14 @@ RecordingStudioNotifications.register_channel(
 ```
 
 For local development in this repository, parent gems are sourced from GitHub
-until published releases are available. Current pins include Recording Studio
-`v6.3.0` (runtime floor `>= 6.1.0`), Accessible `v0.24.0`, Trashable `v0.12.0`
-(`require: false`; query-only for Accessible), notifications `v0.14.1`,
-Metrics `v0.7.0`, and FlatPack `v0.1.329`. The dummy also pins Commentable
-`v0.7.0`, Root Switchable `v0.11.2`, and Cache `v0.6.0`. Accessible `0.11+`
-needs string roles, its 0.8–0.11 migrations, and an
-`access_actor_types` allowlist (dummy uses `User`). Accessible `0.14`
-adds access constraint/rule tables (dummy installs those migrations);
-`0.15` is translation-only; `0.17` filters kept rows via Trashable query
-helpers; `0.18` adds `ControllerAuth` for sibling engines (no Accessible
-migration). Grants go through
-`bootstrap_owner_access!` / `grant_access`. Accessible, Commentable,
-notifications, and Root Switchable ship English I18n keys for their own
-views; rendered English is unchanged.
+tags. Current pins include Recording Studio `v6.3.0` (runtime floor
+`>= 6.1.0`), Accessible `v0.24.0`, Trashable `v0.12.0` (`require: false`;
+query-only for Accessible), notifications `v0.14.1`, Metrics `v0.7.0`, and
+FlatPack `v0.1.329`. The dummy also pins Commentable `v0.7.0`, Root
+Switchable `v0.11.2`, and Cache `v0.6.0`. Grants go through
+`bootstrap_owner_access!` / `grant_access`. The dummy allowlists `User` in
+`access_actor_types`. Accessible, Commentable, notifications, and Root
+Switchable ship English I18n keys for their own views.
 
 Dummy credentials (`test/dummy/config/credentials.yml.enc`) are encrypted with
 the shared RecordingStudio_* development master key. Set `RAILS_MASTER_KEY` or
