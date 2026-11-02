@@ -26,12 +26,17 @@ module RecordingStudioNotificationsEmail
 
       def yaml_configuration(app)
         return unless app.respond_to?(:config_for)
+        return unless yaml_file(app)&.exist?
 
         hash_configuration(app.config_for(:recording_studio_notifications_email))
       rescue Psych::SyntaxError => e
         raise ConfigurationError, "recording_studio_notifications_email.yml is invalid: #{e.message}"
-      rescue RuntimeError => e
-        missing_configuration(e)
+      end
+
+      def yaml_file(app)
+        return unless app.respond_to?(:root) && app.root
+
+        Pathname(app.root).join("config/recording_studio_notifications_email.yml")
       end
 
       def hash_configuration(yaml)
@@ -39,12 +44,6 @@ module RecordingStudioNotificationsEmail
         return yaml if yaml.respond_to?(:each_pair)
 
         raise ConfigurationError, "recording_studio_notifications_email.yml must be a hash"
-      end
-
-      def missing_configuration(error)
-        raise error unless error.message.include?("No such file")
-
-        nil
       end
     end
   end

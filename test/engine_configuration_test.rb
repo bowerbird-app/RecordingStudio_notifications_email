@@ -3,8 +3,13 @@
 require "test_helper"
 
 class EngineConfigurationTest < Minitest::Test
+  def setup
+    @roots = []
+  end
+
   def teardown
     RecordingStudioNotificationsEmail.reset_configuration!
+    @roots.each { |root| FileUtils.remove_entry(root) if File.directory?(root) }
   end
 
   def test_engine_merges_yaml_and_application_configuration
@@ -15,8 +20,7 @@ class EngineConfigurationTest < Minitest::Test
     end
     config = Object.new
     config.define_singleton_method(:x) { application_options }
-    app = Object.new
-    app.define_singleton_method(:config_for) { |_name| { "from" => "from@example.test" } }
+    app = app_with_config_for(->(_name) { { "from" => "from@example.test" } })
     app.define_singleton_method(:config) { config }
 
     load_config_initializer.block.call(app)
@@ -28,10 +32,15 @@ class EngineConfigurationTest < Minitest::Test
   def test_missing_yaml_leaves_configuration_in_place
     RecordingStudioNotificationsEmail.reset_configuration!
     RecordingStudioNotificationsEmail.configuration.from = "already@example.test"
-    app = app_with_config_for(->(_name) { raise "Could not load configuration. No such file - missing.yml" })
+    called = false
+    app = app_with_config_for(lambda { |_name|
+      called = true
+      flunk "config_for should not run when the yaml file is absent"
+    }, file: false)
 
     load_config_initializer.block.call(app)
 
+    refute called
     assert_equal "already@example.test", RecordingStudioNotificationsEmail.configuration.from
   end
 
@@ -64,9 +73,17 @@ class EngineConfigurationTest < Minitest::Test
 
   private
 
-  def app_with_config_for(reader)
+  def app_with_config_for(reader, file: true)
+    root = Dir.mktmpdir
+    @roots << root
+    if file
+      FileUtils.mkdir_p(File.join(root, "config"))
+      File.write(File.join(root, "config/recording_studio_notifications_email.yml"), "{}\n")
+    end
+
     config = Object.new
     app = Object.new
+    app.define_singleton_method(:root) { Pathname(root) }
     app.define_singleton_method(:config_for, reader)
     app.define_singleton_method(:config) { config }
     app
