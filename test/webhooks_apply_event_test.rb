@@ -6,6 +6,8 @@ class WebhooksApplyEventTest < Minitest::Test
   Inbound = Struct.new(:provider_name, :event_type, :provider_event_id, :received_at, keyword_init: true)
   Context = Struct.new(:inbound_event, :payload, keyword_init: true)
 
+  # Stub module scaffolding. register! looks up the RecordingStudioWebhooks
+  # constant, so the test defines that module and removes it afterwards.
   def teardown
     Object.send(:remove_const, :RecordingStudioWebhooks) if defined?(RecordingStudioWebhooks)
   end

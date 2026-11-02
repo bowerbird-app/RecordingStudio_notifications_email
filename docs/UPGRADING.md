@@ -1,5 +1,13 @@
 # Upgrading
 
+## 0.4.2
+
+`Event#url` always uses `RecordingStudioNotifications::UrlSafety.safe?`.
+The previous local fallback is gone. On notifications `0.10.0` or newer that
+fallback never ran, so absolute links still need `allowed_url_hosts` on the
+notifications configuration. Control characters and backslashes are still
+rejected before the parent check.
+
 ## 0.4.0
 
 This version requires Recording Studio `>= 6.1.0`. From a host Gemfile that
