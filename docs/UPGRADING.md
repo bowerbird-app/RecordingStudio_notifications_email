@@ -1,5 +1,12 @@
 # Upgrading
 
+## 0.5.1
+
+Root CI runs a Security job: Brakeman, then `bundler-audit check --update`.
+The development bundle includes `brakeman` and `bundler-audit` for that job.
+
+No application change. `view_component` stays `4.20.0`. There is no migration.
+
 ## 0.5.0
 
 Email template paths are no longer stored on this gem. Pass them in

@@ -61,3 +61,22 @@ jobs:
           RAILS_ENV: test
       - name: Require 94% line coverage
         run: bin/check_coverage
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      BUNDLE_GITHUB__COM: x-access-token:${{ secrets.BOWERBIRD_ORG_CI_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      - name: Run Brakeman
+        run: bundle exec brakeman --no-pager --quiet
+      - name: Run bundler-audit
+        run: bundle exec bundler-audit check --update

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-02
+
+### Changed
+
+- The root CI workflow has a Security job. It runs Brakeman and
+  `bundler-audit check --update` from this gem's bundle.
+
+### Upgrade notes
+
+- No application change. `view_component` stays `4.20.0`. There is no
+  migration.
+
 ## [0.5.0] - 2026-11-02
 
 ### Removed
