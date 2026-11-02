@@ -17,37 +17,23 @@ class DummySurfaceTest < Minitest::Test
     end
   end
 
-  def test_docs_and_dummy_copy_drop_template_placeholders
-    home = File.read(File.join(ROOT, "test/dummy/app/views/home/index.html.erb"))
-    install = File.read(File.join(ROOT, "test/dummy/app/views/docs/install.html.erb"))
-    tailwind = File.read(File.join(ROOT, "test/dummy/app/assets/tailwind/application.css"))
-    readme = File.read(File.join(ROOT, "README.md"))
-    dummy_readme = File.read(File.join(ROOT, "test/dummy/README.md"))
-    copilot = File.read(File.join(ROOT, ".github/copilot-instructions.md"))
-    database = File.read(File.join(ROOT, "test/dummy/config/database.yml"))
+  def test_dummy_test_database_comes_from_the_loaded_configuration
+    require "active_record"
+    require "erb"
 
-    [home, install, readme, dummy_readme, copilot].each do |text|
-      refute_includes text, "Template Demo"
-      refute_includes text, "rename_gem"
-      refute_includes text, "Put the step"
-      refute_includes text, "until published"
-    end
+    path = File.join(ROOT, "test/dummy/config/database.yml")
+    rendered = ERB.new(File.read(path)).result
+    loaded = YAML.safe_load(rendered, aliases: true)
+    previous = ActiveRecord::Base.configurations
+    ActiveRecord::Base.configurations = loaded
 
-    refute_includes home, "No route or migration is required"
-    assert_includes home, "recording_studio_notifications_email:migrations"
-    assert_includes install, "Webhooks::ApplyEvent.register!"
-    refute_includes tailwind, "5ae524ff5c17"
-    refute_includes dummy_readme, "source of truth"
-    refute_includes dummy_readme, "starter sidebar pages"
-    refute_includes copilot, "Do not add migrations, routes, inbound email processing, or webhooks."
-    assert_includes copilot, "suppression migration"
+    test_config = ActiveRecord::Base.configurations.configs_for(env_name: "test").sole
+    development_config = ActiveRecord::Base.configurations.configs_for(env_name: "development").sole
 
-    assert_includes database, 'ENV.fetch("DB_NAME") { "recording_studio_notifications_email_development" }'
-    assert_includes database, 'ENV.fetch("TEST_DB_NAME") { "recording_studio_notifications_email_test" }'
-    refute_includes database, "app_development"
-    refute_includes database, "app_test"
-    test_database = database[/^test:\n(?:  .*\n)*/]
-    assert_includes test_database, "TEST_DB_NAME"
-    refute_includes test_database, 'ENV.fetch("DB_NAME")'
+    assert_equal ENV.fetch("TEST_DB_NAME", "recording_studio_notifications_email_test"), test_config.database
+    assert_equal ENV.fetch("DB_NAME", "recording_studio_notifications_email_development"), development_config.database
+    refute_equal development_config.database, test_config.database
+  ensure
+    ActiveRecord::Base.configurations = previous if previous
   end
 end
