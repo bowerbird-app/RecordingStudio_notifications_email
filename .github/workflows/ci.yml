@@ -31,14 +31,15 @@ jobs:
       DB_HOST: localhost
       DB_USER: postgres
       DB_PASSWORD: postgres
-      BUNDLE_GITHUB__COM: x-access-token:${{ secrets.BOWERBIRD_ORG_CI_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Ruby ${{ matrix.ruby-version }}
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1
         with:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
+        env:
+          BUNDLE_GITHUB__COM: x-access-token:${{ secrets.BOWERBIRD_ORG_CI_TOKEN }}
       - name: Run RuboCop
         run: bundle exec rubocop
       - name: Run gem tests
@@ -46,6 +47,8 @@ jobs:
       - name: Install dummy dependencies
         working-directory: test/dummy
         run: bundle install
+        env:
+          BUNDLE_GITHUB__COM: x-access-token:${{ secrets.BOWERBIRD_ORG_CI_TOKEN }}
       - name: Build dummy CSS
         working-directory: test/dummy
         run: bundle exec rails tailwindcss:build
@@ -67,16 +70,24 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      BUNDLE_GITHUB__COM: x-access-token:${{ secrets.BOWERBIRD_ORG_CI_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1
         with:
           ruby-version: "3.3"
           bundler-cache: true
+        env:
+          BUNDLE_GITHUB__COM: x-access-token:${{ secrets.BOWERBIRD_ORG_CI_TOKEN }}
+      - name: Install dummy dependencies
+        working-directory: test/dummy
+        run: bundle install
+        env:
+          BUNDLE_GITHUB__COM: x-access-token:${{ secrets.BOWERBIRD_ORG_CI_TOKEN }}
       - name: Run Brakeman
+        run: bundle exec brakeman --no-pager --quiet
+      - name: Run Brakeman on the dummy app
+        working-directory: test/dummy
         run: bundle exec brakeman --no-pager --quiet
       - name: Run bundler-audit
         run: bundle exec bundler-audit check --update

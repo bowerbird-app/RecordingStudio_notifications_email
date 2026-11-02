@@ -2,8 +2,11 @@
 
 ## 0.5.1
 
-Root CI runs a Security job: Brakeman, then `bundler-audit check --update`.
-The development bundle includes `brakeman` and `bundler-audit` for that job.
+Root CI runs a Security job: Brakeman on this gem and on `test/dummy`,
+then `bundler-audit check --update`. The development bundle includes
+`brakeman` and `bundler-audit` for that job. Checkout and Ruby setup
+are pinned by commit. The org token is set only on the steps that
+install gems.
 
 No application change. `view_component` stays `4.20.0`. There is no migration.
 
