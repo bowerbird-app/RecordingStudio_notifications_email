@@ -1,5 +1,13 @@
 # Upgrading
 
+## 0.4.6
+
+The gem now requires `recording_studio` `>= 6.1.0` and `< 7`, and
+`recording_studio_notifications` `>= 0.14.0` and `< 1`.
+
+Repository pins: FlatPack `v0.1.332`, Root Switchable `v0.11.3`. Core stays
+`v6.3.0`. Notifications stays `v0.14.1`. `view_component` stays `4.20.0`.
+
 ## 0.4.5
 
 The dummy app resolves its layout only through `recording_studio_layout`.
@@ -61,10 +69,11 @@ gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"
 Stay on `0.3.15` until the host is on Recording Studio 6.1 or newer. There is
 no migration in this gem.
 
-Dummy and development pins in this repository: core `v6.3.0`, FlatPack
-`v0.1.329`, notifications `v0.14.1`, Commentable `v0.7.0`, Accessible
-`v0.24.0`, Trashable `v0.12.0`, Metrics `v0.7.0`, Cache `v0.6.0`, Root
-Switchable `v0.11.2`. Root Switchable `config.layout` must be a layout name,
+Pins shipped with 0.4.0: core `v6.3.0`, FlatPack `v0.1.329`, notifications
+`v0.14.1`, Commentable `v0.7.0`, Accessible `v0.24.0`, Trashable `v0.12.0`,
+Metrics `v0.7.0`, Cache `v0.6.0`, Root Switchable `v0.11.2`. See 0.4.6 for
+the current FlatPack and Root Switchable pins. Root Switchable
+`config.layout` must be a layout name,
 `nil`, `false`, or a callable invoked as `call(controller:)` — not a method
 Symbol.
 
