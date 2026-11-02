@@ -29,7 +29,7 @@
             <p><strong>Notification ID:</strong> <code><%= @webhook_lab_target["notification_id"] %></code></p>
             <p><strong>Delivery ID:</strong> <code><%= @webhook_lab_target["delivery_id"] %></code></p>
             <p><strong>Signed reference:</strong></p>
-            <pre class="overflow-x-auto rounded-md border border-slate-200 bg-slate-50 p-3 text-xs leading-5"><%= @webhook_lab_reference %></pre>
+            <%= render FlatPack::CodeBlock::Component.new(code: @webhook_lab_reference.to_s) %>
           </div>
         <% else %>
           <p class="text-sm text-(--body-muted-content-color)">No target yet. Create one first.</p>
@@ -163,9 +163,9 @@
       <% if @webhook_lab_last_result.present? %>
         <% if @webhook_lab_last_payload.present? %>
           <p class="mb-2 text-sm font-medium">Last payload</p>
-          <pre class="mb-3 overflow-x-auto rounded-md border border-slate-200 bg-slate-50 p-3 text-xs leading-5"><%= JSON.pretty_generate(@webhook_lab_last_payload) %></pre>
+          <%= render FlatPack::CodeBlock::Component.new(language: :json, code: JSON.pretty_generate(@webhook_lab_last_payload)) %>
         <% end %>
-        <pre class="overflow-x-auto rounded-md border border-slate-200 bg-slate-50 p-3 text-xs leading-5"><%= JSON.pretty_generate(@webhook_lab_last_result) %></pre>
+        <%= render FlatPack::CodeBlock::Component.new(language: :json, code: JSON.pretty_generate(@webhook_lab_last_result)) %>
       <% else %>
         <p class="text-sm text-(--body-muted-content-color)">No webhook event has been fired yet.</p>
       <% end %>

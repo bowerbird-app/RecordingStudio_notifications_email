@@ -1,5 +1,19 @@
 # Upgrading
 
+## 0.4.5
+
+The dummy app resolves its layout only through `recording_studio_layout`.
+Signed-in screens use `flat_pack_sidebar`. Devise uses `application`.
+The old `layout :application_layout` override is gone.
+
+Page forms use FlatPack select fields. The workspace outline lists the
+current workspace and labels each row with `RecordingStudio.recordable_type_label`
+and `recordable_name`.
+
+The dummy Tailwind file also scans gems installed under
+`/usr/local/lib/ruby/gems`. Rebuild styles with `bin/rails tailwindcss:build`
+after pulling this version.
+
 ## 0.4.4
 
 The dummy app no longer overrides the notifications inbox. The inbox lists
