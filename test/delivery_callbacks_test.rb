@@ -36,22 +36,22 @@ class DeliveryCallbacksTest < Minitest::Test
   end
 
   class ContractAwareDelivery
-    attr_reader :id, :called_mutators, :called_predicates
+    attr_reader :id, :called_mutators, :called_checks
 
     def initialize(id:)
       @id = id
       @called_mutators = []
-      @called_predicates = []
+      @called_checks = []
     end
 
-    def email_opened?
-      @called_predicates << :email_opened?
+    def email_event_applied?(type)
+      @called_checks << [:email_event_applied?, type]
       false
     end
 
-    def opened?
-      @called_predicates << :opened?
-      false
+    def email_event_at(type)
+      @called_checks << [:email_event_at, type]
+      nil
     end
 
     def mark_email_opened!(at:)
@@ -82,24 +82,20 @@ class DeliveryCallbacksTest < Minitest::Test
       @marked_at = at
     end
 
-    def email_opened?
-      !@opened_at.nil?
+    def email_event_at(type)
+      case type.to_sym
+      when :opened then @opened_at
+      when :clicked then @clicked_at
+      when :bounced then @bounced_at
+      when :complained then @complained_at
+      when :unsubscribed then @unsubscribed_at
+      else
+        raise ArgumentError, "unknown email event: #{type}"
+      end
     end
 
-    def email_clicked?
-      !@clicked_at.nil?
-    end
-
-    def email_bounced?
-      !@bounced_at.nil?
-    end
-
-    def email_complained?
-      !@complained_at.nil?
-    end
-
-    def email_unsubscribed?
-      !@unsubscribed_at.nil?
+    def email_event_applied?(type)
+      email_event_at(type).present?
     end
 
     def mark_email_opened!(at:)
@@ -318,9 +314,9 @@ class DeliveryCallbacksTest < Minitest::Test
     notification.define_singleton_method(:recipient) { recipient }
     delivery = LegacyDelivery.new(id: "delivery-1", notification: notification)
     called = []
-    delivery.define_singleton_method(:email_bounced?) { false }
+    delivery.define_singleton_method(:email_event_applied?) { |_type| false }
+    delivery.define_singleton_method(:email_event_at) { |_type| nil }
     delivery.define_singleton_method(:mark_email_bounced!) { |at:| called << [:mark_email_bounced!, at] }
-    delivery.define_singleton_method(:email_opened?) { false }
     delivery.define_singleton_method(:mark_email_opened!) { |at:| called << [:mark_email_opened!, at] }
 
     with_stubbed_delivery_where([delivery]) do
@@ -357,7 +353,8 @@ class DeliveryCallbacksTest < Minitest::Test
     notification = FakeNotification.new("notification-1", nil)
     notification.define_singleton_method(:recipient) { recipient }
     delivery = LegacyDelivery.new(id: "delivery-1", status: "pending", notification: notification)
-    delivery.define_singleton_method(:email_complained?) { false }
+    delivery.define_singleton_method(:email_event_applied?) { |_type| false }
+    delivery.define_singleton_method(:email_event_at) { |_type| nil }
     delivery.define_singleton_method(:mark_email_complained!) { |**| raise "mutator failed" }
     order = []
 
@@ -543,16 +540,17 @@ class DeliveryCallbacksTest < Minitest::Test
     end
   end
 
-  def test_email_mark_reads_metadata_when_the_predicate_is_absent
+  def test_replayed_webhook_is_already_applied_via_email_event_applied
     reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
-    metadata = {}
+    applied_at = nil
     calls = 0
     delivery = Object.new
     delivery.define_singleton_method(:id) { "delivery-1" }
-    delivery.define_singleton_method(:metadata) { metadata }
+    delivery.define_singleton_method(:email_event_at) { |type| type.to_sym == :clicked ? applied_at : nil }
+    delivery.define_singleton_method(:email_event_applied?) { |type| delivery.email_event_at(type).present? }
     delivery.define_singleton_method(:mark_email_clicked!) do |at:|
       calls += 1
-      metadata["email_clicked_at"] = at.iso8601
+      applied_at = at
     end
 
     with_stubbed_delivery_where([delivery]) do
@@ -568,10 +566,14 @@ class DeliveryCallbacksTest < Minitest::Test
       )
 
       assert_equal %w[delivery-1], first.updated_delivery_ids
+      assert_equal [], first.already_applied_delivery_ids
+      assert_equal [], second.updated_delivery_ids
       assert_equal %w[delivery-1], second.already_applied_delivery_ids
     end
 
     assert_equal 1, calls
+    assert_equal @delivered_at, delivery.email_event_at(:clicked)
+    assert delivery.email_event_applied?(:clicked)
   end
 
   def test_prefers_canonical_contract_methods_over_aliases
@@ -586,7 +588,7 @@ class DeliveryCallbacksTest < Minitest::Test
       )
 
       assert_equal :opened, result.event_type
-      assert_equal [:email_opened?], delivery.called_predicates
+      assert_equal [%i[email_event_applied? opened]], delivery.called_checks
       assert_equal [[:mark_email_opened!, @delivered_at]], delivery.called_mutators
     end
   end
@@ -611,14 +613,14 @@ class DeliveryCallbacksTest < Minitest::Test
     end
   end
 
-  def test_delivered_webhook_without_a_mutator_raises
+  def test_delivered_webhook_without_mark_delivered_raises
     reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
     delivery = Object.new
     delivery.define_singleton_method(:id) { "delivery-1" }
     delivery.define_singleton_method(:delivered?) { false }
 
     with_stubbed_delivery_where([delivery]) do
-      error = assert_raises(RecordingStudioNotificationsEmail::UnsupportedWebhookEventError) do
+      assert_raises(NoMethodError) do
         RecordingStudioNotificationsEmail::DeliveryCallbacks.process_webhook_event!(
           event: {
             provider: :postmark,
@@ -630,8 +632,6 @@ class DeliveryCallbacksTest < Minitest::Test
           configuration: @configuration
         )
       end
-
-      assert_includes error.message, "delivered"
     end
   end
 
@@ -643,7 +643,8 @@ class DeliveryCallbacksTest < Minitest::Test
     delivery = Object.new
     delivery.define_singleton_method(:id) { "delivery-1" }
     delivery.define_singleton_method(:notification_id) { "notification-1" }
-    delivery.define_singleton_method(:email_bounced?) { false }
+    delivery.define_singleton_method(:email_event_applied?) { |_type| false }
+    delivery.define_singleton_method(:email_event_at) { |_type| nil }
     delivery.define_singleton_method(:mark_email_bounced!) { |at:| }
 
     with_notification_lookup(notification) do

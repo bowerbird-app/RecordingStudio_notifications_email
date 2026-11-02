@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-11-02
+
+### Changed
+
+- Notifications is pinned to tag `v0.14.7`. The gemspec floor is
+  `>= 0.14.7` and `< 1`.
+- A replayed provider event asks `Delivery#email_event_applied?`.
+  Timestamps stay on `Delivery#email_event_at`. This gem no longer keeps
+  its own email timestamp keys.
+- The open link in an individual email is
+  `RecordingStudioNotifications.notification_url`. The mailer still
+  receives it as `tracked_notification_path`, and the value is absolute.
+- `Event#url` uses `UrlSafety` for control characters and backslashes.
+  The local character check is gone.
+- The dummy inbox sets `config.default_inbox_scope` to `current_root`.
+  There is no local inbox patch.
+- Lock updates that came with the notifications pin: `nokogiri` `1.19.6`
+  and `rails-html-sanitizer` `1.7.2`.
+
+### Upgrade notes
+
+- Move to notifications `0.14.7` or newer before this version. Set
+  `config.action_mailer.default_url_options[:host]` so `notification_url`
+  can build an absolute link. A missing host raises `ArgumentError`.
+- Custom mailers that read `tracked_notification_path` now get an
+  absolute URL, the same host options as the unsubscribe link.
+- Set notifications `config.default_inbox_scope` to `"current_root"` or
+  `"all"`. Delete any inbox scope patch.
+- No migration. `view_component` stays `4.20.0`.
+
 ## [0.4.6] - 2026-11-02
 
 ### Changed

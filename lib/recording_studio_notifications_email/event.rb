@@ -44,12 +44,8 @@ module RecordingStudioNotificationsEmail
     def url
       value = presentation_attribute(:url).to_s.presence
       return unless value
-      return if unsafe_url_characters?(value)
-
       return value if RecordingStudioNotifications::UrlSafety.safe?(value)
 
-      nil
-    rescue URI::InvalidURIError
       nil
     end
 
@@ -146,10 +142,6 @@ module RecordingStudioNotificationsEmail
 
     def sanitize_header_text(value)
       value.to_s.gsub(/[\r\n]+/, " ").strip
-    end
-
-    def unsafe_url_characters?(value)
-      value.match?(/[\\\x00-\x1F\x7F]/)
     end
 
     def recording_recordable

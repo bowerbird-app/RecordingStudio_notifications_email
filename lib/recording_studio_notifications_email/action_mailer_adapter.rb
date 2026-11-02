@@ -22,7 +22,7 @@ module RecordingStudioNotificationsEmail
         from: configured_from,
         reply_to: configured_reply_to,
         template_path: individual_template_path_for(event),
-        tracked_notification_path: tracked_notification_path(notification),
+        tracked_notification_path: RecordingStudioNotifications.notification_url(notification),
         correlation_reference: reference,
         message_id: DeliveryToken.message_id(reference, configuration: @configuration)
       ).notification
@@ -150,15 +150,6 @@ module RecordingStudioNotificationsEmail
       else
         [:object, recipient.__id__]
       end
-    end
-
-    def tracked_notification_path(notification)
-      helpers = RecordingStudioNotifications::Engine.routes.url_helpers
-      return unless helpers.respond_to?(:open_notification_path)
-
-      helpers.open_notification_path(notification.id)
-    rescue ActionController::UrlGenerationError
-      nil
     end
   end
 

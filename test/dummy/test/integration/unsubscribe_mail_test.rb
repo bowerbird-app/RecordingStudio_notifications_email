@@ -26,6 +26,10 @@ class UnsubscribeMailTest < ActiveSupport::TestCase
     RecordingStudioNotificationsEmail.adapter.deliver(notification: notification, delivery: delivery)
 
     mail = ActionMailer::Base.deliveries.last
+    open_url = RecordingStudioNotifications.notification_url(notification)
+    assert_match %r{\Ahttp://example\.com/.+/notifications/#{notification.id}/open\z}, open_url
+    assert_includes mail.html_part.body.to_s, open_url
+    assert_includes mail.text_part.body.to_s, open_url
     header = mail["List-Unsubscribe"].value
     assert_includes header, "http://example.com/recording_studio_notifications/unsubscribe/system_announcement/email?token="
     assert_equal "List-Unsubscribe=One-Click", mail["List-Unsubscribe-Post"].value

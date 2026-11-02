@@ -100,26 +100,22 @@ class EventTest < Minitest::Test
     assert_nil protocol_relative.url
   end
 
-  def test_url_rejects_backslashes_before_parent_url_safety
+  def test_url_rejects_backslashes_through_url_safety
     event = RecordingStudioNotificationsEmail::Event.new({ url: "/notifications\\1" })
 
-    RecordingStudioNotifications::UrlSafety.stub(:safe?, ->(*) { flunk("expected to reject before UrlSafety") }) do
-      assert_nil event.url
-    end
+    assert_nil event.url
   end
 
-  def test_url_rejects_ascii_controls_before_url_safety
+  def test_url_rejects_ascii_controls_through_url_safety
     event = RecordingStudioNotificationsEmail::Event.new({ url: "/notifications/\u0000control" })
 
-    RecordingStudioNotifications::UrlSafety.stub(:safe?, ->(*) { flunk("expected to reject before UrlSafety") }) do
-      assert_nil event.url
-    end
+    assert_nil event.url
   end
 
-  def test_url_returns_nil_when_url_safety_cannot_parse
+  def test_url_returns_nil_when_url_safety_rejects_the_value
     event = RecordingStudioNotificationsEmail::Event.new({ url: "https://example.test/inbox" })
 
-    RecordingStudioNotifications::UrlSafety.stub(:safe?, ->(*) { raise URI::InvalidURIError }) do
+    RecordingStudioNotifications::UrlSafety.stub(:safe?, false) do
       assert_nil event.url
     end
   end

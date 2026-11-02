@@ -94,7 +94,8 @@ class WebhookLabTest < ActionDispatch::IntegrationTest
     refute_includes unescaped_response_body, "idempotency_key"
     delivery.reload
     assert_equal "pending", delivery.status
-    assert delivery.metadata["email_bounced_at"].present?
+    assert delivery.email_event_applied?(:bounced)
+    assert delivery.email_event_at(:bounced)
     refute RecordingStudioNotificationsEmail::Suppression.suppressed?("bounce-lab@example.com")
     assert_nil RecordingStudioNotificationsEmail::Suppression.find_by(address: "bounce-lab@example.com")
   end

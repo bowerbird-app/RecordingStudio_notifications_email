@@ -3,47 +3,18 @@
 module RecordingStudioNotificationsEmail
   module DeliveryCallbacks
     EVENT_METHOD_CONTRACT = {
-      delivered: {
-        predicate: :delivered?,
-        mutator: :mark_delivered!
-      },
-      opened: {
-        predicate: :email_opened?,
-        mutator: :mark_email_opened!
-      },
-      clicked: {
-        predicate: :email_clicked?,
-        mutator: :mark_email_clicked!
-      },
-      bounced: {
-        predicate: :email_bounced?,
-        mutator: :mark_email_bounced!
-      },
-      complained: {
-        predicate: :email_complained?,
-        mutator: :mark_email_complained!
-      },
-      unsubscribed: {
-        predicate: :email_unsubscribed?,
-        mutator: :mark_email_unsubscribed!
-      }
+      delivered: :mark_delivered!,
+      opened: :mark_email_opened!,
+      clicked: :mark_email_clicked!,
+      bounced: :mark_email_bounced!,
+      complained: :mark_email_complained!,
+      unsubscribed: :mark_email_unsubscribed!
     }.freeze
 
     SUPPRESSION_REASONS = {
       bounced: "bounce",
       complained: "complaint",
       unsubscribed: "unsubscribed"
-    }.freeze
-
-    # Notifications 0.10 stores these in delivery metadata and does not define
-    # email_opened? and the other predicates. Use the predicate when a delivery
-    # implements it, otherwise the timestamp the mutator writes.
-    EMAIL_TIMESTAMP_KEYS = {
-      opened: "email_opened_at",
-      clicked: "email_clicked_at",
-      bounced: "email_bounced_at",
-      complained: "email_complained_at",
-      unsubscribed: "email_unsubscribed_at"
     }.freeze
 
     DeliveryUpdateResult = Data.define(
@@ -222,32 +193,17 @@ module RecordingStudioNotificationsEmail
         normalized_event = event_type.to_sym
         return apply_delivered!(delivery, occurred_at: occurred_at) if normalized_event == :delivered
 
-        contract = EVENT_METHOD_CONTRACT.fetch(normalized_event)
-        return :already_applied if email_event_applied?(delivery, normalized_event, contract)
+        return :already_applied if delivery.email_event_applied?(normalized_event)
 
-        delivery.public_send(contract.fetch(:mutator), at: occurred_at)
+        delivery.public_send(EVENT_METHOD_CONTRACT.fetch(normalized_event), at: occurred_at)
         :updated
       end
 
       def apply_delivered!(delivery, occurred_at:)
-        return :already_applied if delivery.respond_to?(:delivered?) && delivery.delivered?
-
-        unless delivery.respond_to?(:mark_delivered!)
-          raise UnsupportedWebhookEventError, unsupported_event_message(:delivered)
-        end
+        return :already_applied if delivery.delivered?
 
         delivery.mark_delivered!(at: occurred_at)
         :updated
-      end
-
-      def email_event_applied?(delivery, event_type, contract)
-        predicate = contract.fetch(:predicate)
-        return delivery.public_send(predicate) if delivery.respond_to?(predicate)
-
-        metadata = delivery.metadata if delivery.respond_to?(:metadata)
-        return false unless metadata.respond_to?(:[])
-
-        metadata[EMAIL_TIMESTAMP_KEYS.fetch(event_type)].present?
       end
 
       def suppression_for(provider, bounce_type = nil)
@@ -265,10 +221,6 @@ module RecordingStudioNotificationsEmail
         return if event_type == :bounced && !BounceType.permanent?(bounce_type)
 
         SUPPRESSION_REASONS.fetch(event_type)
-      end
-
-      def unsupported_event_message(event_type)
-        "delivery model does not support #{event_type} callbacks"
       end
 
       def suppress_deliveries!(deliveries, reason:, provider:, configuration:)
