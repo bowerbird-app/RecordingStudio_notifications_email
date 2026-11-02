@@ -73,7 +73,7 @@
           ].each do |step, command| %>
             <%= render FlatPack::List::Item.new do %>
               <p><%= step %></p>
-              <%= render FlatPack::CodeBlock::Component.new(language: :bash, title: "Terminal", code: command) %>
+              <%= render FlatPack::CodeBlock::Component.new(language: :bash, title: "Terminal", wrap: false, code: command) %>
             <% end %>
           <% end %>
         <% end %>

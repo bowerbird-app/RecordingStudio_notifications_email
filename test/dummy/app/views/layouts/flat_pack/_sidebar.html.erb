@@ -2,12 +2,11 @@
   <% sidebar.header do %>
     <% version_badge = render FlatPack::Sidebar::Badge::Component.new(
       value: "v#{RecordingStudioNotificationsEmail::VERSION}",
-      style: :muted,
-      class: "ml-2"
+      style: :muted
     ) %>
     <%= render FlatPack::Sidebar::Header::Component.new(
       brand_abbr: "RS",
-      title: safe_join(["Mail", version_badge]),
+      title: safe_join(["Mail", version_badge], " "),
       collapsible: true,
       show_version: false
     ) %>

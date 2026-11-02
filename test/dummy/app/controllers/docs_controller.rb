@@ -302,14 +302,6 @@ class DocsController < ApplicationController
 
   def recording_label(recording)
     recordable = recording.recordable
-    actor = recordable.actor if recordable.respond_to?(:actor)
-    if actor
-      actor_name = actor.try(:name).presence || actor.try(:email).presence
-      return actor_name if actor_name
-
-      return RecordingStudio.recordable_type_label(recordable)
-    end
-
     type_label = RecordingStudio.recordable_type_label(recordable || recording.recordable_type)
     name = RecordingStudio.recordable_name(recordable)
     "#{type_label}: #{name}"

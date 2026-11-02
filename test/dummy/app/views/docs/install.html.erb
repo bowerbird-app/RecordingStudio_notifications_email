@@ -13,6 +13,7 @@
   <%= render FlatPack::CodeBlock::Component.new(
     language: :ruby,
     title: "Gemfile",
+    wrap: false,
     code: <<~CODE
       gem "recording_studio_notifications"
       gem "recording_studio_notifications_email"
@@ -27,6 +28,7 @@
   <%= render FlatPack::CodeBlock::Component.new(
     language: :bash,
     title: "Terminal",
+    wrap: false,
     code: <<~CODE
       bundle install
       bin/rails generate recording_studio_notifications:install
@@ -45,6 +47,7 @@
   <%= render FlatPack::CodeBlock::Component.new(
     language: :ruby,
     title: "Ruby",
+    wrap: false,
     code: <<~CODE
       RecordingStudioNotificationsEmail::Webhooks::ApplyEvent.register!(provider: "postmark")
     CODE

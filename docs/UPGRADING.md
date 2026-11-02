@@ -7,7 +7,9 @@ Signed-in screens use `flat_pack_sidebar`. Devise uses `application`.
 The old `layout :application_layout` override is gone.
 
 Page forms use FlatPack select fields. The workspace outline lists pages
-and folders in the current workspace. `individual_mailer` and
+and folders in the current workspace. Private Workspace is seeded with
+the Private Notes folder and the Private Start page. Studio Workspace
+still has Product Docs and Getting Started. `individual_mailer` and
 `rollup_mailer` in the config sample are deprecated and go away in
 `0.5.0`, replaced by notifications `0.14.3` `channel_options`.
 
