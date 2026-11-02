@@ -14,6 +14,16 @@ All notable changes to this project will be documented in this file.
 - The `Adapters::ActionMailerAdapter` and `Channels::ActionMailerAdapter`
   aliases.
 
+### Breaking
+
+- `tracked_notification_path` is the absolute
+  `RecordingStudioNotifications.notification_url`.
+- `deliver` raises `ArgumentError` when the mailer host is missing.
+  Set `config.action_mailer.default_url_options[:host]` (the same options
+  as unsubscribe links) before sending. Custom mailers that expected a
+  relative path should use the absolute URL as the link and should not
+  prefix another host. A missing open route still leaves the path off.
+
 ### Upgrade notes
 
 - Register email template paths on the notification type:

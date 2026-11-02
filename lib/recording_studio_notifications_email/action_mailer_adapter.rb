@@ -142,10 +142,7 @@ module RecordingStudioNotificationsEmail
     end
 
     def tracked_notification_path(notification)
-      helpers = RecordingStudioNotifications::Engine.routes.url_helpers
-      return unless helpers.respond_to?(:open_notification_path)
-
-      helpers.open_notification_path(notification.id)
+      RecordingStudioNotifications.notification_url(notification)
     rescue ActionController::UrlGenerationError
       nil
     end

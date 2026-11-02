@@ -435,8 +435,8 @@ class MyNotificationsMailer < ApplicationMailer
   def notification
     # Receives params such as event, to, from, template_path,
     # correlation_reference, and tracked_notification_path.
-    # tracked_notification_path is open_notification_path, or nil when that
-    # helper is missing or the route cannot be built.
+    # tracked_notification_path is RecordingStudioNotifications.notification_url,
+    # an absolute open link. A missing mailer host raises ArgumentError.
   end
 
   def rollup

@@ -29,7 +29,25 @@ The adapter constant is `RecordingStudioNotificationsEmail::ActionMailerAdapter`
 `RecordingStudioNotificationsEmail::Adapters::ActionMailerAdapter` and
 `RecordingStudioNotificationsEmail::Channels::ActionMailerAdapter` are gone.
 
-There is no migration. `view_component` stays `4.20.0`.
+### Breaking
+
+`tracked_notification_path` is now the absolute URL from
+`RecordingStudioNotifications.notification_url`. `deliver` raises
+`ArgumentError` when that host is missing, instead of leaving the path
+off.
+
+Move a host that already sends mail:
+
+1. Set `config.action_mailer.default_url_options` to include `:host`
+   (and `:protocol` when the link should be https). Unsubscribe links
+   already use those options.
+2. Custom mailers that treated `tracked_notification_path` as a relative
+   path should put the absolute URL in the href. Do not add a host in
+   front of it.
+3. A missing open route still leaves the path off. A blank host raises
+   `ArgumentError` during `deliver`.
+
+`view_component` stays `4.20.0`. There is no migration.
 
 ## 0.4.7
 
@@ -76,7 +94,7 @@ and folders in the current workspace. Private Workspace is seeded with
 the Private Notes folder and the Private Start page. Studio Workspace
 still has Product Docs and Getting Started. `individual_mailer` and
 `rollup_mailer` in the config sample are deprecated and go away in
-`0.5.0`, replaced by notifications `0.14.3` `channel_options`.
+[0.5.0](#050), replaced by notifications `0.14.3` `channel_options`.
 
 The dummy Tailwind file also scans gems installed under
 `/usr/local/lib/ruby/gems`. Rebuild styles with `bin/rails tailwindcss:build`
