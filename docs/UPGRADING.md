@@ -1,5 +1,16 @@
 # Upgrading
 
+## 0.4.3
+
+`config/recording_studio_notifications_email.yml` is optional. A missing file
+boots as before. Invalid YAML, or a file whose environment section is not a
+hash, raises `RecordingStudioNotificationsEmail::ConfigurationError` during
+engine load. Previously that failure was logged and ignored.
+
+The link path inside a message still uses the notifications open route. If
+that helper is not mounted, the message falls back to the event URL. Other
+errors while building the path are no longer swallowed.
+
 ## 0.4.2
 
 `Event#url` always uses `RecordingStudioNotifications::UrlSafety.safe?`.

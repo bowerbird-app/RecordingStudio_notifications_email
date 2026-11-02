@@ -25,7 +25,52 @@ class EngineConfigurationTest < Minitest::Test
     assert_equal "reply@example.test", RecordingStudioNotificationsEmail.configuration.reply_to
   end
 
+  def test_missing_yaml_leaves_configuration_in_place
+    RecordingStudioNotificationsEmail.reset_configuration!
+    RecordingStudioNotificationsEmail.configuration.from = "already@example.test"
+    app = app_with_config_for(->(_name) { raise "Could not load configuration. No such file - missing.yml" })
+
+    load_config_initializer.block.call(app)
+
+    assert_equal "already@example.test", RecordingStudioNotificationsEmail.configuration.from
+  end
+
+  def test_invalid_yaml_raises_configuration_error
+    syntax_error = Psych::SyntaxError.new("recording_studio_notifications_email.yml", 1, 1, 0, "bad indent", "context")
+    app = app_with_config_for(->(_name) { raise syntax_error })
+
+    error = assert_raises(RecordingStudioNotificationsEmail::ConfigurationError) do
+      load_config_initializer.block.call(app)
+    end
+
+    assert_includes error.message, "invalid"
+  end
+
+  def test_non_hash_yaml_raises_configuration_error
+    app = app_with_config_for(->(_name) { "from@example.test" })
+
+    error = assert_raises(RecordingStudioNotificationsEmail::ConfigurationError) do
+      load_config_initializer.block.call(app)
+    end
+
+    assert_includes error.message, "must be a hash"
+  end
+
+  def test_unexpected_config_load_errors_propagate
+    app = app_with_config_for(->(_name) { raise "disk failed" })
+
+    assert_raises(RuntimeError) { load_config_initializer.block.call(app) }
+  end
+
   private
+
+  def app_with_config_for(reader)
+    config = Object.new
+    app = Object.new
+    app.define_singleton_method(:config_for, reader)
+    app.define_singleton_method(:config) { config }
+    app
+  end
 
   def load_config_initializer
     RecordingStudioNotificationsEmail::Engine.initializers.find do |candidate|

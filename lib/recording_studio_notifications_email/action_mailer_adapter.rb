@@ -154,7 +154,7 @@ module RecordingStudioNotificationsEmail
 
     def tracked_notification_path(notification)
       RecordingStudioNotifications::Engine.routes.url_helpers.open_notification_path(notification.id)
-    rescue StandardError
+    rescue ActionController::UrlGenerationError, NoMethodError
       nil
     end
   end

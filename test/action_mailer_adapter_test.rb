@@ -63,6 +63,42 @@ class ActionMailerAdapterTest < Minitest::Test
     end
   end
 
+  def test_tracked_notification_path_uses_the_open_route
+    with_open_notification_path(->(id) { "/notifications/#{id}/open" }) do
+      @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
+    end
+
+    assert_equal "/notifications/notification-1/open", FakeMailer.params.fetch(:tracked_notification_path)
+  end
+
+  def test_tracked_notification_path_is_omitted_when_the_route_cannot_be_built
+    with_open_notification_path(lambda { |_id|
+      raise ActionController::UrlGenerationError, "missing route"
+    }) do
+      @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
+    end
+
+    assert_nil FakeMailer.params.fetch(:tracked_notification_path)
+    assert_equal :notification, FakeMailer.action
+  end
+
+  def test_tracked_notification_path_is_omitted_when_the_helper_is_missing
+    @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
+
+    assert_nil FakeMailer.params.fetch(:tracked_notification_path)
+    assert_equal :notification, FakeMailer.action
+  end
+
+  def test_tracked_notification_path_does_not_swallow_other_errors
+    with_open_notification_path(->(_id) { raise "route exploded" }) do
+      assert_raises(RuntimeError) do
+        @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
+      end
+    end
+
+    assert_nil FakeMailer.action
+  end
+
   def test_delivers_with_normalized_event_and_signed_reference
     notification = build_notification
 
@@ -389,6 +425,24 @@ class ActionMailerAdapterTest < Minitest::Test
   end
 
   private
+
+  def with_open_notification_path(implementation, &body)
+    helpers = RecordingStudioNotifications::Engine.routes.url_helpers
+    singleton = nil
+    existed = false
+    original = nil
+    singleton = helpers.singleton_class
+    existed = singleton.method_defined?(:open_notification_path)
+    original = helpers.method(:open_notification_path) if existed
+    singleton.define_method(:open_notification_path, &implementation)
+    body.call
+  ensure
+    if existed
+      singleton.define_method(:open_notification_path, original)
+    elsif singleton&.method_defined?(:open_notification_path)
+      singleton.send(:remove_method, :open_notification_path)
+    end
+  end
 
   def build_notification(id: "notification-1", notification_type: :comment,
                          recipient: Recipient.new(email: "person@example.test"))
