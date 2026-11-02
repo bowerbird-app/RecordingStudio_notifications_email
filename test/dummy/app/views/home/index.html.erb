@@ -29,7 +29,7 @@
           <div class="space-y-2">
             <label class="text-sm font-medium">Workspace</label>
             <%= f.select :workspace_id,
-                         Workspace.order(:name).map { |workspace| [workspace.name, workspace.id] },
+                         workspaces_you_can_change.map { |workspace| [workspace.name, workspace.id] },
                          {},
                          class: "w-full rounded-md border px-3 py-2 text-sm" %>
           </div>
@@ -37,7 +37,7 @@
           <div class="space-y-2">
             <label class="text-sm font-medium">Parent folder (optional)</label>
             <%= f.select :parent_folder_id,
-                         [["Root workspace", ""]] + Folder.order(:name).map { |folder| [folder.name, folder.id] },
+                         [["This workspace", ""]] + folders_you_can_use.map { |folder| [folder.name, folder.id] },
                          {},
                          class: "w-full rounded-md border px-3 py-2 text-sm" %>
           </div>

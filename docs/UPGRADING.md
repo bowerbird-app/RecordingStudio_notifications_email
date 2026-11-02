@@ -1,5 +1,17 @@
 # Upgrading
 
+## 0.4.4
+
+The dummy app no longer overrides the notifications inbox. The inbox lists
+the current workspace. When notifications releases `config.default_inbox_scope`,
+a later version of this gem can offer every workspace from that setting.
+There is no public way to do that on notifications `0.14.1`.
+
+Workspace switching uses Accessible. A person only sees workspaces they can
+open. Creating a page checks `authorized?` for `:edit` on that workspace
+before anything is saved. Sending a system notice checks `:admin` on the
+current workspace.
+
 ## 0.4.3
 
 `config/recording_studio_notifications_email.yml` is optional. A missing file

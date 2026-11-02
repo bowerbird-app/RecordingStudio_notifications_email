@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-11-02
+
+### Changed
+
+- The dummy inbox uses notifications' current workspace. The class_eval
+  override that forced every workspace is gone. Choosing "all workspaces"
+  waits until notifications ships `config.default_inbox_scope`.
+- The workspace switcher lists workspaces you can open, through Accessible.
+  Creating a page requires access to change that workspace. Sending a notice
+  requires admin on the current workspace.
+- Page comment mail no longer hides errors from `notify`.
+
+### Upgrade notes
+
+- Dummy hosts that copied the inbox scope patch should delete it. The inbox
+  stays on the current workspace until notifications adds
+  `config.default_inbox_scope`. This gem will adopt that in a later release.
+- No migration.
+
 ## [0.4.3] - 2026-11-02
 
 ### Changed

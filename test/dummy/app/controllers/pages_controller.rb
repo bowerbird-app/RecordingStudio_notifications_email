@@ -2,19 +2,23 @@
 
 class PagesController < ApplicationController
   def index
-    @workspaces = Workspace.order(:name)
-    @folders = Folder.order(:name)
-    @pages = Page.order(created_at: :desc)
-    @recordings_by_page_id = RecordingStudio::Recording.where(
-      recordable_type: "Page",
-      recordable_id: @pages.map(&:id)
-    ).where(RecordingStudio::Recording.recording_studio_trashable_kept_sql)
-      .index_by(&:recordable_id)
+    @workspaces = workspaces_you_can_change
+    @folders = folders_you_can_use
+    page_recordings = kept_recordings.where(
+      root_recording_id: root_recordings_you_can_change.map(&:id),
+      recordable_type: "Page"
+    )
+    @recordings_by_page_id = page_recordings.index_by(&:recordable_id)
+    @pages = Page.where(id: page_recordings.map(&:recordable_id)).order(created_at: :desc)
   end
 
   def create
     workspace = Workspace.find(page_params.fetch(:workspace_id))
     root_recording = RecordingStudio.root_recording_for(workspace)
+    unless RecordingStudioAccessible.authorized?(actor: current_user, recording: root_recording, role: :edit)
+      redirect_to pages_path, alert: "You don't have access to this workspace. Ask someone to invite you."
+      return
+    end
 
     page = Page.create!(title: page_params.fetch(:title))
     RecordingStudio.record!(
@@ -40,9 +44,7 @@ class PagesController < ApplicationController
     return root_recording if folder_id.blank?
 
     folder = Folder.find(folder_id)
-    RecordingStudio::Recording.where(
-      RecordingStudio::Recording.recording_studio_trashable_kept_sql
-    ).find_by!(
+    kept_recordings.find_by!(
       recordable: folder,
       root_recording: root_recording
     )
