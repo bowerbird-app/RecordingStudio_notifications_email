@@ -59,7 +59,8 @@ class DummyScreensTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "Unknown actor"
 
     get docs_gem_views_path
-    assert_includes response.body, "app/views/recording_studio_notifications_email/"
+    assert_includes response.body, "Paths under"
+    assert_includes response.body, "recording_studio_notifications_email/"
     assert_includes response.body, "notification_mailer/notification.html.erb"
     refute_includes response.body, "app/views/recording_studio_notifications_email/notification_mailer/notification.html.erb"
 
