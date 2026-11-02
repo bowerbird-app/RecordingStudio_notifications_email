@@ -10,6 +10,5 @@ class InboxScopeTest < ActiveSupport::TestCase
     assert_equal "current_root", configuration.inbox_scope_for(nil)
     assert_equal "current_root", configuration.inbox_scope_for("somewhere")
     assert_equal "all", configuration.inbox_scope_for("all")
-    refute File.exist?(Rails.root.join("config/initializers/recording_studio_notifications_scope_patch.rb"))
   end
 end

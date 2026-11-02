@@ -9,11 +9,10 @@ Replayed email events use `Delivery#email_event_applied?`. Read the time
 with `Delivery#email_event_at`. This gem no longer looks for
 `email_opened_at` and the other timestamp keys on its own.
 
-Individual mail puts `RecordingStudioNotifications.notification_url` in
-`tracked_notification_path`. That value is an absolute URL. Set
-`config.action_mailer.default_url_options[:host]` (the same host options
-unsubscribe links already use). A blank host raises `ArgumentError`
-instead of dropping the link.
+Individual mail still passes a relative open path as
+`tracked_notification_path`. The path is left off when
+`config.action_mailer.default_url_options[:host]` is blank, or when the
+open route cannot be built. `deliver` does not raise in those cases.
 
 `Event#url` asks `RecordingStudioNotifications::UrlSafety` and does not
 pre-check control characters or backslashes. `UrlSafety` rejects those.

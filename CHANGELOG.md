@@ -13,9 +13,9 @@ All notable changes to this project will be documented in this file.
 - A replayed provider event asks `Delivery#email_event_applied?`.
   Timestamps stay on `Delivery#email_event_at`. This gem no longer keeps
   its own email timestamp keys.
-- The open link in an individual email is
-  `RecordingStudioNotifications.notification_url`. The mailer still
-  receives it as `tracked_notification_path`, and the value is absolute.
+- The open link in an individual email stays a relative path in
+  `tracked_notification_path`. It is left off when the mailer host or the
+  open route is missing. `deliver` does not raise for a missing host.
 - `Event#url` uses `UrlSafety` for control characters and backslashes.
   The local character check is gone.
 - The dummy inbox sets `config.default_inbox_scope` to `current_root`.
@@ -25,11 +25,9 @@ All notable changes to this project will be documented in this file.
 
 ### Upgrade notes
 
-- Move to notifications `0.14.7` or newer before this version. Set
-  `config.action_mailer.default_url_options[:host]` so `notification_url`
-  can build an absolute link. A missing host raises `ArgumentError`.
-- Custom mailers that read `tracked_notification_path` now get an
-  absolute URL, the same host options as the unsubscribe link.
+- Move to notifications `0.14.7` or newer before this version.
+  `tracked_notification_path` is still a relative path, or absent when
+  the host or open route is missing.
 - Set notifications `config.default_inbox_scope` to `"current_root"` or
   `"all"`. Delete any inbox scope patch.
 - No migration. `view_component` stays `4.20.0`.

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "action_controller"
 
 class ActionMailerAdapterTest < Minitest::Test
   Recipient = Struct.new(:id, :email, keyword_init: true)
@@ -55,7 +56,6 @@ class ActionMailerAdapterTest < Minitest::Test
     @adapter = RecordingStudioNotificationsEmail::ActionMailerAdapter.new(configuration: @configuration)
     FakeMailer.reset!
     @suppressed = ->(_address) { false }
-    draw_notification_routes
   end
 
   def teardown
@@ -68,36 +68,48 @@ class ActionMailerAdapterTest < Minitest::Test
     end
   end
 
-  def test_mail_uses_the_absolute_notification_url
-    notification = build_notification
-    open_url = nil
-
-    with_mailer_host do
-      open_url = RecordingStudioNotifications.notification_url(notification)
-      @adapter.deliver(notification: notification, delivery: Delivery.new("delivery-1"))
+  def test_tracked_notification_path_stays_relative
+    with_local_open_routes do
+      with_mailer_host do
+        @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
+      end
     end
 
-    assert_equal "https://mail.example/notifications/notification-1/open", open_url
-    assert_equal open_url, FakeMailer.params.fetch(:tracked_notification_path)
+    assert_equal "/notifications/notification-1/open", FakeMailer.params.fetch(:tracked_notification_path)
+    assert_equal :notification, FakeMailer.action
   end
 
-  def test_notification_url_errors_propagate
-    error = assert_raises(ArgumentError) do
+  def test_tracked_notification_path_is_nil_without_a_host
+    with_local_open_routes do
       with_mailer_host(host: nil) do
         @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
       end
     end
 
-    assert_match(/notification_url is absolute/, error.message)
-    assert_nil FakeMailer.action
+    assert_nil FakeMailer.params.fetch(:tracked_notification_path)
+    assert_equal :notification, FakeMailer.action
+  end
+
+  def test_tracked_notification_path_is_omitted_when_the_route_cannot_be_built
+    route_set = ActionDispatch::Routing::RouteSet.new
+    route_set.draw do
+      get "notifications/:id/open/:extra", as: :open_notification, to: "notifications#open"
+    end
+
+    RecordingStudioNotifications::Engine.stub(:routes, route_helpers_for(route_set)) do
+      with_mailer_host do
+        @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
+      end
+    end
+
+    assert_nil FakeMailer.params.fetch(:tracked_notification_path)
+    assert_equal :notification, FakeMailer.action
   end
 
   def test_delivers_with_normalized_event_and_signed_reference
     notification = build_notification
 
-    message = with_mailer_host do
-      @adapter.deliver(notification: notification, delivery: Delivery.new("delivery-1"))
-    end
+    message = @adapter.deliver(notification: notification, delivery: Delivery.new("delivery-1"))
 
     assert message.delivered
     assert_equal :notification, FakeMailer.action
@@ -117,9 +129,7 @@ class ActionMailerAdapterTest < Minitest::Test
       individual_mailer: "notification_mailer/individual/comment"
     )
 
-    with_mailer_host do
-      @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
-    end
+    @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
 
     assert_equal "notification_mailer/individual/comment", FakeMailer.params.fetch(:template_path)
   end
@@ -127,9 +137,7 @@ class ActionMailerAdapterTest < Minitest::Test
   def test_individual_delivery_falls_back_to_the_bundled_template
     RecordingStudioNotifications.register_notification_type(:comment, label: "Comment")
 
-    with_mailer_host do
-      @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
-    end
+    @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
 
     assert_equal RecordingStudioNotificationsEmail::Configuration::DEFAULT_TEMPLATE,
                  FakeMailer.params.fetch(:template_path)
@@ -150,12 +158,10 @@ class ActionMailerAdapterTest < Minitest::Test
                  RecordingStudioNotificationsEmail.notification_type_mailers.fetch(:adapter_template_paths,
                                                                                    :rollup_mailer)
 
-    with_mailer_host do
-      @adapter.deliver(
-        notification: build_notification(notification_type: :adapter_template_paths),
-        delivery: Delivery.new("delivery-1")
-      )
-    end
+    @adapter.deliver(
+      notification: build_notification(notification_type: :adapter_template_paths),
+      delivery: Delivery.new("delivery-1")
+    )
     assert_equal "notification_mailer/individual/adapter_template_paths", FakeMailer.params.fetch(:template_path)
 
     @adapter.deliver_rollup(
@@ -202,9 +208,7 @@ class ActionMailerAdapterTest < Minitest::Test
   def test_multiple_reply_to_addresses_are_preserved
     @configuration.reply_to = ["one@example.test", "two@example.test"]
 
-    with_mailer_host do
-      @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
-    end
+    @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
 
     assert_equal ["one@example.test", "two@example.test"], FakeMailer.params.fetch(:reply_to)
   end
@@ -429,12 +433,20 @@ class ActionMailerAdapterTest < Minitest::Test
 
   private
 
-  def draw_notification_routes
-    names = RecordingStudioNotifications::Engine.routes.named_routes.names
-    return if names.include?(:open_notification)
+  def with_local_open_routes(&)
+    route_set = ActionDispatch::Routing::RouteSet.new
+    route_set.draw do
+      resources :notifications, only: [] do
+        member { get :open }
+      end
+    end
+    RecordingStudioNotifications::Engine.stub(:routes, route_helpers_for(route_set), &)
+  end
 
-    root = Gem.loaded_specs.fetch("recording_studio_notifications").full_gem_path
-    load File.join(root, "config/routes.rb")
+  def route_helpers_for(route_set)
+    helpers = Object.new
+    helpers.define_singleton_method(:url_helpers) { route_set.url_helpers }
+    helpers
   end
 
   def with_mailer_host(host: "mail.example", &)

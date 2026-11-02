@@ -202,6 +202,10 @@ module RecordingStudioNotificationsEmail
       def apply_delivered!(delivery, occurred_at:)
         return :already_applied if delivery.delivered?
 
+        unless delivery.respond_to?(:mark_delivered!)
+          raise UnsupportedWebhookEventError, "delivery model does not support delivered callbacks"
+        end
+
         delivery.mark_delivered!(at: occurred_at)
         :updated
       end
