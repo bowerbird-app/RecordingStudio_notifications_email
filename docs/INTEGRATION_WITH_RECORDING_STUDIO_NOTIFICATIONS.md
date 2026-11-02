@@ -249,8 +249,12 @@ RecordingStudioNotifications.register_notification_type(
   available_channels: %i[in_app email],
   scope: :root,
   allowed_cadences: %i[individual daily weekly],
-  individual_mailer: "notification_mailer/individual/page_comment",
-  rollup_mailer: "notification_mailer/rollup/page_comment"
+  channel_options: {
+    email: {
+      individual_mailer: "notification_mailer/individual/page_comment",
+      rollup_mailer: "notification_mailer/rollup/page_comment"
+    }
+  }
 )
 ```
 

@@ -98,10 +98,8 @@ module RecordingStudioNotificationsEmail
 
     def template_path_for(notification_type, attribute, default)
       definition = RecordingStudioNotifications.notification_types.fetch(notification_type)
-      path = definition.public_send(attribute).presence if definition.respond_to?(attribute)
-      path ||= RecordingStudioNotificationsEmail.notification_type_mailers.fetch(notification_type, attribute)
-
-      path.presence || default
+      path = definition.channel_options.dig(:email, attribute).to_s.strip.presence
+      path || default
     rescue KeyError
       default
     end
@@ -160,13 +158,5 @@ module RecordingStudioNotificationsEmail
         [:object, recipient.__id__]
       end
     end
-  end
-
-  module Adapters
-    ActionMailerAdapter = RecordingStudioNotificationsEmail::ActionMailerAdapter
-  end
-
-  module Channels
-    ActionMailerAdapter = RecordingStudioNotificationsEmail::ActionMailerAdapter
   end
 end

@@ -91,7 +91,7 @@
 
   <%= render FlatPack::SectionTitle::Component.new(
     title: "Parent Notification Setup",
-    subtitle: "Enable :email on each notification type. individual_mailer and rollup_mailer are deprecated.",
+    subtitle: "Enable :email on each notification type. Template paths live in channel_options.",
   ) %>
 
   <%= render FlatPack::CodeBlock::Component.new(
@@ -107,9 +107,12 @@
           available_channels: %i[in_app email],
           scope: :root,
           allowed_cadences: %i[individual daily weekly],
-          # Deprecated. Removed in 0.5.0. Use notifications 0.14.3 channel_options.
-          individual_mailer: "notification_mailer/individual/page_comment",
-          rollup_mailer: "notification_mailer/rollup/page_comment"
+          channel_options: {
+            email: {
+              individual_mailer: "notification_mailer/individual/page_comment",
+              rollup_mailer: "notification_mailer/rollup/page_comment"
+            }
+          }
         )
       end
     CODE
@@ -129,8 +132,7 @@
     ["allowed_cadences", "No", ":individual, :daily, :every_other_day, :weekly, :biweekly, or :monthly; default [:individual]", "Non-empty cadence choices available to recipients."],
     ["default_cadence", "No", "One allowed cadence; default :individual", "Cadence assigned when the recipient has not selected one."],
     ["required_cadence", "No", "One allowed cadence or nil; default nil", "Locks delivery to a cadence for all recipients."],
-    ["individual_mailer", "No", "Deprecated. Removed in 0.5.0.", "Replaced by notifications 0.14.3 channel_options. Template path for :individual deliveries until then."],
-    ["rollup_mailer", "No", "Deprecated. Removed in 0.5.0.", "Replaced by notifications 0.14.3 channel_options. Template path for rollup deliveries until then."]
+    ["channel_options", "No", "Hash of channel name to options; default {}", "Per-channel settings. Email template paths are :individual_mailer and :rollup_mailer under :email. :email must be an available channel."]
 ], min_width: :none) do |table| %>
   <% table.column(title: "Parameter") { |row| row[0] } %>
   <% table.column(title: "Required") { |row| row[1] } %>

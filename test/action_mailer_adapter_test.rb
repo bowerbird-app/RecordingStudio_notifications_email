@@ -121,9 +121,8 @@ class ActionMailerAdapterTest < Minitest::Test
   end
 
   def test_individual_delivery_uses_registered_template_path
-    RecordingStudioNotifications.register_notification_type(
+    register_email_templates(
       :comment,
-      label: "Comment",
       individual_mailer: "notification_mailer/individual/comment"
     )
 
@@ -142,19 +141,16 @@ class ActionMailerAdapterTest < Minitest::Test
   end
 
   def test_parent_type_registration_supplies_individual_and_rollup_template_paths
-    RecordingStudioNotifications.notification_types.register(
+    definition = register_email_templates(
       :adapter_template_paths,
-      label: "Adapter template paths",
       individual_mailer: "notification_mailer/individual/adapter_template_paths",
       rollup_mailer: "notification_mailer/rollup/adapter_template_paths"
     )
 
     assert_equal "notification_mailer/individual/adapter_template_paths",
-                 RecordingStudioNotificationsEmail.notification_type_mailers.fetch(:adapter_template_paths,
-                                                                                   :individual_mailer)
+                 definition.channel_options.dig(:email, :individual_mailer)
     assert_equal "notification_mailer/rollup/adapter_template_paths",
-                 RecordingStudioNotificationsEmail.notification_type_mailers.fetch(:adapter_template_paths,
-                                                                                   :rollup_mailer)
+                 definition.channel_options.dig(:email, :rollup_mailer)
 
     @adapter.deliver(
       notification: build_notification(notification_type: :adapter_template_paths),
@@ -290,11 +286,7 @@ class ActionMailerAdapterTest < Minitest::Test
     recipient = Recipient.new(id: "person-1", email: "person@example.test")
     notifications = [build_notification(id: "notification-1", recipient: recipient)]
 
-    RecordingStudioNotifications.register_notification_type(
-      :comment,
-      label: "Comment",
-      rollup_mailer: "notification_mailer/rollup/comment"
-    )
+    register_email_templates(:comment, rollup_mailer: "notification_mailer/rollup/comment")
     @adapter.deliver_rollup(
       notifications: notifications,
       deliveries: [Delivery.new("delivery-1")],
@@ -430,6 +422,19 @@ class ActionMailerAdapterTest < Minitest::Test
   end
 
   private
+
+  def register_email_templates(key, individual_mailer: nil, rollup_mailer: nil)
+    email = {}
+    email[:individual_mailer] = individual_mailer if individual_mailer
+    email[:rollup_mailer] = rollup_mailer if rollup_mailer
+
+    RecordingStudioNotifications.register_notification_type(
+      key,
+      label: key.to_s.tr("_", " ").capitalize,
+      available_channels: [:email],
+      channel_options: { email: email }
+    )
+  end
 
   def with_open_notification_path(implementation, &body)
     helpers = RecordingStudioNotifications::Engine.routes.url_helpers

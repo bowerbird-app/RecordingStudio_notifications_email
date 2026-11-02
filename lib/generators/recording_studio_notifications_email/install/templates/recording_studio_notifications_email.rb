@@ -8,7 +8,7 @@ RecordingStudioNotificationsEmail.configure do |config|
   # `email`.
   # config.recipients.register(User) { |user| user.notification_email }
 
-  # Register optional individual_mailer: and rollup_mailer: template paths on
-  # each notification type. Provide matching .html.erb and .text.erb templates
-  # under app/views.
+  # Optional template paths belong on the notification type:
+  # channel_options: { email: { individual_mailer:, rollup_mailer: } }
+  # Provide matching .html.erb and .text.erb templates under app/views.
 end

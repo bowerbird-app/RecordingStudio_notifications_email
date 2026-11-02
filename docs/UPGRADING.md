@@ -1,5 +1,36 @@
 # Upgrading
 
+## 0.5.0
+
+Email template paths are no longer stored on this gem. Pass them in
+notifications `channel_options` when you register the type. `:email` must
+be an available channel.
+
+```ruby
+RecordingStudioNotifications.register_notification_type(
+  :page_comment,
+  label: "Page comment",
+  available_channels: %i[in_app email],
+  channel_options: {
+    email: {
+      individual_mailer: "notification_mailer/individual/page_comment",
+      rollup_mailer: "notification_mailer/rollup/page_comment"
+    }
+  }
+)
+```
+
+Read a path with `definition.channel_options.dig(:email, :individual_mailer)`
+or `:rollup_mailer`. This gem no longer accepts `individual_mailer:` or
+`rollup_mailer:` as register keywords, and
+`RecordingStudioNotificationsEmail.notification_type_mailers` is gone.
+
+The adapter constant is `RecordingStudioNotificationsEmail::ActionMailerAdapter`.
+`RecordingStudioNotificationsEmail::Adapters::ActionMailerAdapter` and
+`RecordingStudioNotificationsEmail::Channels::ActionMailerAdapter` are gone.
+
+There is no migration. `view_component` stays `4.20.0`.
+
 ## 0.4.7
 
 Notifications must be `>= 0.14.7` and `< 1`. This repository pins tag
