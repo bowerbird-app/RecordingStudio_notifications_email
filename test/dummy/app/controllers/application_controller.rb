@@ -56,7 +56,10 @@ class ApplicationController < ActionController::Base
   end
 
   def root_recordings_you_can_change
-    RecordingStudioAccessible.root_recordings_for(actor: current_user, minimum_role: :edit)
+    @root_recordings_you_can_change ||= RecordingStudioAccessible.root_recordings_for(
+      actor: current_user,
+      minimum_role: :edit
+    )
   end
 
   def kept_recordings

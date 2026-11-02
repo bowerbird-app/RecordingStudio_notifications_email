@@ -10,7 +10,8 @@ There is no public way to do that on notifications `0.14.1`.
 Workspace switching uses Accessible. A person only sees workspaces they can
 open. Creating a page checks `authorized?` for `:edit` on that workspace
 before anything is saved. Sending a system notice checks `:admin` on the
-current workspace.
+current workspace, and it is sent only to people who can open that
+workspace.
 
 ## 0.4.3
 

@@ -13,7 +13,10 @@ All notable changes to this project will be documented in this file.
   waits until notifications ships `config.default_inbox_scope`.
 - The workspace switcher lists workspaces you can open, through Accessible.
   Creating a page requires access to change that workspace. Sending a notice
-  requires admin on the current workspace.
+  requires admin on the current workspace, and it goes only to people who
+  can open that workspace.
+- The notice form uses `new_system_notifications_path`. The singular
+  `new_system_notification_path` helper raised `NameError`.
 - Page comment mail no longer hides errors from `notify`.
 
 ### Upgrade notes

@@ -47,12 +47,13 @@ class WorkspaceAccessTest < ActionDispatch::IntegrationTest
     workspace = Workspace.create!(name: "Notice Workspace")
     grant_workspace(admin, workspace)
 
-    assert_difference -> { RecordingStudioNotifications::Notification.count }, User.count do
+    assert_difference -> { RecordingStudioNotifications::Notification.count }, 1 do
       post system_notifications_path, params: {
         system_notification: { title: "Tonight", body: "We will be back at 10." }
       }
     end
     assert_redirected_to new_system_notifications_path
+    assert_equal "Notice sent to 1 person in this workspace.", flash[:notice]
 
     sign_out admin
     editor = sign_in_user("notice-editor@example.com")
