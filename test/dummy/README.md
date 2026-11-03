@@ -1,6 +1,6 @@
 # Dummy App
 
-This Rails app is a legacy host-app sandbox for manually exercising Recording Studio integrations.
+This Rails app is the host sandbox for the email notification channel.
 
 ## What It Covers
 
@@ -34,16 +34,19 @@ Then open the app and sign in with:
 
 ## Useful Routes
 
-- `/` - dummy app home page and addon guidance
+- `/` - create a page and send mail
 - `/recording_studio` - redirects to `/` while the mounted Recording Studio engine stays available under that prefix for non-root routes
 - `/users/sign_in` - Devise sign-in page
-- `/docs/install`, `/docs/config`, `/docs/recordable_types`, `/docs/recordings_tree`, `/docs/gem_views`, `/docs/methods` - starter sidebar pages to adapt for the gem
+- `/docs/install` - host install steps
+- `/docs/config` - channel configuration
+- `/docs/webhook_lab` - create a notification and apply a provider event
+- `/docs/recordable_types`, `/docs/recordings_tree`, `/docs/gem_views`, `/docs/methods` - host wiring notes
+- `/pages` - pages in the signed-in workspace
+- `/system_notifications/new` - send a system notice
 - `/up` - Rails health check
 
 ## Why This App Exists
 
-Use this app only for optional manual host integration checks. The focused root test suite is the source of truth for the email channel.
+Use this app to exercise host wiring: sign-in, page mail, suppressions, and the webhook lab. The gem suite under `test/` covers the channel library. Both suites run in CI.
 
-The authenticated layout in `app/views/layouts/flat_pack_sidebar.html.erb` and sidebar menu in `app/views/layouts/flat_pack/_sidebar.html.erb` are a styled skeleton, not the final information architecture for every addon. Replace the sidebar items and docs page content so they match the gem's actual concepts and workflows.
-
-Likewise, the home page in `app/views/home/index.html.erb` should stay a minimal demo surface for the gem's core feature. Do not turn it into a wall of documentation; the dedicated sidebar pages exist so deeper explanations can live in focused sections.
+The signed-in layout is `app/views/layouts/flat_pack_sidebar.html.erb`. The home page stays a short demo. Longer notes live on the docs pages.

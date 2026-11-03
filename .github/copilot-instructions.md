@@ -29,4 +29,4 @@
 
 - Keep internal dependency assumptions intact unless the request explicitly asks to change private gem infrastructure.
 - Update docs when public behavior or setup steps change.
-- Do not add migrations, routes, inbound email processing, or webhooks.
+- This gem ships a suppression migration and registers a webhook action with `recording_studio_webhooks`. It does not mount inbound HTTP routes or process inbound email. Do not add a second webhook stack or an inbound mail endpoint.
