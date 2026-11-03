@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-11-02
+
+### Changed
+
+- Loading `config/recording_studio_notifications_email.yml` ignores a missing
+  file. Invalid YAML, or a file that is not a hash, raises
+  `ConfigurationError` instead of logging and continuing.
+- The open-notification path in mail is omitted only when the notifications
+  route helper is missing or cannot build the path. Other errors propagate.
+
+### Upgrade notes
+
+- Fix invalid `recording_studio_notifications_email.yml` before booting.
+  A missing file is still fine; set `config.from` in the initializer.
+- No migration.
+
 ## [0.4.2] - 2026-11-02
 
 ### Changed
