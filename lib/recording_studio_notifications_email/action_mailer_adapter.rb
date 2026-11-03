@@ -98,10 +98,8 @@ module RecordingStudioNotificationsEmail
 
     def template_path_for(notification_type, attribute, default)
       definition = RecordingStudioNotifications.notification_types.fetch(notification_type)
-      path = definition.public_send(attribute).presence if definition.respond_to?(attribute)
-      path ||= RecordingStudioNotificationsEmail.notification_type_mailers.fetch(notification_type, attribute)
-
-      path.presence || default
+      path = definition.channel_options.dig(:email, attribute).to_s.strip.presence
+      path || default
     rescue KeyError
       default
     end
@@ -144,10 +142,7 @@ module RecordingStudioNotificationsEmail
     end
 
     def tracked_notification_path(notification)
-      helpers = RecordingStudioNotifications::Engine.routes.url_helpers
-      return unless helpers.respond_to?(:open_notification_path)
-
-      helpers.open_notification_path(notification.id)
+      RecordingStudioNotifications.notification_url(notification)
     rescue ActionController::UrlGenerationError
       nil
     end
@@ -160,13 +155,5 @@ module RecordingStudioNotificationsEmail
         [:object, recipient.__id__]
       end
     end
-  end
-
-  module Adapters
-    ActionMailerAdapter = RecordingStudioNotificationsEmail::ActionMailerAdapter
-  end
-
-  module Channels
-    ActionMailerAdapter = RecordingStudioNotificationsEmail::ActionMailerAdapter
   end
 end

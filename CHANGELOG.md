@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-02
+
+### Removed
+
+- The mailer registry, `NotificationTypeMailerRegistration` (and its
+  prepend on the notifications type registry), and
+  `RecordingStudioNotificationsEmail.notification_type_mailers`.
+- The `Adapters::ActionMailerAdapter` and `Channels::ActionMailerAdapter`
+  aliases.
+
+### Breaking
+
+- `tracked_notification_path` is the absolute
+  `RecordingStudioNotifications.notification_url`.
+- `deliver` raises `ArgumentError` when the mailer host is missing.
+  Set `config.action_mailer.default_url_options[:host]` (the same options
+  as unsubscribe links) before sending. Custom mailers that expected a
+  relative path should use the absolute URL as the link and should not
+  prefix another host. A missing open route still leaves the path off.
+
+### Upgrade notes
+
+- Register email template paths on the notification type:
+
+```ruby
+channel_options: {
+  email: {
+    individual_mailer: "notification_mailer/individual/page_comment",
+    rollup_mailer: "notification_mailer/rollup/page_comment"
+  }
+}
+```
+
+  Read them with `definition.channel_options.dig(:email, :individual_mailer)`.
+  `:email` has to be an available channel. Omitted paths still use this
+  gem's bundled individual and rollup templates.
+- Use `RecordingStudioNotificationsEmail::ActionMailerAdapter`. The
+  `Adapters::` and `Channels::` aliases are gone.
+- No migration. `view_component` stays `4.20.0`.
+
 ## [0.4.7] - 2026-11-02
 
 ### Changed

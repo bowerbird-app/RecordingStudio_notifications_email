@@ -8,8 +8,6 @@ require "action_mailer/railtie"
 require "recording_studio_notifications"
 require "recording_studio_notifications_email/version"
 require "recording_studio_notifications_email/configuration"
-require "recording_studio_notifications_email/notification_type_mailer_registry"
-require "recording_studio_notifications_email/notification_type_mailer_registration"
 require "recording_studio_notifications_email/event"
 require "recording_studio_notifications_email/delivery_token"
 require "recording_studio_notifications_email/delivery_callbacks"
@@ -41,10 +39,6 @@ module RecordingStudioNotificationsEmail
       end
     end
 
-    def notification_type_mailers
-      configuration_mutex.synchronize { @notification_type_mailers ||= NotificationTypeMailerRegistry.new }
-    end
-
     def register!
       unless defined?(RecordingStudioNotifications) &&
              RecordingStudioNotifications.respond_to?(:register_channel)
@@ -58,7 +52,6 @@ module RecordingStudioNotificationsEmail
       configuration_mutex.synchronize do
         @configuration = Configuration.new
         @adapter = nil
-        @notification_type_mailers = NotificationTypeMailerRegistry.new
       end
     end
 

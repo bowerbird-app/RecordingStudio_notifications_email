@@ -102,16 +102,20 @@ RecordingStudioNotifications.register_notification_type(
   available_channels: %i[in_app email],
   scope: :root,
   allowed_cadences: %i[individual daily weekly],
-  individual_mailer: "notification_mailer/individual/page_comment",
-  rollup_mailer: "notification_mailer/rollup/page_comment"
+  channel_options: {
+    email: {
+      individual_mailer: "notification_mailer/individual/page_comment",
+      rollup_mailer: "notification_mailer/rollup/page_comment"
+    }
+  }
 )
 ```
 
-`individual_mailer` and `rollup_mailer` are optional Rails template paths
-stored by this gem. Notifications 0.9 rejects unknown register options, so
-these two are removed before the parent registry sees the call. Each path
-needs matching `.html.erb` and `.text.erb` files. When omitted, the email
-channel renders its bundled individual or rollup template.
+`channel_options[:email]` holds optional Rails template paths. Read them
+with `definition.channel_options.dig(:email, :individual_mailer)` and
+`:rollup_mailer`. Each path needs matching `.html.erb` and `.text.erb`
+files. When a path is omitted, the email channel renders its bundled
+individual or rollup template.
 
 Then use the normal parent API:
 

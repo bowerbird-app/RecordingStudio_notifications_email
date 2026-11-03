@@ -39,8 +39,12 @@ register_dummy_notification_types = lambda do
       scope: :root,
       allowed_cadences: %i[individual daily weekly],
       default_cadence: :daily,
-      individual_mailer: "recording_studio_notifications_email/notification_mailer/page_comment",
-      rollup_mailer: "recording_studio_notifications_email/notification_mailer/rollup/page_comment"
+      channel_options: {
+        email: {
+          individual_mailer: "recording_studio_notifications_email/notification_mailer/page_comment",
+          rollup_mailer: "recording_studio_notifications_email/notification_mailer/rollup/page_comment"
+        }
+      }
     )
 
     config.notification_types.register(
