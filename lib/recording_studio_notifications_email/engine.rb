@@ -5,7 +5,7 @@ module RecordingStudioNotificationsEmail
     isolate_namespace RecordingStudioNotificationsEmail
 
     initializer "recording_studio_notifications_email.load_config" do |app|
-      RecordingStudioNotificationsEmail::Engine.load_configuration(app)
+      RecordingStudioNotificationsEmail::Engine.send(:load_configuration, app)
     end
 
     initializer "recording_studio_notifications_email.register_channel",
@@ -14,6 +14,8 @@ module RecordingStudioNotificationsEmail
     end
 
     class << self
+      private
+
       def load_configuration(app)
         yaml = yaml_configuration(app)
         RecordingStudioNotificationsEmail.configuration.merge!(yaml) if yaml
@@ -21,8 +23,6 @@ module RecordingStudioNotificationsEmail
         options = app.config.x.recording_studio_notifications_email if app.config.respond_to?(:x)
         RecordingStudioNotificationsEmail.configuration.merge!(options.to_h) if options.respond_to?(:to_h)
       end
-
-      private
 
       def yaml_configuration(app)
         return unless app.respond_to?(:config_for)

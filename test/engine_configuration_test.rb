@@ -12,6 +12,14 @@ class EngineConfigurationTest < Minitest::Test
     @roots.each { |root| FileUtils.remove_entry(root) if File.directory?(root) }
   end
 
+  def test_load_configuration_is_private
+    refute_respond_to RecordingStudioNotificationsEmail::Engine, :load_configuration
+
+    assert_raises(NoMethodError) do
+      RecordingStudioNotificationsEmail::Engine.load_configuration(Object.new)
+    end
+  end
+
   def test_engine_merges_yaml_and_application_configuration
     RecordingStudioNotificationsEmail.reset_configuration!
     application_options = Object.new
