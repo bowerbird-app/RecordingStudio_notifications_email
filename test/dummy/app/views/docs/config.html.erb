@@ -180,6 +180,9 @@
   <% table.column(title: "Description") { |row| row[3] } %>
 <% end %>
 
-  <p class="text-sm">Delivery remains owned by RecordingStudioNotifications. This channel is registered during Rails preparation and calls <code class="rounded bg-slate-100 px-1 py-0.5 text-xs">deliver_now</code> inside the parent delivery workflow so delivery status and retries remain centralized.</p>
+  <%= render FlatPack::Content::Component.new do %>
+    <p>Delivery remains owned by RecordingStudioNotifications. This channel is registered during Rails preparation and calls the method below inside the parent delivery workflow so delivery status and retries remain centralized.</p>
+  <% end %>
+  <%= render FlatPack::CodeBlock::Component.new(title: "Ruby", wrap: false, code: "deliver_now") %>
 
 </div>

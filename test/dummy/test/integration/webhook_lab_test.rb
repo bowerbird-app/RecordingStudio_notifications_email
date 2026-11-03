@@ -16,6 +16,11 @@ class WebhookLabTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes unescaped_response_body, "Webhook Lab"
     assert_includes unescaped_response_body, "Create notification target"
+    assert_includes unescaped_response_body, "No target yet"
+    assert_includes unescaped_response_body, "No notification loaded"
+    assert_includes unescaped_response_body, "No delivery loaded"
+    assert_includes unescaped_response_body, "No webhook yet"
+    refute_includes response.body, "text-(--body-muted-content-color)"
   end
 
   test "create target notification shows notification and delivery ids" do

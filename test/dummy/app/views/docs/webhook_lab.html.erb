@@ -29,10 +29,15 @@
             <p><strong>Notification ID:</strong> <code><%= @webhook_lab_target["notification_id"] %></code></p>
             <p><strong>Delivery ID:</strong> <code><%= @webhook_lab_target["delivery_id"] %></code></p>
             <p><strong>Signed reference:</strong></p>
-            <%= render FlatPack::CodeBlock::Component.new(title: "Ruby", wrap: false, code: @webhook_lab_reference.to_s) %>
+            <%= render FlatPack::CodeBlock::Component.new(title: "Reference", wrap: false, code: @webhook_lab_reference.to_s) %>
           </div>
         <% else %>
-          <p class="text-sm text-(--body-muted-content-color)">No target yet. Create one first.</p>
+          <%= render FlatPack::EmptyState::Component.new(
+            title: "No target yet",
+            description: "Create one first.",
+            size: :sm,
+            width: :full
+          ) %>
         <% end %>
       </div>
     <% end %>
@@ -96,7 +101,12 @@
           <% end %>
         </div>
       <% else %>
-        <p class="text-sm text-(--body-muted-content-color)">Create a target notification before firing events.</p>
+        <%= render FlatPack::EmptyState::Component.new(
+          title: "No target yet",
+          description: "Create a target notification before firing events.",
+          size: :sm,
+          width: :full
+        ) %>
       <% end %>
     <% end %>
   <% end %>
@@ -121,7 +131,11 @@
             <p><strong>Read at:</strong> <%= @webhook_lab_notification.read_at || "-" %></p>
           </div>
         <% else %>
-          <p class="text-sm text-(--body-muted-content-color)">No notification loaded.</p>
+          <%= render FlatPack::EmptyState::Component.new(
+            title: "No notification loaded",
+            size: :sm,
+            width: :full
+          ) %>
         <% end %>
       <% end %>
     <% end %>
@@ -145,7 +159,11 @@
             <p><strong>Updated at:</strong> <%= @webhook_lab_delivery.updated_at %></p>
           </div>
         <% else %>
-          <p class="text-sm text-(--body-muted-content-color)">No delivery loaded.</p>
+          <%= render FlatPack::EmptyState::Component.new(
+            title: "No delivery loaded",
+            size: :sm,
+            width: :full
+          ) %>
         <% end %>
       <% end %>
     <% end %>
@@ -167,7 +185,12 @@
         <% end %>
         <%= render FlatPack::CodeBlock::Component.new(language: :json, title: "JSON", wrap: false, code: JSON.pretty_generate(@webhook_lab_last_result)) %>
       <% else %>
-        <p class="text-sm text-(--body-muted-content-color)">No webhook event has been fired yet.</p>
+        <%= render FlatPack::EmptyState::Component.new(
+          title: "No webhook yet",
+          description: "Fire an event to see the result.",
+          size: :sm,
+          width: :full
+        ) %>
       <% end %>
     <% end %>
   <% end %>

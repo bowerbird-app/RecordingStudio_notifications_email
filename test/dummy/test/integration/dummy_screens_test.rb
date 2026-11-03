@@ -67,6 +67,10 @@ class DummyScreensTest < ActionDispatch::IntegrationTest
     get docs_methods_path
     assert_includes response.body, "mark_delivered!"
 
+    get docs_config_path
+    assert_includes response.body, "deliver_now"
+    refute_includes response.body, "bg-slate-100"
+
     get new_system_notifications_path
     assert_includes response.body, "people who can open this workspace"
     refute_includes response.body, "every user"
