@@ -3,31 +3,25 @@
 require "test_helper"
 
 # The gem suite does not boot the notifications engine, so these models are
-# not loaded. The stand-ins exist so tests can stub where, transaction, and
-# find_by for one block.
-module RecordingStudioNotifications
-  unless const_defined?(:Delivery, false)
-    class Delivery
-      def self.where(*_args, **_kwargs)
-        []
-      end
-
-      def self.transaction(**)
-        yield
-      end
-    end
-  end
-
-  unless const_defined?(:Notification, false)
-    class Notification
-      def self.find_by(*)
-        nil
-      end
-    end
-  end
-end
-
+# not loaded. The stand-ins stay on this test and are installed only while
+# it runs, so other files do not see them.
 class DeliveryCallbacksTest < Minitest::Test
+  class Delivery
+    def self.where(*_args, **_kwargs)
+      []
+    end
+
+    def self.transaction(**)
+      yield
+    end
+  end
+
+  class Notification
+    def self.find_by(*)
+      nil
+    end
+  end
+
   Record = Struct.new(:id)
   FakeNotification = Struct.new(:id, :read_at) do
     attr_reader :saved
@@ -167,9 +161,16 @@ class DeliveryCallbacksTest < Minitest::Test
   end
 
   def setup
+    @installed_stand_ins = install_stand_ins
     @configuration = RecordingStudioNotificationsEmail::Configuration.new
     @configuration.message_verifier = ActiveSupport::MessageVerifier.new("c" * 64, serializer: JSON)
     @delivered_at = Time.utc(2026, 7, 17, 12, 0, 0)
+  end
+
+  def teardown
+    @installed_stand_ins&.each do |name|
+      RecordingStudioNotifications.send(:remove_const, name)
+    end
   end
 
   def test_marks_pending_deliveries_from_signed_reference
@@ -755,6 +756,15 @@ class DeliveryCallbacksTest < Minitest::Test
   end
 
   private
+
+  def install_stand_ins
+    { Delivery: Delivery, Notification: Notification }.filter_map do |name, stand_in|
+      next if RecordingStudioNotifications.const_defined?(name, false)
+
+      RecordingStudioNotifications.const_set(name, stand_in)
+      name
+    end
+  end
 
   def signed_reference(notification_id:, delivery_id:)
     RecordingStudioNotificationsEmail::DeliveryToken.sign(

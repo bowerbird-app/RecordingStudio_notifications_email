@@ -53,6 +53,10 @@ class ActionMailerAdapterTest < Minitest::Test
     @suppressed = ->(_address) { false }
   end
 
+  def teardown
+    RecordingStudioNotifications.notification_types.clear!
+  end
+
   def run
     RecordingStudioNotificationsEmail::Suppression.stub(:suppressed?, ->(address) { @suppressed.call(address) }) do
       super
