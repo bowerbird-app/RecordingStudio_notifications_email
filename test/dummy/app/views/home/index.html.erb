@@ -1,11 +1,10 @@
-<div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
-  <%= render FlatPack::PageTitle::Component.new(
-    title: "Page mail",
-    subtitle: "Create a page and mail the people in this workspace.",
-    variant: :h1
-  ) %>
+<%= render FlatPack::PageTitle::Component.new(
+  title: "Page mail",
+  subtitle: "Create a page and mail the people in this workspace.",
+  variant: :h1
+) %>
 
-  <div class="grid gap-6 lg:grid-cols-2">
+<%= render FlatPack::Grid::Component.new(cols: 2, gap: :lg) do %>
     <%= render FlatPack::Card::Component.new(border: :default, shadow: :none) do |card| %>
       <% card.header do %>
         <%= render FlatPack::PageTitle::Component.new(
@@ -17,7 +16,7 @@
       <% end %>
 
       <% card.body do %>
-        <%= form_with url: pages_path, scope: :page, method: :post, class: "space-y-4" do |f| %>
+        <%= form_with url: pages_path, scope: :page, method: :post do %>
           <%= render FlatPack::TextInput::Component.new(
             name: "page[title]",
             value: params.dig(:page, :title),
@@ -26,21 +25,22 @@
             placeholder: "New product spec"
           ) %>
 
-          <div class="space-y-2">
-            <label class="text-sm font-medium">Workspace</label>
-            <%= f.select :workspace_id,
-                         workspaces_you_can_change.map { |workspace| [workspace.name, workspace.id] },
-                         {},
-                         class: "w-full rounded-md border px-3 py-2 text-sm" %>
-          </div>
+          <% workspace_choices = workspaces_you_can_change.map { |workspace| [workspace.name, workspace.id] } %>
+          <%= render FlatPack::Select::Component.new(
+            name: "page[workspace_id]",
+            label: "Workspace",
+            required: true,
+            value: params.dig(:page, :workspace_id).presence || workspace_choices.dig(0, 1),
+            options: workspace_choices
+          ) %>
 
-          <div class="space-y-2">
-            <label class="text-sm font-medium">Parent folder (optional)</label>
-            <%= f.select :parent_folder_id,
-                         [["This workspace", ""]] + folders_you_can_use.map { |folder| [folder.name, folder.id] },
-                         {},
-                         class: "w-full rounded-md border px-3 py-2 text-sm" %>
-          </div>
+          <%= render FlatPack::Select::Component.new(
+            name: "page[parent_folder_id]",
+            label: "Parent folder (optional)",
+            placeholder: "This workspace",
+            value: params.dig(:page, :parent_folder_id).presence,
+            options: folders_you_can_use.map { |folder| [folder.name, folder.id] }
+          ) %>
 
           <%= render FlatPack::Button::Component.new(
             text: "Create page + notify workspace users",
@@ -63,14 +63,20 @@
       <% end %>
 
       <% card.body do %>
-        <ul class="space-y-3 text-sm leading-6">
-          <li>Add the gem to your host app and run <code>bundle install</code>.</li>
-          <li>Run <code>rails generate recording_studio_notifications_email:install</code> to add configuration.</li>
-          <li>Run <code>rails generate recording_studio_notifications_email:migrations</code>, then migrate. That adds the address suppression table.</li>
-          <li>Register <code>Webhooks::ApplyEvent</code> with your webhook provider. This gem mounts no inbound route of its own.</li>
-          <li>Rebuild Tailwind if needed with <code>bin/rails tailwindcss:build</code>.</li>
-        </ul>
+        <%= render FlatPack::List::Component.new(ordered: true, spacing: :dense) do %>
+          <% [
+            ["Add the gem to the host app.", "bundle install"],
+            ["Add configuration.", "bin/rails generate recording_studio_notifications_email:install"],
+            ["Add the address suppression table, then migrate.", "bin/rails generate recording_studio_notifications_email:migrations"],
+            ["Register the webhook action. This gem mounts no inbound route.", "RecordingStudioNotificationsEmail::Webhooks::ApplyEvent.register!"],
+            ["Rebuild styles when the host serves its own CSS.", "bin/rails tailwindcss:build"]
+          ].each do |step, command| %>
+            <%= render FlatPack::List::Item.new do %>
+              <p><%= step %></p>
+              <%= render FlatPack::CodeBlock::Component.new(language: :bash, title: "Terminal", wrap: false, code: command) %>
+            <% end %>
+          <% end %>
+        <% end %>
       <% end %>
     <% end %>
-  </div>
-</div>
+<% end %>

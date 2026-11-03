@@ -120,14 +120,20 @@
   ] %>
 
   <% sections.each do |section| %>
+    <% module_name, _separator, method_name = section[:title].rpartition(".") %>
     <div class="space-y-3">
       <%= render FlatPack::SectionTitle::Component.new(
-        title: section[:title],
-        subtitle: section[:subtitle]
+        title: method_name,
+        subtitle: "#{module_name}. #{section[:subtitle]}",
+        size: :sm,
+        level: :h3,
+        spacing: :sm
       ) %>
 
       <%= render FlatPack::CodeBlock::Component.new(
         language: :ruby,
+        title: "Ruby",
+        wrap: false,
         code: section[:code]
       ) %>
     </div>

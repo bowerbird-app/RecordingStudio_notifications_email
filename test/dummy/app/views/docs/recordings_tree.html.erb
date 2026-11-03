@@ -1,7 +1,6 @@
-<div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
-  <%= render FlatPack::PageTitle::Component.new(
-    title: "Recordings tree",
-    subtitle: "Active dummy-app recordings shown as a nested parent/child outline.",
+<%= render FlatPack::PageTitle::Component.new(
+    title: "This workspace",
+    subtitle: "Pages and folders in the workspace you're in.",
     variant: :h1
   ) %>
 
@@ -12,6 +11,8 @@
       <% end %>
     <% end %>
   <% else %>
-    <p class="text-sm text-(--surface-muted-content-color)">No active recordings found.</p>
+    <%= render FlatPack::EmptyState::Component.new(
+      title: "Nothing here yet",
+      description: "Pages and folders show up after you add them to this workspace."
+    ) %>
   <% end %>
-</div>

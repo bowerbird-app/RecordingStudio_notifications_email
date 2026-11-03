@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-11-02
+
+### Changed
+
+- The dummy signed-in screens use one layout. `recording_studio_layout`
+  returns `flat_pack_sidebar`. Devise keeps the `application` layout.
+- Dummy page forms use FlatPack selects. The workspace outline uses
+  Recording Studio labels and only the current workspace.
+- The dummy Tailwind build also scans FlatPack, core, and notifications
+  when those gems are installed under `lib/ruby`.
+- The dummy seed puts a folder and a page in Private Workspace, which is
+  what the workspace outline shows for that root.
+- The workspace outline lists pages and folders. The config sample marks
+  `individual_mailer` and `rollup_mailer` as deprecated. `0.5.0` removes
+  them in favor of notifications `0.14.3` `channel_options`.
+
+### Upgrade notes
+
+- Dummy only. Drop a copied `layout :application_layout` override and return
+  `flat_pack_sidebar` from `recording_studio_layout` for signed-in screens.
+- No migration.
+
 ## [0.4.4] - 2026-11-02
 
 ### Changed

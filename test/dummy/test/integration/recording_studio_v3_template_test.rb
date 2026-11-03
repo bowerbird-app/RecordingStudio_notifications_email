@@ -42,11 +42,15 @@ class RecordingStudioV3TemplateTest < ActiveSupport::TestCase
     private_workspace = Workspace.find_by!(name: "Private Workspace")
     folder = Folder.find_by!(name: "Product Docs")
     page = Page.find_by!(title: "Getting Started")
+    private_folder = Folder.find_by!(name: "Private Notes")
+    private_page = Page.find_by!(title: "Private Start")
     root_recording = RecordingStudio::Recording.find_by!(recordable: workspace)
     accessible_root_recording = RecordingStudio::Recording.find_by!(recordable: accessible_workspace)
     private_root_recording = RecordingStudio::Recording.find_by!(recordable: private_workspace)
     folder_recording = RecordingStudio::Recording.find_by!(recordable: folder)
     page_recording = RecordingStudio::Recording.find_by!(recordable: page)
+    private_folder_recording = RecordingStudio::Recording.find_by!(recordable: private_folder)
+    private_page_recording = RecordingStudio::Recording.find_by!(recordable: private_page)
 
     assert_nil Current.actor
     assert_nil root_recording.parent_recording_id
@@ -56,6 +60,10 @@ class RecordingStudioV3TemplateTest < ActiveSupport::TestCase
     assert_equal root_recording, folder_recording.root_recording
     assert_equal folder_recording, page_recording.parent_recording
     assert_equal root_recording, page_recording.root_recording
+    assert_equal private_root_recording, private_folder_recording.parent_recording
+    assert_equal private_root_recording, private_folder_recording.root_recording
+    assert_equal private_folder_recording, private_page_recording.parent_recording
+    assert_equal private_root_recording, private_page_recording.root_recording
     assert_equal 3, Workspace.count
     admin = User.find_by!(email: "admin@admin.com")
     commenter = User.find_by!(email: "commenter@commenter.com")
