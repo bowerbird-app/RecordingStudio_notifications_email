@@ -144,30 +144,12 @@ module RecordingStudioNotificationsEmail
     end
 
     def tracked_notification_path(notification)
-      return if notification_host.blank?
-
       helpers = RecordingStudioNotifications::Engine.routes.url_helpers
-      return unless helpers.respond_to?(:open_notification_url)
+      return unless helpers.respond_to?(:open_notification_path)
 
-      relative_notification_path(RecordingStudioNotifications.notification_url(notification))
+      helpers.open_notification_path(notification.id)
     rescue ActionController::UrlGenerationError
       nil
-    end
-
-    def notification_host
-      application = Rails.application
-      return if application.nil?
-
-      routes = application.routes.default_url_options || {}
-      mailer = application.config.action_mailer.default_url_options || {}
-      routes.stringify_keys.merge(mailer.stringify_keys.compact_blank)["host"].presence
-    end
-
-    def relative_notification_path(absolute)
-      uri = URI.parse(absolute.to_s)
-      return if uri.path.blank?
-
-      uri.query.present? ? "#{uri.path}?#{uri.query}" : uri.path
     end
 
     def recipient_identity_key(recipient)

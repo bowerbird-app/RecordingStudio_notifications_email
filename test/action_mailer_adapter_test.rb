@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "action_controller"
 
 class ActionMailerAdapterTest < Minitest::Test
   Recipient = Struct.new(:id, :email, keyword_init: true)
@@ -68,42 +67,41 @@ class ActionMailerAdapterTest < Minitest::Test
     end
   end
 
-  def test_tracked_notification_path_stays_relative
-    with_local_open_routes do
-      with_mailer_host do
-        @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
-      end
+  def test_tracked_notification_path_uses_the_open_route
+    with_open_notification_path(->(id) { "/notifications/#{id}/open" }) do
+      @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
     end
 
     assert_equal "/notifications/notification-1/open", FakeMailer.params.fetch(:tracked_notification_path)
     assert_equal :notification, FakeMailer.action
   end
 
-  def test_tracked_notification_path_is_nil_without_a_host
-    with_local_open_routes do
-      with_mailer_host(host: nil) do
-        @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
-      end
+  def test_tracked_notification_path_is_omitted_when_the_route_cannot_be_built
+    with_open_notification_path(lambda { |_id|
+      raise ActionController::UrlGenerationError, "missing route"
+    }) do
+      @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
     end
 
     assert_nil FakeMailer.params.fetch(:tracked_notification_path)
     assert_equal :notification, FakeMailer.action
   end
 
-  def test_tracked_notification_path_is_omitted_when_the_route_cannot_be_built
-    route_set = ActionDispatch::Routing::RouteSet.new
-    route_set.draw do
-      get "notifications/:id/open/:extra", as: :open_notification, to: "notifications#open"
-    end
+  def test_tracked_notification_path_is_omitted_when_the_helper_is_missing
+    @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
 
-    RecordingStudioNotifications::Engine.stub(:routes, route_helpers_for(route_set)) do
-      with_mailer_host do
+    assert_nil FakeMailer.params.fetch(:tracked_notification_path)
+    assert_equal :notification, FakeMailer.action
+  end
+
+  def test_tracked_notification_path_does_not_swallow_other_errors
+    with_open_notification_path(->(_id) { raise "route exploded" }) do
+      assert_raises(RuntimeError) do
         @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
       end
     end
 
-    assert_nil FakeMailer.params.fetch(:tracked_notification_path)
-    assert_equal :notification, FakeMailer.action
+    assert_nil FakeMailer.action
   end
 
   def test_delivers_with_normalized_event_and_signed_reference
@@ -433,38 +431,19 @@ class ActionMailerAdapterTest < Minitest::Test
 
   private
 
-  def with_local_open_routes(&)
-    route_set = ActionDispatch::Routing::RouteSet.new
-    route_set.draw do
-      resources :notifications, only: [] do
-        member { get :open }
-      end
+  def with_open_notification_path(implementation, &body)
+    helpers = RecordingStudioNotifications::Engine.routes.url_helpers
+    singleton = helpers.singleton_class
+    existed = singleton.method_defined?(:open_notification_path)
+    original = helpers.method(:open_notification_path) if existed
+    singleton.define_method(:open_notification_path, &implementation)
+    body.call
+  ensure
+    if existed
+      singleton.define_method(:open_notification_path, original)
+    elsif singleton&.method_defined?(:open_notification_path)
+      singleton.send(:remove_method, :open_notification_path)
     end
-    RecordingStudioNotifications::Engine.stub(:routes, route_helpers_for(route_set), &)
-  end
-
-  def route_helpers_for(route_set)
-    helpers = Object.new
-    helpers.define_singleton_method(:url_helpers) { route_set.url_helpers }
-    helpers
-  end
-
-  def with_mailer_host(host: "mail.example", &)
-    options = host.present? ? { host: host, protocol: "https" } : {}
-    Rails.stub(:application, mailer_application(options), &)
-  end
-
-  def mailer_application(options)
-    application = Object.new
-    route_set = Object.new
-    route_set.define_singleton_method(:default_url_options) { options }
-    mailer_config = Object.new
-    mailer_config.define_singleton_method(:default_url_options) { options }
-    config = Object.new
-    config.define_singleton_method(:action_mailer) { mailer_config }
-    application.define_singleton_method(:routes) { route_set }
-    application.define_singleton_method(:config) { config }
-    application
   end
 
   def build_notification(id: "notification-1", notification_type: :comment,
