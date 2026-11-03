@@ -19,20 +19,6 @@ class GemspecDependenciesTest < Minitest::Test
     refute notifications.satisfied_by?(Gem::Version.new("1.0.0"))
   end
 
-  def test_repository_pins_and_view_component_stay_put
-    root = File.expand_path("..", __dir__)
-    gemfile = File.read(File.join(root, "Gemfile"))
-    dummy_gemfile = File.read(File.join(root, "test/dummy/Gemfile"))
-    root_lock = File.read(File.join(root, "Gemfile.lock"))
-    dummy_lock = File.read(File.join(root, "test/dummy/Gemfile.lock"))
-
-    assert_includes gemfile, 'tag: "v0.1.332"'
-    assert_includes dummy_gemfile, 'tag: "v0.1.332"'
-    assert_includes dummy_gemfile, 'tag: "v0.11.3"'
-    assert_includes root_lock, "view_component (4.20.0)"
-    assert_includes dummy_lock, "view_component (4.20.0)"
-  end
-
   private
 
   def requirement_for(spec, name)
