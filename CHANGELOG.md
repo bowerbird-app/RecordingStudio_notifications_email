@@ -4,7 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [0.5.0] - 2026-11-02
+## [0.5.1] - 2026-11-02
+
+This release also includes 0.4.1 through 0.5.0 below (first tagged release since v0.4.0).
+
+### Changed
+
+- The root CI workflow has a Security job. It runs Brakeman and
+  `bundler-audit check --update` on this gem and on `test/dummy`.
+  Checkout and Ruby setup are pinned by commit. The org token is set
+  only on the steps that install gems.
+- The dummy lock updates `addressable` to `2.9.2` so that audit is clean.
+
+### Upgrade notes
+
+- No application change. `view_component` stays `4.20.0`. There is no
+  migration.
+
+## 0.5.0 - 2026-11-02
 
 ### Removed
 
@@ -44,7 +61,7 @@ channel_options: {
   `Adapters::` and `Channels::` aliases are gone.
 - No migration. `view_component` stays `4.20.0`.
 
-## [0.4.7] - 2026-11-02
+## 0.4.7 - 2026-11-02
 
 ### Changed
 
@@ -72,7 +89,7 @@ channel_options: {
   `"all"`. Delete any inbox scope patch.
 - No migration. `view_component` stays `4.20.0`.
 
-## [0.4.6] - 2026-11-02
+## 0.4.6 - 2026-11-02
 
 ### Changed
 
@@ -88,7 +105,7 @@ channel_options: {
   need to move before this version.
 - No migration. `view_component` stays `4.20.0`.
 
-## [0.4.5] - 2026-11-02
+## 0.4.5 - 2026-11-02
 
 ### Changed
 
@@ -110,7 +127,7 @@ channel_options: {
   `flat_pack_sidebar` from `recording_studio_layout` for signed-in screens.
 - No migration.
 
-## [0.4.4] - 2026-11-02
+## 0.4.4 - 2026-11-02
 
 ### Changed
 
@@ -132,7 +149,7 @@ channel_options: {
   `config.default_inbox_scope`. This gem will adopt that in a later release.
 - No migration.
 
-## [0.4.3] - 2026-11-02
+## 0.4.3 - 2026-11-02
 
 ### Changed
 
@@ -148,7 +165,7 @@ channel_options: {
   A missing file is still fine; set `config.from` in the initializer.
 - No migration.
 
-## [0.4.2] - 2026-11-02
+## 0.4.2 - 2026-11-02
 
 ### Changed
 
@@ -166,7 +183,7 @@ channel_options: {
 - Hosts already on notifications `0.10.0` or newer see the same URL check.
   Allow absolute links by setting notifications `allowed_url_hosts`.
 
-## [0.4.1] - 2026-11-02
+## 0.4.1 - 2026-11-02
 
 ### Changed
 
@@ -354,7 +371,8 @@ unchanged.
 - Expiring signed correlation references.
 - Recording Studio-backed normalized event facade.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.4.0...v0.5.1
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.15...v0.4.0
 [0.3.15]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.14...v0.3.15
 [0.3.14]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.1...v0.3.14
