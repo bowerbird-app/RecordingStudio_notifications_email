@@ -6,7 +6,7 @@ source "https://rubygems.org"
 gemspec
 
 # Development sources until parent gems are published on RubyGems.
-gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.329"
+gem "flat_pack", github: "bowerbird-app/flatpack", tag: "v0.1.332"
 gem "recording_studio", github: "bowerbird-app/RecordingStudio", tag: "v6.3.0"
 gem "recording_studio_accessible", github: "bowerbird-app/RecordingStudio_accessible", tag: "v0.24.0"
 gem "recording_studio_metrics", github: "bowerbird-app/RecordingStudio_metrics", tag: "v0.7.0"
