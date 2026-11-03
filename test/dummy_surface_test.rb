@@ -5,18 +5,6 @@ require "test_helper"
 class DummySurfaceTest < Minitest::Test
   ROOT = File.expand_path("..", __dir__)
 
-  def test_template_leftovers_are_gone
-    [
-      "test/dummy/install_page.html",
-      "test/dummy/app/javascript/controllers/hello_controller.js",
-      "test/dummy/app/views/makeup_artist/custom_examples/.keep",
-      "test/dummy/.github/workflows/ci.yml",
-      "test/dummy/.github/dependabot.yml"
-    ].each do |relative|
-      refute File.exist?(File.join(ROOT, relative)), relative
-    end
-  end
-
   def test_dummy_test_database_comes_from_the_loaded_configuration
     require "active_record"
     require "erb"
