@@ -8,10 +8,11 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- The root CI workflow has a Security job. It runs Brakeman on this
-  gem and on `test/dummy`, then `bundler-audit check --update` from
-  this gem's bundle. Checkout and Ruby setup are pinned by commit.
-  The org token is set only on the steps that install gems.
+- The root CI workflow has a Security job. It runs Brakeman and
+  `bundler-audit check --update` on this gem and on `test/dummy`.
+  Checkout and Ruby setup are pinned by commit. The org token is set
+  only on the steps that install gems.
+- The dummy lock updates `addressable` to `2.9.2` so that audit is clean.
 
 ### Upgrade notes
 

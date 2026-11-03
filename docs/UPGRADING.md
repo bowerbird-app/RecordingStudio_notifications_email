@@ -2,8 +2,8 @@
 
 ## 0.5.1
 
-Root CI runs a Security job: Brakeman on this gem and on `test/dummy`,
-then `bundler-audit check --update`. The development bundle includes
+Root CI runs a Security job: Brakeman and `bundler-audit check --update`
+on this gem and on `test/dummy`. The development bundle includes
 `brakeman` and `bundler-audit` for that job. Checkout and Ruby setup
 are pinned by commit. The org token is set only on the steps that
 install gems.
