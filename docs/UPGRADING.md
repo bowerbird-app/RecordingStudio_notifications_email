@@ -1,12 +1,38 @@
 # Upgrading
 
+## 0.4.7
+
+Notifications must be `>= 0.14.7` and `< 1`. This repository pins tag
+`v0.14.7`.
+
+Replayed email events use `Delivery#email_event_applied?`. Read the time
+with `Delivery#email_event_at`. This gem no longer looks for
+`email_opened_at` and the other timestamp keys on its own.
+
+Individual mail still passes the notifications open path as
+`tracked_notification_path` (`open_notification_path`). The path is
+left off when that helper is missing or the route cannot be built.
+Other errors propagate. This patch does not switch the link to an
+absolute URL.
+
+`Event#url` asks `RecordingStudioNotifications::UrlSafety` and does not
+pre-check control characters or backslashes. `UrlSafety` rejects those.
+
+The dummy inbox sets `config.default_inbox_scope = "current_root"`. Hosts
+that copied an inbox scope patch should delete it and set that config.
+`"all"` lists every workspace. `"current_root"` stays on the workspace
+the person is in.
+
+`view_component` stays `4.20.0`. There is no migration.
+
 ## 0.4.6
 
 The gem now requires `recording_studio` `>= 6.1.0` and `< 7`, and
 `recording_studio_notifications` `>= 0.14.0` and `< 1`.
 
 Repository pins: FlatPack `v0.1.332`, Root Switchable `v0.11.3`. Core stays
-`v6.3.0`. Notifications stays `v0.14.1`. `view_component` stays `4.20.0`.
+`v6.3.0`. Notifications in that release stayed `v0.14.1`. See 0.4.7 for
+the current notifications pin. `view_component` stays `4.20.0`.
 
 ## 0.4.5
 

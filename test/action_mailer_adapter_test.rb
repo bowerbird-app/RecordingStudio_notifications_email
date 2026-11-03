@@ -4,7 +4,11 @@ require "test_helper"
 
 class ActionMailerAdapterTest < Minitest::Test
   Recipient = Struct.new(:id, :email, keyword_init: true)
-  Notification = Struct.new(:id, :notification_type, :title, :recipient, keyword_init: true)
+  Notification = Struct.new(:id, :notification_type, :title, :recipient, keyword_init: true) do
+    def to_param
+      id
+    end
+  end
   Delivery = Struct.new(:id)
 
   class FakeMessage
@@ -69,6 +73,7 @@ class ActionMailerAdapterTest < Minitest::Test
     end
 
     assert_equal "/notifications/notification-1/open", FakeMailer.params.fetch(:tracked_notification_path)
+    assert_equal :notification, FakeMailer.action
   end
 
   def test_tracked_notification_path_is_omitted_when_the_route_cannot_be_built
@@ -428,9 +433,6 @@ class ActionMailerAdapterTest < Minitest::Test
 
   def with_open_notification_path(implementation, &body)
     helpers = RecordingStudioNotifications::Engine.routes.url_helpers
-    singleton = nil
-    existed = false
-    original = nil
     singleton = helpers.singleton_class
     existed = singleton.method_defined?(:open_notification_path)
     original = helpers.method(:open_notification_path) if existed

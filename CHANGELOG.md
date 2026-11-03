@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-11-02
+
+### Changed
+
+- Notifications is pinned to tag `v0.14.7`. The gemspec floor is
+  `>= 0.14.7` and `< 1`.
+- A replayed provider event asks `Delivery#email_event_applied?`.
+  Timestamps stay on `Delivery#email_event_at`. This gem no longer keeps
+  its own email timestamp keys.
+- The open link in an individual email stays
+  `open_notification_path` from notifications. It is left off when that
+  helper is missing or the route cannot be built. Other errors still
+  propagate. Absolute links are not part of this patch.
+- `Event#url` uses `UrlSafety` for control characters and backslashes.
+  The local character check is gone.
+- The dummy inbox sets `config.default_inbox_scope` to `current_root`.
+  There is no local inbox patch.
+- Lock updates that came with the notifications pin: `nokogiri` `1.19.6`
+  and `rails-html-sanitizer` `1.7.2`.
+
+### Upgrade notes
+
+- Move to notifications `0.14.7` or newer before this version.
+  `tracked_notification_path` is still the notifications open path.
+- Set notifications `config.default_inbox_scope` to `"current_root"` or
+  `"all"`. Delete any inbox scope patch.
+- No migration. `view_component` stays `4.20.0`.
+
 ## [0.4.6] - 2026-11-02
 
 ### Changed

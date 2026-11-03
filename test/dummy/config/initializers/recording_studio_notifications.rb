@@ -59,6 +59,7 @@ end
 
 RecordingStudioNotifications.configure do |config|
   config.deliver_later = false if Rails.env.development?
+  config.default_inbox_scope = "current_root"
 
   # Resolve the current actor for API calls and engine controllers.
   config.actor_resolver = -> { Current.actor }

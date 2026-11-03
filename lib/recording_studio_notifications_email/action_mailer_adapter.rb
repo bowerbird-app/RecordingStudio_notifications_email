@@ -143,15 +143,6 @@ module RecordingStudioNotificationsEmail
       raise DeliveryError, "#{label} must be a valid email address"
     end
 
-    def recipient_identity_key(recipient)
-      id = recipient.id if recipient.respond_to?(:id)
-      if id.to_s.strip.present?
-        [recipient.class.name.presence || recipient.class.to_s, id.to_s]
-      else
-        [:object, recipient.__id__]
-      end
-    end
-
     def tracked_notification_path(notification)
       helpers = RecordingStudioNotifications::Engine.routes.url_helpers
       return unless helpers.respond_to?(:open_notification_path)
@@ -159,6 +150,15 @@ module RecordingStudioNotificationsEmail
       helpers.open_notification_path(notification.id)
     rescue ActionController::UrlGenerationError
       nil
+    end
+
+    def recipient_identity_key(recipient)
+      id = recipient.id if recipient.respond_to?(:id)
+      if id.to_s.strip.present?
+        [recipient.class.name.presence || recipient.class.to_s, id.to_s]
+      else
+        [:object, recipient.__id__]
+      end
     end
   end
 
