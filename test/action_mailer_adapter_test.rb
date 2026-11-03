@@ -6,17 +6,6 @@ class ActionMailerAdapterTest < Minitest::Test
   Recipient = Struct.new(:id, :email, keyword_init: true)
   Notification = Struct.new(:id, :notification_type, :title, :recipient, keyword_init: true)
   Delivery = Struct.new(:id)
-  NotificationType = Struct.new(:individual_mailer, :rollup_mailer, keyword_init: true)
-
-  class NotificationTypeRegistry
-    def initialize(definitions)
-      @definitions = definitions
-    end
-
-    def fetch(key)
-      @definitions.fetch(key.to_sym)
-    end
-  end
 
   class FakeMessage
     attr_reader :delivered
@@ -45,6 +34,11 @@ class ActionMailerAdapterTest < Minitest::Test
         @action = :rollup
         FakeMessage.new
       end
+
+      def reset!
+        @params = nil
+        @action = nil
+      end
     end
   end
 
@@ -55,18 +49,18 @@ class ActionMailerAdapterTest < Minitest::Test
     @configuration.message_verifier = ActiveSupport::MessageVerifier.new("b" * 64, serializer: JSON)
     @configuration.message_id_domain = "mail.example.test"
     @adapter = RecordingStudioNotificationsEmail::ActionMailerAdapter.new(configuration: @configuration)
-    FakeMailer.instance_variable_set(:@action, nil)
-    FakeMailer.instance_variable_set(:@params, nil)
-    @suppression_singleton = class << RecordingStudioNotificationsEmail::Suppression; self; end
-    @original_suppressed = RecordingStudioNotificationsEmail::Suppression.method(:suppressed?)
-    @suppression_singleton.send(:define_method, :suppressed?) { |_address| false }
+    FakeMailer.reset!
+    @suppressed = ->(_address) { false }
   end
 
   def teardown
-    return unless @suppression_singleton
+    RecordingStudioNotifications.notification_types.clear!
+  end
 
-    @suppression_singleton.send(:remove_method, :suppressed?)
-    @suppression_singleton.send(:define_method, :suppressed?, @original_suppressed)
+  def run
+    RecordingStudioNotificationsEmail::Suppression.stub(:suppressed?, ->(address) { @suppressed.call(address) }) do
+      super
+    end
   end
 
   def test_delivers_with_normalized_event_and_signed_reference
@@ -86,20 +80,21 @@ class ActionMailerAdapterTest < Minitest::Test
   end
 
   def test_individual_delivery_uses_registered_template_path
-    notification_type = NotificationType.new(
+    RecordingStudioNotifications.register_notification_type(
+      :comment,
+      label: "Comment",
       individual_mailer: "notification_mailer/individual/comment"
     )
-    with_notification_types(comment: notification_type) do
-      @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
-    end
+
+    @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
 
     assert_equal "notification_mailer/individual/comment", FakeMailer.params.fetch(:template_path)
   end
 
   def test_individual_delivery_falls_back_to_the_bundled_template
-    with_notification_types(comment: NotificationType.new) do
-      @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
-    end
+    RecordingStudioNotifications.register_notification_type(:comment, label: "Comment")
+
+    @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
 
     assert_equal RecordingStudioNotificationsEmail::Configuration::DEFAULT_TEMPLATE,
                  FakeMailer.params.fetch(:template_path)
@@ -139,9 +134,7 @@ class ActionMailerAdapterTest < Minitest::Test
   end
 
   def test_suppressed_recipient_is_not_delivered
-    suppressor = RecordingStudioNotificationsEmail::Suppression
-    singleton = class << suppressor; self; end
-    singleton.send(:define_method, :suppressed?) { |address| address == "person@example.test" }
+    @suppressed = ->(address) { address == "person@example.test" }
 
     error = assert_raises(RecordingStudioNotificationsEmail::SuppressedRecipientError) do
       @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
@@ -153,9 +146,7 @@ class ActionMailerAdapterTest < Minitest::Test
 
   def test_suppressed_rollup_recipient_is_not_delivered
     recipient = Recipient.new(id: "person-1", email: "person@example.test")
-    suppressor = RecordingStudioNotificationsEmail::Suppression
-    singleton = class << suppressor; self; end
-    singleton.send(:define_method, :suppressed?) { |_address| true }
+    @suppressed = ->(_address) { true }
 
     assert_raises(RecordingStudioNotificationsEmail::SuppressedRecipientError) do
       @adapter.deliver_rollup(
@@ -258,17 +249,20 @@ class ActionMailerAdapterTest < Minitest::Test
     recipient = Recipient.new(id: "person-1", email: "person@example.test")
     notifications = [build_notification(id: "notification-1", recipient: recipient)]
 
-    with_notification_types(comment: NotificationType.new(rollup_mailer: "notification_mailer/rollup/comment")) do
-      @adapter.deliver_rollup(
-        notifications: notifications,
-        deliveries: [Delivery.new("delivery-1")],
-        rollup_key: "weekly/person/comment",
-        cadence: :weekly,
-        period_starts_at: Time.now,
-        period_ends_at: Time.now,
-        idempotency_key: "weekly/person/comment"
-      )
-    end
+    RecordingStudioNotifications.register_notification_type(
+      :comment,
+      label: "Comment",
+      rollup_mailer: "notification_mailer/rollup/comment"
+    )
+    @adapter.deliver_rollup(
+      notifications: notifications,
+      deliveries: [Delivery.new("delivery-1")],
+      rollup_key: "weekly/person/comment",
+      cadence: :weekly,
+      period_starts_at: Time.now,
+      period_ends_at: Time.now,
+      idempotency_key: "weekly/person/comment"
+    )
 
     assert_equal "notification_mailer/rollup/comment", FakeMailer.params.fetch(:template_path)
   end
@@ -277,17 +271,16 @@ class ActionMailerAdapterTest < Minitest::Test
     recipient = Recipient.new(id: "person-1", email: "person@example.test")
     notifications = [build_notification(id: "notification-1", recipient: recipient)]
 
-    with_notification_types(comment: NotificationType.new) do
-      @adapter.deliver_rollup(
-        notifications: notifications,
-        deliveries: [Delivery.new("delivery-1")],
-        rollup_key: "weekly/person/comment",
-        cadence: :weekly,
-        period_starts_at: Time.now,
-        period_ends_at: Time.now,
-        idempotency_key: "weekly/person/comment"
-      )
-    end
+    RecordingStudioNotifications.register_notification_type(:comment, label: "Comment")
+    @adapter.deliver_rollup(
+      notifications: notifications,
+      deliveries: [Delivery.new("delivery-1")],
+      rollup_key: "weekly/person/comment",
+      cadence: :weekly,
+      period_starts_at: Time.now,
+      period_ends_at: Time.now,
+      idempotency_key: "weekly/person/comment"
+    )
 
     assert_equal RecordingStudioNotificationsEmail::Configuration::DEFAULT_ROLLUP_TEMPLATE,
                  FakeMailer.params.fetch(:template_path)
@@ -396,15 +389,6 @@ class ActionMailerAdapterTest < Minitest::Test
   end
 
   private
-
-  def with_notification_types(definitions)
-    configuration = RecordingStudioNotifications.configuration
-    original_registry = configuration.instance_variable_get(:@notification_types)
-    configuration.instance_variable_set(:@notification_types, NotificationTypeRegistry.new(definitions))
-    yield
-  ensure
-    configuration&.instance_variable_set(:@notification_types, original_registry)
-  end
 
   def build_notification(id: "notification-1", notification_type: :comment,
                          recipient: Recipient.new(email: "person@example.test"))

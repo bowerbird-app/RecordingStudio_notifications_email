@@ -92,18 +92,15 @@ class EventTest < Minitest::Test
     end
   end
 
-  def test_builtin_url_fallback_fails_closed
-    event = RecordingStudioNotificationsEmail::Event.new({})
+  def test_url_rejects_schemes_and_protocol_relative_values
+    javascript = RecordingStudioNotificationsEmail::Event.new({ url: "javascript:alert(1)" })
+    protocol_relative = RecordingStudioNotificationsEmail::Event.new({ url: "//evil.example/steal" })
 
-    assert event.send(:fallback_url_safe?, "/notifications/1")
-    assert event.send(:fallback_url_safe?, "https://example.test/notifications/1")
-    refute event.send(:fallback_url_safe?, "//evil.example/steal")
-    refute event.send(:fallback_url_safe?, "javascript:alert(1)")
+    assert_nil javascript.url
+    assert_nil protocol_relative.url
   end
 
   def test_url_rejects_backslashes_before_parent_url_safety
-    skip "RecordingStudioNotifications::UrlSafety unavailable" unless defined?(RecordingStudioNotifications::UrlSafety)
-
     event = RecordingStudioNotificationsEmail::Event.new({ url: "/notifications\\1" })
 
     RecordingStudioNotifications::UrlSafety.stub(:safe?, ->(*) { flunk("expected to reject before UrlSafety") }) do
@@ -111,19 +108,23 @@ class EventTest < Minitest::Test
     end
   end
 
-  def test_url_rejects_ascii_controls_before_fallback_url_safety
+  def test_url_rejects_ascii_controls_before_url_safety
     event = RecordingStudioNotificationsEmail::Event.new({ url: "/notifications/\u0000control" })
 
-    with_url_safety_unavailable do
-      event.stub(:fallback_url_safe?, ->(*) { flunk("expected to reject before fallback") }) do
-        assert_nil event.url
-      end
+    RecordingStudioNotifications::UrlSafety.stub(:safe?, ->(*) { flunk("expected to reject before UrlSafety") }) do
+      assert_nil event.url
+    end
+  end
+
+  def test_url_returns_nil_when_url_safety_cannot_parse
+    event = RecordingStudioNotificationsEmail::Event.new({ url: "https://example.test/inbox" })
+
+    RecordingStudioNotifications::UrlSafety.stub(:safe?, ->(*) { raise URI::InvalidURIError }) do
+      assert_nil event.url
     end
   end
 
   def test_title_body_and_url_use_delivery_payload_when_delivery_present
-    skip "RecordingStudioNotifications.delivery_payload_for unavailable" unless delivery_payload_available?
-
     notification = Notification.new(
       notification_type: :otp_sign_in,
       title: "Stored title",
@@ -159,24 +160,5 @@ class EventTest < Minitest::Test
     assert_equal "Stored title", event.title
     assert_equal "Stored body", event.body
     assert_equal "/notifications/1", event.url
-  end
-
-  private
-
-  def delivery_payload_available?
-    defined?(RecordingStudioNotifications) &&
-      RecordingStudioNotifications.respond_to?(:delivery_payload_for)
-  end
-
-  def with_url_safety_unavailable
-    unless defined?(RecordingStudioNotifications::UrlSafety)
-      yield
-      return
-    end
-
-    original = RecordingStudioNotifications.send(:remove_const, :UrlSafety)
-    yield
-  ensure
-    RecordingStudioNotifications.const_set(:UrlSafety, original) if defined?(original) && original
   end
 end

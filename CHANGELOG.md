@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-11-02
+
+### Changed
+
+- `Event#url` always asks `RecordingStudioNotifications::UrlSafety.safe?`.
+  The local fallback that accepted any http(s) host is gone. Control
+  characters and backslashes are still rejected before that check.
+- Gem tests call `reset_configuration!`, notification-type registration, and
+  public suppression checks. They no longer swap private configuration state
+  or remove parent constants.
+- The dummy app depends on `minitest-mock` so a test can stub one delivery
+  for the length of a block.
+
+### Upgrade notes
+
+- Hosts already on notifications `0.10.0` or newer see the same URL check.
+  Allow absolute links by setting notifications `allowed_url_hosts`.
+
 ## [0.4.1] - 2026-11-02
 
 ### Changed

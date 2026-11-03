@@ -2,7 +2,26 @@
 
 require "test_helper"
 
+# The gem suite does not boot the notifications engine, so these models are
+# not loaded. The stand-ins stay on this test and are installed only while
+# it runs, so other files do not see them.
 class DeliveryCallbacksTest < Minitest::Test
+  class Delivery
+    def self.where(*_args, **_kwargs)
+      []
+    end
+
+    def self.transaction(**)
+      yield
+    end
+  end
+
+  class Notification
+    def self.find_by(*)
+      nil
+    end
+  end
+
   Record = Struct.new(:id)
   FakeNotification = Struct.new(:id, :read_at) do
     attr_reader :saved
@@ -142,20 +161,15 @@ class DeliveryCallbacksTest < Minitest::Test
   end
 
   def setup
-    @had_delivery_constant = RecordingStudioNotifications.const_defined?(:Delivery, false)
-    @original_delivery_constant = RecordingStudioNotifications.const_get(:Delivery) if @had_delivery_constant
-    RecordingStudioNotifications.const_set(:Delivery, Class.new) unless @had_delivery_constant
-
+    @installed_stand_ins = install_stand_ins
     @configuration = RecordingStudioNotificationsEmail::Configuration.new
     @configuration.message_verifier = ActiveSupport::MessageVerifier.new("c" * 64, serializer: JSON)
     @delivered_at = Time.utc(2026, 7, 17, 12, 0, 0)
   end
 
   def teardown
-    if @had_delivery_constant
-      RecordingStudioNotifications.const_set(:Delivery, @original_delivery_constant)
-    else
-      RecordingStudioNotifications.send(:remove_const, :Delivery)
+    @installed_stand_ins&.each do |name|
+      RecordingStudioNotifications.send(:remove_const, name)
     end
   end
 
@@ -632,51 +646,38 @@ class DeliveryCallbacksTest < Minitest::Test
     delivery.define_singleton_method(:email_bounced?) { false }
     delivery.define_singleton_method(:mark_email_bounced!) { |at:| }
 
-    had_notification = RecordingStudioNotifications.const_defined?(:Notification, false)
-    original_notification = RecordingStudioNotifications.const_get(:Notification) if had_notification
-    notification_class = Class.new do
-      define_singleton_method(:find_by) { |id:| id == "notification-1" ? notification : nil }
-    end
-    RecordingStudioNotifications.const_set(:Notification, notification_class)
+    with_notification_lookup(notification) do
+      with_stubbed_delivery_where([delivery]) do
+        with_recorded_suppressions do |calls|
+          RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_bounced!(
+            reference: reference,
+            bounced_at: @delivered_at,
+            provider: :postmark,
+            bounce_type: "HardBounce",
+            configuration: @configuration
+          )
 
-    with_stubbed_delivery_where([delivery]) do
-      with_recorded_suppressions do |calls|
-        RecordingStudioNotificationsEmail::DeliveryCallbacks.mark_bounced!(
-          reference: reference,
-          bounced_at: @delivered_at,
-          provider: :postmark,
-          bounce_type: "HardBounce",
-          configuration: @configuration
-        )
-
-        assert_equal "person@example.test", calls.first.fetch(:address)
+          assert_equal "person@example.test", calls.first.fetch(:address)
+        end
       end
-    end
-  ensure
-    if had_notification
-      RecordingStudioNotifications.const_set(:Notification, original_notification)
-    elsif RecordingStudioNotifications.const_defined?(:Notification, false)
-      RecordingStudioNotifications.send(:remove_const, :Notification)
     end
   end
 
   def test_public_api_delegates_to_delivery_callbacks
     reference = signed_reference(notification_id: "notification-1", delivery_id: "delivery-1")
     delivery = FakeDelivery.new(id: "delivery-1")
-    original_configuration = RecordingStudioNotificationsEmail.instance_variable_get(:@configuration)
 
-    with_stubbed_delivery_where([delivery]) do
-      RecordingStudioNotificationsEmail.instance_variable_set(:@configuration, @configuration)
-      result = RecordingStudioNotificationsEmail.mark_delivered!(
-        reference: reference,
-        delivered_at: @delivered_at
-      )
+    with_test_configuration do
+      with_stubbed_delivery_where([delivery]) do
+        result = RecordingStudioNotificationsEmail.mark_delivered!(
+          reference: reference,
+          delivered_at: @delivered_at
+        )
 
-      assert_equal %w[delivery-1], result.updated_delivery_ids
-      assert_equal @delivered_at, delivery.marked_at
+        assert_equal %w[delivery-1], result.updated_delivery_ids
+        assert_equal @delivered_at, delivery.marked_at
+      end
     end
-  ensure
-    RecordingStudioNotificationsEmail.instance_variable_set(:@configuration, original_configuration)
   end
 
   def test_public_api_delegates_webhook_helpers
@@ -685,79 +686,85 @@ class DeliveryCallbacksTest < Minitest::Test
     notification = FakeNotification.new("notification-1", nil)
     notification.define_singleton_method(:recipient) { recipient }
     delivery = FakeDelivery.new(id: "delivery-1", notification: notification)
-    original_configuration = RecordingStudioNotificationsEmail.instance_variable_get(:@configuration)
 
-    with_stubbed_delivery_where([delivery]) do
-      RecordingStudioNotificationsEmail.instance_variable_set(:@configuration, @configuration)
-
-      opened_result = RecordingStudioNotificationsEmail.mark_opened!(
-        reference: reference,
-        opened_at: @delivered_at
-      )
-      assert_equal :opened, opened_result.event_type
-      assert_equal @delivered_at, delivery.opened_at
-
-      clicked_result = RecordingStudioNotificationsEmail.mark_clicked!(
-        reference: reference,
-        clicked_at: @delivered_at
-      )
-      assert_equal :clicked, clicked_result.event_type
-
-      with_recorded_suppressions do |calls|
-        unsubscribed_result = RecordingStudioNotificationsEmail.mark_unsubscribed!(
+    with_test_configuration do
+      with_stubbed_delivery_where([delivery]) do
+        opened_result = RecordingStudioNotificationsEmail.mark_opened!(
           reference: reference,
-          unsubscribed_at: @delivered_at,
-          provider: :postmark
+          opened_at: @delivered_at
         )
-        assert_equal :unsubscribed, unsubscribed_result.event_type
-        assert_equal "unsubscribed", calls.last.fetch(:reason)
+        assert_equal :opened, opened_result.event_type
+        assert_equal @delivered_at, delivery.opened_at
 
-        bounced_result = RecordingStudioNotificationsEmail.mark_bounced!(
+        clicked_result = RecordingStudioNotificationsEmail.mark_clicked!(
           reference: reference,
-          bounced_at: @delivered_at,
-          provider: :postmark
+          clicked_at: @delivered_at
         )
-        assert_equal :bounced, bounced_result.event_type
-        assert_equal @delivered_at, delivery.bounced_at
-        assert_equal 1, calls.size
+        assert_equal :clicked, clicked_result.event_type
 
-        complained_result = RecordingStudioNotificationsEmail.mark_complained!(
-          reference: reference,
-          complained_at: @delivered_at,
-          provider: :postmark
-        )
-        assert_equal :complained, complained_result.event_type
-
-        process_result = RecordingStudioNotificationsEmail.process_webhook_event!(
-          event: {
-            provider: :postmark,
-            event_type: :unsubscribed,
+        with_recorded_suppressions do |calls|
+          unsubscribed_result = RecordingStudioNotificationsEmail.mark_unsubscribed!(
             reference: reference,
-            occurred_at: @delivered_at,
-            metadata: {}
-          }
-        )
-        assert_equal :unsubscribed, process_result.event_type
-        assert_equal @delivered_at, delivery.unsubscribed_at
+            unsubscribed_at: @delivered_at,
+            provider: :postmark
+          )
+          assert_equal :unsubscribed, unsubscribed_result.event_type
+          assert_equal "unsubscribed", calls.last.fetch(:reason)
 
-        process_result = RecordingStudioNotificationsEmail.process_webhook_event!(
-          event: {
-            provider: :postmark,
-            event_type: :unsubscribed,
+          bounced_result = RecordingStudioNotificationsEmail.mark_bounced!(
             reference: reference,
-            occurred_at: @delivered_at,
-            metadata: {}
-          }
-        )
-        assert_equal :unsubscribed, process_result.event_type
-        assert_equal @delivered_at, delivery.unsubscribed_at
+            bounced_at: @delivered_at,
+            provider: :postmark
+          )
+          assert_equal :bounced, bounced_result.event_type
+          assert_equal @delivered_at, delivery.bounced_at
+          assert_equal 1, calls.size
+
+          complained_result = RecordingStudioNotificationsEmail.mark_complained!(
+            reference: reference,
+            complained_at: @delivered_at,
+            provider: :postmark
+          )
+          assert_equal :complained, complained_result.event_type
+
+          process_result = RecordingStudioNotificationsEmail.process_webhook_event!(
+            event: {
+              provider: :postmark,
+              event_type: :unsubscribed,
+              reference: reference,
+              occurred_at: @delivered_at,
+              metadata: {}
+            }
+          )
+          assert_equal :unsubscribed, process_result.event_type
+          assert_equal @delivered_at, delivery.unsubscribed_at
+
+          process_result = RecordingStudioNotificationsEmail.process_webhook_event!(
+            event: {
+              provider: :postmark,
+              event_type: :unsubscribed,
+              reference: reference,
+              occurred_at: @delivered_at,
+              metadata: {}
+            }
+          )
+          assert_equal :unsubscribed, process_result.event_type
+          assert_equal @delivered_at, delivery.unsubscribed_at
+        end
       end
     end
-  ensure
-    RecordingStudioNotificationsEmail.instance_variable_set(:@configuration, original_configuration)
   end
 
   private
+
+  def install_stand_ins
+    { Delivery: Delivery, Notification: Notification }.filter_map do |name, stand_in|
+      next if RecordingStudioNotifications.const_defined?(name, false)
+
+      RecordingStudioNotifications.const_set(name, stand_in)
+      name
+    end
+  end
 
   def signed_reference(notification_id:, delivery_id:)
     RecordingStudioNotificationsEmail::DeliveryToken.sign(
@@ -767,43 +774,38 @@ class DeliveryCallbacksTest < Minitest::Test
     )
   end
 
-  def with_stubbed_delivery_where(result, on_transaction: nil)
-    delivery_class = RecordingStudioNotifications::Delivery
-    singleton = class << delivery_class; self; end
-    had_where = singleton.method_defined?(:where)
-    original_where = delivery_class.method(:where) if had_where
-    had_transaction = singleton.method_defined?(:transaction)
-    original_transaction = delivery_class.method(:transaction) if had_transaction
-
-    singleton.send(:define_method, :where) { |_ids| result }
-    singleton.send(:define_method, :transaction) do |**_, &block|
-      on_transaction&.call
-      block.call
-    end
+  def with_test_configuration
+    RecordingStudioNotificationsEmail.reset_configuration!
+    RecordingStudioNotificationsEmail.configuration.message_verifier = @configuration.message_verifier
     yield
   ensure
-    singleton.send(:remove_method, :where)
-    singleton.send(:define_method, :where, original_where) if had_where
-    singleton.send(:remove_method, :transaction)
-    singleton.send(:define_method, :transaction, original_transaction) if had_transaction
+    RecordingStudioNotificationsEmail.reset_configuration!
   end
 
-  def with_recorded_suppressions(on_transaction: nil)
+  def with_notification_lookup(notification, &)
+    RecordingStudioNotifications::Notification.stub(:find_by, ->(id:) { notification if id == "notification-1" }, &)
+  end
+
+  def with_stubbed_delivery_where(result, on_transaction: nil, &body)
+    delivery_class = RecordingStudioNotifications::Delivery
+    delivery_class.stub(:where, ->(*_args, **_kwargs) { result }) do
+      delivery_class.stub(:transaction, lambda { |**, &block|
+        on_transaction&.call
+        block.call
+      }, &body)
+    end
+  end
+
+  def with_recorded_suppressions(on_transaction: nil, &body)
     calls = []
     suppressor = RecordingStudioNotificationsEmail::Suppression
-    singleton = class << suppressor; self; end
-    original_transaction = suppressor.method(:transaction)
-    original_suppress = suppressor.method(:suppress!)
-    singleton.send(:define_method, :transaction) do |**_, &block|
+    suppressor.stub(:transaction, lambda { |**, &block|
       on_transaction&.call
       block.call
+    }) do
+      suppressor.stub(:suppress!, ->(**kwargs) { calls << kwargs }) do
+        body.call(calls)
+      end
     end
-    singleton.send(:define_method, :suppress!) { |**kwargs| calls << kwargs }
-    yield calls
-  ensure
-    singleton.send(:remove_method, :transaction)
-    singleton.send(:define_method, :transaction, original_transaction)
-    singleton.send(:remove_method, :suppress!)
-    singleton.send(:define_method, :suppress!, original_suppress)
   end
 end

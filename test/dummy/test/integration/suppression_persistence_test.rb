@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "minitest/mock"
 
 class SuppressionPersistenceTest < ActiveSupport::TestCase
   ADDRESS = "bounce-suppress@example.com"
@@ -29,13 +30,6 @@ class SuppressionPersistenceTest < ActiveSupport::TestCase
       delivery: @delivery
     )
     @original_status = @delivery.status
-    @mark_email_bounced = RecordingStudioNotifications::Delivery.instance_method(:mark_email_bounced!)
-  end
-
-  teardown do
-    delivery_class = RecordingStudioNotifications::Delivery
-    delivery_class.send(:remove_method, :mark_email_bounced!) if delivery_class.method_defined?(:mark_email_bounced!)
-    delivery_class.define_method(:mark_email_bounced!, @mark_email_bounced)
   end
 
   test "schema has the address suppression table" do
@@ -49,19 +43,20 @@ class SuppressionPersistenceTest < ActiveSupport::TestCase
   end
 
   test "bounce suppression remains when the delivery update rolls back" do
-    RecordingStudioNotifications::Delivery.class_eval do
-      def mark_email_bounced!(at:)
-        update!(status: "failed", error_message: "should roll back")
-        raise "after write"
-      end
+    failing = RecordingStudioNotifications::Delivery.find(@delivery.id)
+    failing.define_singleton_method(:mark_email_bounced!) do |*|
+      update!(status: "failed", error_message: "should roll back")
+      raise "after write"
     end
 
     assert_raises(RuntimeError) do
-      RecordingStudioNotificationsEmail.mark_bounced!(
-        reference: @reference,
-        provider: "postmark",
-        bounce_type: "permanent"
-      )
+      RecordingStudioNotifications::Delivery.stub(:where, [failing]) do
+        RecordingStudioNotificationsEmail.mark_bounced!(
+          reference: @reference,
+          provider: "postmark",
+          bounce_type: "permanent"
+        )
+      end
     end
 
     @delivery.reload

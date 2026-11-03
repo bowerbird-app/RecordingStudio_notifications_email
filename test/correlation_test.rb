@@ -6,16 +6,13 @@ class CorrelationTest < Minitest::Test
   Record = Struct.new(:id)
 
   def setup
-    @original_configuration = RecordingStudioNotificationsEmail.instance_variable_get(:@configuration)
-    @original_adapter = RecordingStudioNotificationsEmail.instance_variable_get(:@adapter)
     RecordingStudioNotificationsEmail.reset_configuration!
     RecordingStudioNotificationsEmail.configuration.message_verifier =
       ActiveSupport::MessageVerifier.new("a" * 64, serializer: JSON)
   end
 
   def teardown
-    RecordingStudioNotificationsEmail.instance_variable_set(:@configuration, @original_configuration)
-    RecordingStudioNotificationsEmail.instance_variable_set(:@adapter, @original_adapter)
+    RecordingStudioNotificationsEmail.reset_configuration!
   end
 
   def test_signed_reference_round_trips_ids

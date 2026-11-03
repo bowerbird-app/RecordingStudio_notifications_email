@@ -46,11 +46,7 @@ module RecordingStudioNotificationsEmail
       return unless value
       return if unsafe_url_characters?(value)
 
-      if defined?(RecordingStudioNotifications::UrlSafety)
-        return value if RecordingStudioNotifications::UrlSafety.safe?(value)
-      elsif fallback_url_safe?(value)
-        return value
-      end
+      return value if RecordingStudioNotifications::UrlSafety.safe?(value)
 
       nil
     rescue URI::InvalidURIError
@@ -150,13 +146,6 @@ module RecordingStudioNotificationsEmail
 
     def sanitize_header_text(value)
       value.to_s.gsub(/[\r\n]+/, " ").strip
-    end
-
-    def fallback_url_safe?(value)
-      return !value.start_with?("//") if value.start_with?("/")
-
-      uri = URI.parse(value)
-      [URI::HTTP, URI::HTTPS].any? { |type| uri.is_a?(type) } && uri.host.present?
     end
 
     def unsafe_url_characters?(value)
