@@ -63,13 +63,6 @@ RecordingStudioNotifications.configure do |config|
   # Resolve the current actor for API calls and engine controllers.
   config.actor_resolver = -> { Current.actor }
 
-  # Resolve selected root from RecordingStudio::RootSwitchable helper when available.
-  config.current_root_resolver = lambda do |controller:|
-    if controller.respond_to?(:current_root_recording, true)
-      controller.send(:current_root_recording)
-    end
-  end
-
   register_dummy_notification_types.call
 end
 

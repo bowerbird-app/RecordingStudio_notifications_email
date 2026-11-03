@@ -75,8 +75,6 @@ module Notifications
 
     def comments_path_for(page_recording)
       Rails.application.routes.url_helpers.all_recording_comments_path(page_recording)
-    rescue StandardError
-      nil
     end
 
     def notification_channels
@@ -114,10 +112,6 @@ module Notifications
         channels: notification_channels,
         idempotency_key: "page-comment/#{@event_payload[:event_id]}/#{recipient.id}"
       )
-    rescue StandardError => e
-      # Keep comment creation resilient even if notification delivery setup is misconfigured.
-      Rails.logger&.warn("[PageCommentNotifier] notification skipped: #{e.class} #{e.message}")
-      nil
     end
   end
 end

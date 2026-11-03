@@ -49,4 +49,6 @@ Then open the app and sign in with:
 
 Use this app to exercise host wiring: sign-in, page mail, suppressions, and the webhook lab. The gem suite under `test/` covers the channel library. Both suites run in CI.
 
+Page lists and the workspace switcher follow Accessible. You can create a page in a workspace you can change. Sending a notice needs admin on the current workspace. The inbox shows that workspace. Notifications does not yet ship `config.default_inbox_scope`, so this dummy does not list every workspace in the inbox.
+
 The signed-in layout is `app/views/layouts/flat_pack_sidebar.html.erb`. The home page stays a short demo. Longer notes live on the docs pages.

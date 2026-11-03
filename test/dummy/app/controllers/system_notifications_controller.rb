@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class SystemNotificationsController < ApplicationController
+  before_action :require_workspace_admin
+
   def new
     @default_message = "System maintenance window tonight at 10 PM UTC."
   end
@@ -9,7 +11,7 @@ class SystemNotificationsController < ApplicationController
     title = system_notification_params.fetch(:title)
     body = system_notification_params.fetch(:body)
 
-    recipients = User.order(:email)
+    recipients = people_in_the_current_workspace
     recipients.each do |recipient|
       RecordingStudioNotifications.notify(
         notification_type: :system_announcement,
@@ -26,9 +28,10 @@ class SystemNotificationsController < ApplicationController
       )
     end
 
-    redirect_to new_system_notification_path, notice: "System notification sent to #{recipients.count} users."
+    redirect_to new_system_notifications_path,
+                notice: "Notice sent to #{recipients.size} #{'person'.pluralize(recipients.size)} in this workspace."
   rescue KeyError => e
-    redirect_to new_system_notification_path, alert: "Missing field: #{e.message}"
+    redirect_to new_system_notifications_path, alert: "Missing field: #{e.message}"
   end
 
   private
@@ -37,7 +40,22 @@ class SystemNotificationsController < ApplicationController
     params.require(:system_notification).permit(:title, :body)
   end
 
+  def people_in_the_current_workspace
+    RecordingStudioAccessible.access_recordings_for(current_root_recording).includes(recordable: :actor).filter_map do |access_recording|
+      access = access_recording.recordable
+      actor = access.actor if access.respond_to?(:actor)
+      actor if actor.is_a?(User)
+    end.uniq
+  end
+
   def announcement_token
     @announcement_token ||= SecureRandom.uuid
+  end
+
+  def require_workspace_admin
+    recording = current_root_recording
+    return if recording && RecordingStudioAccessible.authorized?(actor: current_user, recording: recording, role: :admin)
+
+    redirect_to root_path, alert: "You don't have access to send a notice from this workspace."
   end
 end
