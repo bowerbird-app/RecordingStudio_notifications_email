@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-11-04
+
+### Changed
+
+- Development pins: `flat_pack` v0.1.341, `recording_studio_metrics`
+  v0.7.2, `recording_studio_trashable` v0.12.2, dummy `recording_studio_cache`
+  v0.6.2, dummy `recording_studio_root_switchable` v0.11.4. Core stays
+  v6.3.0, Accessible v0.24.0, notifications v0.14.7. `view_component`
+  stays `4.20.0`.
+
+### Upgrade notes
+
+- No application change. There is no migration.
+
 ## [0.5.1] - 2026-11-02
 
 This release also includes 0.4.1 through 0.5.0 below (first tagged release since v0.4.0).
@@ -371,7 +385,8 @@ unchanged.
 - Expiring signed correlation references.
 - Recording Studio-backed normalized event facade.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.4.0...v0.5.1
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.15...v0.4.0
 [0.3.15]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.14...v0.3.15

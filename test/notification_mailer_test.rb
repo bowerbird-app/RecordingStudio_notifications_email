@@ -12,6 +12,10 @@ class NotificationMailerTest < Minitest::Test
     )
   end
 
+  def test_mailer_uses_no_layout
+    assert_equal false, RecordingStudioNotificationsEmail::NotificationMailer._layout
+  end
+
   def test_fallback_templates_render_multipart_message_and_correlation_header
     event = RecordingStudioNotificationsEmail::Event.new(
       Notification.new(
