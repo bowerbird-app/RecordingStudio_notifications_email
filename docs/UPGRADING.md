@@ -1,5 +1,10 @@
 # Upgrading
 
+## 0.5.2
+
+Development pins only. Core, Accessible, and notifications tags are
+unchanged. `view_component` stays `4.20.0`. There is no migration.
+
 ## 0.5.1
 
 Root CI runs a Security job: Brakeman and `bundler-audit check --update`
