@@ -28,6 +28,7 @@ class DummyScreensTest < ActionDispatch::IntegrationTest
     grant_workspace(owner, hidden)
     hidden_root = RecordingStudio.root_recording_for(hidden)
     secret = Page.create!(title: "Secret outline")
+    Current.actor = owner
     RecordingStudio.record!(
       action: "created",
       recordable: secret,
@@ -41,6 +42,7 @@ class DummyScreensTest < ActionDispatch::IntegrationTest
     grant_workspace(visitor, visible)
     visible_root = RecordingStudio.root_recording_for(visible)
     page = Page.create!(title: "Visible outline")
+    Current.actor = visitor
     RecordingStudio.record!(
       action: "created",
       recordable: page,
@@ -75,6 +77,8 @@ class DummyScreensTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "people who can open this workspace"
     refute_includes response.body, "every user"
     refute_includes response.body, "Send to all users"
+  ensure
+    Current.actor = nil
   end
 
   private
