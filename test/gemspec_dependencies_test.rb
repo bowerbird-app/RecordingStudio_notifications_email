@@ -11,7 +11,8 @@ class GemspecDependenciesTest < Minitest::Test
 
     assert studio.satisfied_by?(Gem::Version.new("6.1.0"))
     assert studio.satisfied_by?(Gem::Version.new("6.3.0"))
-    refute studio.satisfied_by?(Gem::Version.new("7.0.0"))
+    assert studio.satisfied_by?(Gem::Version.new("7.0.0"))
+    refute studio.satisfied_by?(Gem::Version.new("8.0.0"))
 
     assert notifications.satisfied_by?(Gem::Version.new("0.14.7"))
     assert notifications.satisfied_by?(Gem::Version.new("0.14.8"))
