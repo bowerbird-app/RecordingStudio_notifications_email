@@ -17,7 +17,8 @@ This gem adds no migration of its own.
 Repository pins: Recording Studio `v7.0.0`, Notifications `v0.18.0`,
 Accessible `v0.44.0`, Trashable `v0.17.0`, Metrics `v0.9.0`, and dummy Root
 Switchable `v0.16.0`. Commentable stays `v0.8.0`, Cache stays `v0.6.3`, and
-FlatPack stays `v0.1.356`.
+FlatPack stays `v0.1.356`. The dummy lock updates `msgpack` to `1.8.7` and
+`puma` to `8.1.0`. No application change for those two.
 
 ## 0.5.2
 

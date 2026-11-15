@@ -22,6 +22,8 @@ All notable changes to this project will be documented in this file.
 - Dummy kept-recording lookups use `Recording.kept`. Trashable 0.16 removed
   `recording_studio_trashable_kept_sql`.
 - The dummy copies core migration `add_root_recording_id_to_recording_studio_events`.
+- Dummy lock updates `msgpack` to `1.8.7` and `puma` to `8.1.0` so
+  bundler-audit is clean.
 
 ### Upgrade notes
 
