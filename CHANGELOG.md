@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-11-15
+
+### Changed
+
+- Allow recording_studio < 8.0 (core 7 phase 1).
+
 ## [0.5.2] - 2026-11-04
 
 ### Changed
