@@ -10,7 +10,7 @@ class PageCommentMailTest < ActiveSupport::TestCase
       password_confirmation: "Password123!"
     )
     workspace = Workspace.create!(name: "Comment Mail Workspace")
-    root = RecordingStudio.root_recording_for(workspace)
+    root = RecordingStudio.create_root_recording!(workspace, actor: user)
     notification = RecordingStudioNotifications.notify(
       notification_type: :page_comment,
       recipient: user,

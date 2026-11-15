@@ -1,5 +1,24 @@
 # Upgrading
 
+## 0.5.4
+
+This gem requires Recording Studio `>= 7.0`, `< 8.0` and Notifications
+`>= 0.18.0`, `< 1.0`.
+
+`root_recording_for` only finds a root. Create one with
+`RecordingStudio.create_root_recording!(recordable, actor:)`. Set
+`config.authorize_write` and pass an actor. A new root is authorized with
+`root_recording` nil. Do not set `allow_unauthorized_writes`.
+
+Recording Studio 7 stores `root_recording_id` on events. Run core migration
+`add_root_recording_id_to_recording_studio_events` if that column is missing.
+This gem adds no migration of its own.
+
+Repository pins: Recording Studio `v7.0.0`, Notifications `v0.18.0`,
+Accessible `v0.44.0`, Trashable `v0.17.0`, Metrics `v0.9.0`, and dummy Root
+Switchable `v0.16.0`. Commentable stays `v0.8.0`, Cache stays `v0.6.3`, and
+FlatPack stays `v0.1.356`.
+
 ## 0.5.2
 
 Development pins only. Core, Accessible, and notifications tags are

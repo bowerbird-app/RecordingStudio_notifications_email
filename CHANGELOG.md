@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-11-15
+
+### Changed
+
+- Gemspec requires `recording_studio` `>= 7.0`, `< 8.0` and
+  `recording_studio_notifications` `>= 0.18.0`, `< 1.0`.
+- Development and dummy apps pin Recording Studio `v7.0.0`, Notifications
+  `v0.18.0`, Accessible `v0.44.0`, Trashable `v0.17.0`, and Metrics
+  `v0.9.0`. The dummy also pins Root Switchable `v0.16.0`. Commentable stays
+  `v0.8.0`, Cache stays `v0.6.3`, and FlatPack stays `v0.1.356`.
+- Dummy roots are created with `RecordingStudio.create_root_recording!(recordable, actor:)`.
+  Lookups stay on `root_recording_for`.
+- Dummy `authorize_write` allows a write when an actor is present, including a
+  new root where `root_recording` is nil. It does not set
+  `allow_unauthorized_writes`.
+- Dummy kept-recording lookups use `Recording.kept`. Trashable 0.16 removed
+  `recording_studio_trashable_kept_sql`.
+- The dummy copies core migration `add_root_recording_id_to_recording_studio_events`.
+
+### Upgrade notes
+
+- Bump to `0.5.4`. This gem adds no migration of its own. Recording Studio 7
+  stores `root_recording_id` on events. Run core migration
+  `add_root_recording_id_to_recording_studio_events` if that column is missing.
+- Install Recording Studio `>= 7.0`, `< 8.0` and Notifications `>= 0.18.0`,
+  `< 1.0`.
+- `root_recording_for` only finds a root. Create one with
+  `RecordingStudio.create_root_recording!(recordable, actor:)`. A second call
+  returns the same root and does not append another event.
+- Set `config.authorize_write` and pass an actor on writes. A new root is
+  authorized with `root_recording` nil. Do not set `allow_unauthorized_writes`.
+- Replace `recording_studio_trashable_kept_sql` with `Recording.kept` when
+  moving to Trashable 0.17.
+
 ## [0.5.3] - 2026-11-15
 
 ### Changed
