@@ -119,7 +119,7 @@ class RootSwitchDropdownTest < ActionDispatch::IntegrationTest
   private
 
   def grant_workspace(actor, workspace)
-    recording = RecordingStudio.root_recording_for(workspace)
+    recording = RecordingStudio.create_root_recording!(workspace, actor: actor)
     RecordingStudioAccessible.bootstrap_owner_access!(recording: recording, actor: actor).value!
     recording
   end

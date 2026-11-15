@@ -50,12 +50,12 @@ RecordingStudioNotifications.register_channel(
 ```
 
 For local development in this repository, parent gems are sourced from GitHub
-tags. Current pins include Recording Studio `v6.3.0` (runtime
-`>= 6.1.0` and `< 7`), Accessible `v0.24.0`, Trashable `v0.12.2`
-(`require: false`; query-only for Accessible), notifications `v0.14.7`
-(runtime `>= 0.14.7`), Metrics `v0.7.2`, and FlatPack `v0.1.341`. The dummy
-also pins Commentable `v0.7.0`, Root Switchable `v0.11.4`, and Cache
-`v0.6.2`. Grants go through
+tags. Current pins include Recording Studio `v7.0.0` (runtime
+`>= 7.0` and `< 8.0`), Accessible `v0.44.0`, Trashable `v0.17.0`
+(`require: false`; query-only for Accessible), notifications `v0.18.0`
+(runtime `>= 0.18.0` and `< 1.0`), Metrics `v0.9.0`, and FlatPack `v0.1.356`.
+The dummy also pins Commentable `v0.8.0`, Root Switchable `v0.16.0`, and
+Cache `v0.6.3`. Grants go through
 `bootstrap_owner_access!` / `grant_access`. The dummy allowlists `User` in
 `access_actor_types`. Accessible, Commentable, notifications, and Root
 Switchable ship English I18n keys for their own views.

@@ -57,6 +57,6 @@ class ApplicationController < ActionController::Base
   end
 
   def kept_recordings
-    RecordingStudio::Recording.where(RecordingStudio::Recording.recording_studio_trashable_kept_sql)
+    RecordingStudio::Recording.kept
   end
 end
