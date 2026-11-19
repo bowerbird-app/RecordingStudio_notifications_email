@@ -1,5 +1,57 @@
 # Upgrading
 
+## 0.6.0
+
+This gem requires Recording Studio `>= 7.1`, `< 8.0` and Notifications
+`>= 0.20.0`, `< 1.0`.
+
+Reply-by-email is optional. Leave `config.reply_domain` unset and the
+previous Reply-To behavior stays. A notification type accepts replies only
+after the host registers a reply handler with Notifications.
+
+This gem adds no migration. Hosts that accept replies need three sets of
+migrations.
+
+1. Notifications 0.20 adds `thread_key` and the replies table. Run
+   `bin/rails generate recording_studio_notifications:migrations`, then
+   `bin/rails db:migrate`.
+2. Action Mailbox. Run `bin/rails action_mailbox:install`, then migrate.
+3. Active Storage, for reply attachments. Run
+   `bin/rails active_storage:install`, then migrate.
+
+Choose Postmark, Mailgun, or Amazon SES as the Action Mailbox ingress.
+Point MX for `reply_domain` at that provider and publish the DNS records
+it requires. Put the ingress secret in the host's credentials.
+
+Route replies from the host. This gem mounts no route.
+
+```ruby
+class ApplicationMailbox < ActionMailbox::Base
+  routing(/^reply\+/i => "recording_studio_notifications_email/reply")
+end
+```
+
+New settings are `reply_domain`, `reply_address_expires_in` (default 30
+days), `require_inbound_authentication` (default true),
+`reply_max_body_bytes`, `reply_max_attachment_bytes`, and
+`reply_max_attachments`. Threading headers use the existing
+`message_id_domain`.
+
+`DeliveryToken` is unchanged. Its purpose, header, format, and
+`signed_reference_expires_in` are separate from the reply address.
+
+A reply that Notifications rejects or fails is ignored. This gem does not
+bounce it. Action Mailbox marks that inbound email delivered, so the
+provider does not retry it. A failed handler's claim is rolled back, and
+reprocessing the same Message-ID can try again.
+
+Suppressed addresses still do not receive mail. Hard bounces, complaints,
+and unsubscribes still suppress. Soft bounces do not. Every message still
+includes List-Unsubscribe headers and an unsubscribe link.
+
+The gem loads when Action Mailbox is not enabled. Require the mailbox only
+by routing to it, which the engine does when Action Mailbox is loaded.
+
 ## 0.5.4
 
 This gem requires Recording Studio `>= 7.0`, `< 8.0` and Notifications

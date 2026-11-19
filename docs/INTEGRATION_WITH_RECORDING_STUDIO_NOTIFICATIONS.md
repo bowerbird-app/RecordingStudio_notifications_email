@@ -116,6 +116,23 @@ A recipient cannot receive an email when their resolver returns a blank or
 invalid address. The delivery is marked failed by core, rather than silently
 sending to an unknown destination.
 
+## Reply by email
+
+A notification type can accept an email reply after the host registers a
+reply handler with Notifications. Set `config.reply_domain`. Messages for
+that type then use a per-delivery Reply-To on that domain. A reply is
+checked and passed to `RecordingStudioNotifications.handle_reply`. This gem
+does not read Messages, and it does not store the reply body.
+
+Leave `reply_domain` blank, or skip the reply handler, and the message keeps
+`config.reply_to`.
+
+The host turns on Action Mailbox and routes `/^reply\+/` to
+`recording_studio_notifications_email/reply`. This gem still mounts no route
+and adds no migration. Hosts that accept replies install the Action Mailbox
+and Active Storage migrations, plus the Notifications 0.20 migration. The
+README has the ingress, DNS, and routing steps.
+
 ## Tell Core Which Notifications May Use Email
 
 Notification types are registered in the core gem. Add `:email` to the

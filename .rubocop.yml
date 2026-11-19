@@ -24,11 +24,14 @@ Metrics/ClassLength:
     - 'lib/recording_studio_notifications_email/delivery_callbacks.rb'
     - 'lib/recording_studio_notifications_email/delivery_token.rb'
     - 'lib/recording_studio_notifications_email/action_mailer_adapter.rb'
+    - 'lib/recording_studio_notifications_email/reply_address.rb'
+    - 'lib/recording_studio_notifications_email/services/parse_inbound_reply.rb'
 
 Metrics/ModuleLength:
   Exclude:
     - 'lib/recording_studio_notifications_email/delivery_callbacks.rb'
     - 'lib/recording_studio_notifications_email/delivery_token.rb'
+    - 'lib/recording_studio_notifications_email/reply_address.rb'
 
 Metrics/MethodLength:
   Exclude:
@@ -40,6 +43,9 @@ Metrics/MethodLength:
     - 'lib/recording_studio_notifications_email/delivery_token.rb'
     - 'lib/recording_studio_notifications_email/event.rb'
     - 'lib/recording_studio_notifications_email/webhook_event.rb'
+    - 'lib/recording_studio_notifications_email/reply_address.rb'
+    - 'lib/recording_studio_notifications_email/reply_body.rb'
+    - 'lib/recording_studio_notifications_email/services/parse_inbound_reply.rb'
 
 Metrics/AbcSize:
   Exclude:
@@ -50,6 +56,8 @@ Metrics/AbcSize:
     - 'lib/recording_studio_notifications_email/delivery_callbacks.rb'
     - 'lib/recording_studio_notifications_email/event.rb'
     - 'lib/recording_studio_notifications_email/webhook_event.rb'
+    - 'lib/recording_studio_notifications_email/reply_address.rb'
+    - 'lib/recording_studio_notifications_email/services/parse_inbound_reply.rb'
 
 Metrics/ParameterLists:
   Exclude:
@@ -61,11 +69,13 @@ Metrics/CyclomaticComplexity:
   Exclude:
     - 'lib/recording_studio_notifications_email/action_mailer_adapter.rb'
     - 'lib/recording_studio_notifications_email/delivery_callbacks.rb'
+    - 'lib/recording_studio_notifications_email/services/parse_inbound_reply.rb'
 
 Metrics/PerceivedComplexity:
   Exclude:
     - 'lib/recording_studio_notifications_email/action_mailer_adapter.rb'
     - 'lib/recording_studio_notifications_email/delivery_callbacks.rb'
+    - 'lib/recording_studio_notifications_email/services/parse_inbound_reply.rb'
 
 Metrics/BlockLength:
   Exclude:

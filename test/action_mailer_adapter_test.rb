@@ -440,6 +440,152 @@ class ActionMailerAdapterTest < Minitest::Test
     assert_match(/one email address/, error.message)
   end
 
+  def test_replyable_delivery_sets_a_per_delivery_reply_address
+    @configuration.reply_domain = "reply.example.test"
+    @configuration.reply_to = "support@example.test"
+    delivery = Delivery.new("11111111-1111-4111-8111-111111111111")
+
+    with_replyable(:comment) do
+      with_absolute_open_link do
+        @adapter.deliver(notification: build_notification, delivery: delivery)
+      end
+    end
+
+    address = FakeMailer.params.fetch(:reply_to)
+    local = address.split("@").first
+
+    assert_equal "reply.example.test", address.split("@").last
+    assert_operator local.length, :<=, 64
+    verified = RecordingStudioNotificationsEmail::ReplyAddress.verify(address, configuration: @configuration)
+    assert_equal delivery.id, verified
+    refute_equal "support@example.test", address
+  end
+
+  def test_non_replyable_delivery_keeps_the_static_reply_to
+    @configuration.reply_domain = "reply.example.test"
+    @configuration.reply_to = "support@example.test"
+
+    with_replyable(nil) do
+      with_absolute_open_link do
+        @adapter.deliver(
+          notification: build_notification,
+          delivery: Delivery.new("11111111-1111-4111-8111-111111111111")
+        )
+      end
+    end
+
+    assert_equal "support@example.test", FakeMailer.params.fetch(:reply_to)
+  end
+
+  def test_replyable_delivery_without_a_reply_domain_keeps_the_static_reply_to
+    @configuration.reply_to = "support@example.test"
+
+    with_replyable(:comment) do
+      with_absolute_open_link do
+        @adapter.deliver(
+          notification: build_notification,
+          delivery: Delivery.new("11111111-1111-4111-8111-111111111111")
+        )
+      end
+    end
+
+    assert_equal "support@example.test", FakeMailer.params.fetch(:reply_to)
+  end
+
+  def test_thread_key_sets_threading_headers_without_the_raw_key
+    notification = build_notification
+    notification.define_singleton_method(:thread_key) { "secret-thread" }
+    digest = OpenSSL::Digest::SHA256.hexdigest("secret-thread")
+    expected = "<rsne-thread-#{digest}@mail.example.test>"
+
+    with_absolute_open_link do
+      @adapter.deliver(notification: notification, delivery: Delivery.new("delivery-1"))
+    end
+
+    assert_equal expected, FakeMailer.params.fetch(:in_reply_to)
+    assert_equal expected, FakeMailer.params.fetch(:references)
+    assert_match(/\A<rsne-[0-9a-f]{64}@mail\.example\.test>\z/, FakeMailer.params.fetch(:message_id))
+    refute_includes expected, "secret-thread"
+  end
+
+  def test_missing_thread_key_omits_threading_headers
+    with_absolute_open_link do
+      @adapter.deliver(notification: build_notification, delivery: Delivery.new("delivery-1"))
+    end
+
+    assert_nil FakeMailer.params.fetch(:in_reply_to)
+    assert_nil FakeMailer.params.fetch(:references)
+  end
+
+  def test_suppressed_replyable_recipient_is_not_delivered
+    @configuration.reply_domain = "reply.example.test"
+    @suppressed = ->(address) { address == "person@example.test" }
+
+    error = with_replyable(:comment) do
+      assert_raises(RecordingStudioNotificationsEmail::SuppressedRecipientError) do
+        @adapter.deliver(
+          notification: build_notification,
+          delivery: Delivery.new("11111111-1111-4111-8111-111111111111")
+        )
+      end
+    end
+
+    assert_equal "email recipient is suppressed", error.message
+    assert_nil FakeMailer.action
+  end
+
+  def test_rollup_of_many_deliveries_keeps_the_static_reply_to_and_shares_one_thread
+    @configuration.reply_domain = "reply.example.test"
+    @configuration.reply_to = "support@example.test"
+    recipient = Recipient.new(id: "person-1", email: "person@example.test")
+    notifications = [
+      build_notification(id: "notification-1", recipient: recipient),
+      build_notification(id: "notification-2", recipient: recipient)
+    ]
+    notifications.each { |notification| notification.define_singleton_method(:thread_key) { "same-thread" } }
+    digest = OpenSSL::Digest::SHA256.hexdigest("same-thread")
+
+    with_replyable(:comment) do
+      @adapter.deliver_rollup(
+        notifications: notifications,
+        deliveries: [
+          Delivery.new("11111111-1111-4111-8111-111111111111"),
+          Delivery.new("22222222-2222-4222-8222-222222222222")
+        ],
+        rollup_key: "weekly/person",
+        cadence: :weekly,
+        period_starts_at: Time.now,
+        period_ends_at: Time.now,
+        idempotency_key: "weekly/person"
+      )
+    end
+
+    assert_equal "support@example.test", FakeMailer.params.fetch(:reply_to)
+    assert_equal "<rsne-thread-#{digest}@mail.example.test>", FakeMailer.params.fetch(:in_reply_to)
+    refute_includes FakeMailer.params.fetch(:in_reply_to), "same-thread"
+  end
+
+  def test_rollup_with_mixed_thread_keys_omits_threading_headers
+    recipient = Recipient.new(id: "person-1", email: "person@example.test")
+    first = build_notification(id: "notification-1", recipient: recipient)
+    second = build_notification(id: "notification-2", recipient: recipient)
+    first.define_singleton_method(:thread_key) { "one-thread" }
+    second.define_singleton_method(:thread_key) { "other-thread" }
+
+    @adapter.deliver_rollup(
+      notifications: [first, second],
+      deliveries: [Delivery.new("delivery-1"), Delivery.new("delivery-2")],
+      rollup_key: "weekly/person",
+      cadence: :weekly,
+      period_starts_at: Time.now,
+      period_ends_at: Time.now,
+      idempotency_key: "weekly/person"
+    )
+
+    assert_nil FakeMailer.params.fetch(:in_reply_to)
+    assert_nil FakeMailer.params.fetch(:references)
+  end
+
   private
 
   def register_email_templates(key, individual_mailer: nil, rollup_mailer: nil)
@@ -493,6 +639,10 @@ class ActionMailerAdapterTest < Minitest::Test
     application.define_singleton_method(:routes) { route_set }
     application.define_singleton_method(:config) { config }
     application
+  end
+
+  def with_replyable(type, &)
+    RecordingStudioNotifications.stub(:replyable?, ->(candidate) { candidate.to_sym == type }, &)
   end
 
   def build_notification(id: "notification-1", notification_type: :comment,

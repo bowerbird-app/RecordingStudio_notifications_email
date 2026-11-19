@@ -4,6 +4,63 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-19
+
+### Added
+
+- Reply-by-email for notification types where
+  `RecordingStudioNotifications.replyable?` is true. The message Reply-To
+  is `reply+<code>@config.reply_domain`. The code is lowercase base32, fits
+  in a 64 character local part, and expires. The default expiry is 30 days
+  (`config.reply_address_expires_in`).
+- The reply signing key uses the purpose
+  `recording_studio_notifications_email.reply_address`. The delivery
+  reference token, its format, and `signed_reference_expires_in` are
+  unchanged.
+- Stable Message-ID values stay in place. When `notification.thread_key`
+  is present, In-Reply-To and References name a hash of that key under
+  `message_id_domain`. The raw key is not in the header.
+- `RecordingStudioNotificationsEmail::ReplyMailbox` and
+  `Services::ParseInboundReply`. The host enables Action Mailbox and routes
+  `/^reply\+/` to the mailbox. This gem mounts no route. The gem still
+  loads when Action Mailbox is not loaded.
+- Inbound checks for HMAC, expiry, recipient address, SPF or DMARC,
+  auto-replies, bounces, quoted text, and body and attachment limits.
+  Attachments are stored as Active Storage blobs. The parser calls
+  `handle_reply` with `channel: :email` and the inbound Message-ID.
+
+### Changed
+
+- Gemspec requires `recording_studio` `>= 7.1`, `< 8.0` and
+  `recording_studio_notifications` `>= 0.20.0`, `< 1.0`.
+- Development pins move to notifications `v0.20.0`. The root app pins
+  Recording Studio `v7.3.0` so that dependency can install. The dummy
+  already pinned Recording Studio `v7.3.0`.
+- The dummy copies the Notifications inbox-index and inbound-reply
+  migrations, and installs the Action Mailbox and Active Storage tables,
+  so reply tests can run.
+
+### Upgrade notes
+
+- Bump to `0.6.0`. This gem adds no migration.
+- Install Notifications `>= 0.20.0`, `< 1.0`. That release requires
+  Recording Studio `>= 7.1`, `< 8.0`. Run
+  `bin/rails generate recording_studio_notifications:migrations` and
+  `bin/rails db:migrate` for the Notifications 0.20 reply tables.
+- Hosts that accept replies also run the Action Mailbox and Active Storage
+  install migrations. Set `config.reply_domain`, point MX at the ingress,
+  and route `/^reply\+/` to
+  `recording_studio_notifications_email/reply`. See the README.
+- Leave `reply_domain` unset to keep the previous Reply-To behavior.
+  Types without a reply handler also keep `config.reply_to`.
+- Suppressed addresses still do not receive mail. Hard bounces, complaints,
+  and unsubscribes still suppress. Soft bounces do not. List-Unsubscribe
+  headers and unsubscribe links stay on every message.
+- `DeliveryToken` is unchanged. Do not reuse its purpose or expiry for
+  reply addresses.
+- A rejected or failed reply is ignored. This gem does not bounce it.
+  Reprocessing the same Message-ID can try a failed handler again.
+
 ## [0.5.4] - 2026-11-15
 
 ### Changed
@@ -427,7 +484,8 @@ unchanged.
 - Expiring signed correlation references.
 - Recording Studio-backed normalized event facade.
 
-[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.5.4...v0.6.0
 [0.5.2]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.4.0...v0.5.1
 [0.4.0]: https://github.com/bowerbird-app/RecordingStudio_notifications_email/compare/v0.3.15...v0.4.0

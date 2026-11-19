@@ -44,7 +44,9 @@ module RecordingStudioNotificationsEmail
     def prepare_headers
       @unsubscribe_url = unsubscribe_url_for(unsubscribe_event)
       headers[DeliveryToken::HEADER] = @correlation_reference
-      headers["Message-ID"] = params[:message_id] if params[:message_id]
+      headers["Message-ID"] = params[:message_id] if params[:message_id].present?
+      headers["In-Reply-To"] = params[:in_reply_to] if params[:in_reply_to].present?
+      headers["References"] = params[:references] if params[:references].present?
       unsubscribe_headers.each { |name, value| headers[name] = value }
     end
 

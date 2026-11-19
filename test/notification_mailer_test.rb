@@ -143,6 +143,46 @@ class NotificationMailerTest < Minitest::Test
     assert_includes rollup.text_part.body.to_s, "Unsubscribe: http://example.test/unsub"
   end
 
+  def test_threading_headers_are_set_and_unsubscribe_stays
+    source = Struct.new(:id, :notification_type, :title, :body, :url, :recipient, keyword_init: true)
+    event = RecordingStudioNotificationsEmail::Event.new(
+      source.new(
+        id: "notification-1",
+        notification_type: :generic,
+        title: "Account notice",
+        body: "A useful update",
+        recipient: Object.new
+      )
+    )
+    thread_id = "<rsne-thread-abc@mail.example.test>"
+    headers = {
+      "List-Unsubscribe" => "<http://example.test/unsub>",
+      "List-Unsubscribe-Post" => "List-Unsubscribe=One-Click"
+    }
+
+    message = with_unsubscribe_helpers(headers) do
+      RecordingStudioNotificationsEmail::NotificationMailer.with(
+        event: event,
+        to: "person@example.test",
+        from: "notifications@example.test",
+        reply_to: "reply+abc@reply.example.test",
+        template_path: RecordingStudioNotificationsEmail::Configuration::DEFAULT_TEMPLATE,
+        correlation_reference: "signed-reference",
+        message_id: "<rsne-message@mail.example.test>",
+        in_reply_to: thread_id,
+        references: thread_id
+      ).notification.message
+    end
+
+    assert_equal "<rsne-message@mail.example.test>", message["Message-ID"].value
+    assert_equal thread_id, message["In-Reply-To"].value
+    assert_equal thread_id, message["References"].value
+    assert_equal ["reply+abc@reply.example.test"], message.reply_to
+    assert_equal "<http://example.test/unsub>", message["List-Unsubscribe"].value
+    assert_includes message.html_part.body.to_s, "http://example.test/unsub"
+    assert_includes message.text_part.body.to_s, "Unsubscribe: http://example.test/unsub"
+  end
+
   private
 
   def with_unsubscribe_helpers(headers, &block)

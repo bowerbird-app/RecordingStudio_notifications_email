@@ -61,6 +61,11 @@
         # Optional Message-ID domain
         config.message_id_domain = "mail.example.com"
 
+        # Optional reply-by-email domain. Leave blank to keep reply_to.
+        config.reply_domain = "reply.example.com"
+        config.reply_address_expires_in = 30.days
+        config.require_inbound_authentication = true
+
         # Optional recipient resolvers by model type
         config.recipients.register(User) { |user| user.notification_email }
         config.recipients.register("default") { |recipient| recipient.email }
@@ -80,7 +85,13 @@
     ["mailer_class", "String, Symbol, or Class", "RecordingStudioNotificationsEmail::NotificationMailer", "Mailer used by the adapter. Must support Action Mailer .with(...)."],
     ["channel", "Symbol", ":email", "Channel key registered with RecordingStudioNotifications."],
     ["signed_reference_expires_in", "ActiveSupport::Duration", "30.days", "Expiration window for correlation references in email headers."],
-    ["message_id_domain", "String", "nil", "Optional deterministic Message-ID domain for outbound messages."],
+    ["message_id_domain", "String", "nil", "Optional deterministic Message-ID domain for outbound messages. Also used for thread headers."],
+    ["reply_domain", "String", "nil", "Domain for per-delivery Reply-To addresses. Blank keeps reply_to."],
+    ["reply_address_expires_in", "ActiveSupport::Duration", "30.days", "Lifetime of a reply address. Separate from signed_reference_expires_in."],
+    ["require_inbound_authentication", "Boolean", "true", "Require an SPF or DMARC pass on Authentication-Results before accepting a reply."],
+    ["reply_max_body_bytes", "Integer", "65536", "Maximum accepted reply body size."],
+    ["reply_max_attachment_bytes", "Integer", "10485760", "Maximum size of one reply attachment."],
+    ["reply_max_attachments", "Integer", "10", "Maximum number of reply attachments."],
     ["recipients", "RecipientRegistry", "recipient.email fallback", "Recipient resolver registry; supports model-specific email resolution."]
 ], min_width: :none) do |table| %>
   <% table.column(title: "Option") { |row| row[0] } %>
