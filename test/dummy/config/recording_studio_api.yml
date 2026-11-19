@@ -1,0 +1,12 @@
+# Loaded at boot. API 1.12 and newer raise when this file is missing.
+shared:
+  timeout: 5
+
+development:
+  timeout: 5
+
+test:
+  timeout: 5
+
+production:
+  timeout: 5

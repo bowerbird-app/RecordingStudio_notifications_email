@@ -1,5 +1,27 @@
 # Upgrading
 
+## 0.7.0
+
+Development and dummy apps pin Recording Studio `~> 7.8` (`v7.8.0`),
+FlatPack `~> 0.2` (`v0.2.0`), Accessible `~> 0.58` (`v0.58.0`), API
+`~> 1.21` (`v1.21.2`), Icons `~> 0.5` (`v0.5.0`), Logs `~> 0.9`
+(`v0.9.0`), Metrics `~> 0.10` (`v0.10.0`), Moveable `~> 6.1` (`v6.1.0`),
+Notifications `~> 0.21` (`v0.21.0`), and Trashable `~> 1.3` (`v1.3.0`).
+The dummy also pins Cache `~> 0.8` (`v0.8.0`) and Root Switchable
+`~> 0.17` (`v0.17.0`). Commentable stays `v0.12.0`.
+
+Hosts MUST run the Recording Studio 7.4, 7.5, and 7.7 migrations if they
+have not. This gem adds no migration. Gemspec floors stay Recording Studio
+`>= 7.1`, `< 8.0` and Notifications `>= 0.20.0`, `< 1.0`.
+
+flat_pack 0.2.0 is supported; hosts moving to 0.2 must remove the manual
+`flat_pack/heroicons` importmap pin and any `flat-pack--icon` controller
+registration. The dummy drops that pin. Icons render on the server.
+
+API 1.12 and newer raise on boot when `config/recording_studio_api.yml` is
+missing. Notifications 0.21 depends on API. Add that file if the host does
+not have one. The dummy sets `timeout: 5`.
+
 ## 0.6.0
 
 This gem requires Recording Studio `>= 7.1`, `< 8.0` and Notifications
