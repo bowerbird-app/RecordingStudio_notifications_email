@@ -10,6 +10,10 @@ require "recording_studio_notifications_email/version"
 require "recording_studio_notifications_email/configuration"
 require "recording_studio_notifications_email/event"
 require "recording_studio_notifications_email/delivery_token"
+require "recording_studio_notifications_email/reply_address"
+require "recording_studio_notifications_email/thread_message_id"
+require "recording_studio_notifications_email/reply_body"
+require "recording_studio_notifications_email/services/parse_inbound_reply"
 require "recording_studio_notifications_email/delivery_callbacks"
 require "recording_studio_notifications_email/webhook_errors"
 require "recording_studio_notifications_email/webhook_event"
@@ -46,6 +50,12 @@ module RecordingStudioNotificationsEmail
       end
 
       RecordingStudioNotifications.register_channel(configuration.channel, adapter)
+    end
+
+    def load_reply_mailbox!
+      return unless defined?(::ActionMailbox::Base)
+
+      require_relative "recording_studio_notifications_email/reply_mailbox"
     end
 
     def reset_configuration!

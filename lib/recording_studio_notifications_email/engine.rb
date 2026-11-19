@@ -13,6 +13,10 @@ module RecordingStudioNotificationsEmail
       config.to_prepare { RecordingStudioNotificationsEmail.register! }
     end
 
+    initializer "recording_studio_notifications_email.reply_mailbox" do
+      config.to_prepare { RecordingStudioNotificationsEmail.load_reply_mailbox! }
+    end
+
     class << self
       private
 

@@ -8,7 +8,9 @@ module RecordingStudioNotificationsEmail
     DEFAULT_ROLLUP_TEMPLATE = "recording_studio_notifications_email/notification_mailer/rollup"
 
     attr_accessor :from, :reply_to, :mailer_class, :channel, :message_verifier,
-                  :signed_reference_expires_in, :message_id_domain
+                  :signed_reference_expires_in, :message_id_domain, :reply_domain,
+                  :reply_address_expires_in, :require_inbound_authentication,
+                  :reply_max_body_bytes, :reply_max_attachment_bytes, :reply_max_attachments
     attr_reader :recipients
 
     def initialize
@@ -19,6 +21,7 @@ module RecordingStudioNotificationsEmail
       @message_verifier = nil
       @signed_reference_expires_in = 30.days
       @message_id_domain = nil
+      apply_reply_defaults
       @recipients = RecipientRegistry.new
     end
 
@@ -28,6 +31,14 @@ module RecordingStudioNotificationsEmail
       return mailer_class if mailer_class.respond_to?(:with)
 
       mailer_class.to_s.constantize
+    end
+
+    def inbound_authserv_ids
+      Array(@inbound_authserv_ids).filter_map { |id| id.to_s.strip.downcase.presence }.uniq
+    end
+
+    def inbound_authserv_ids=(value)
+      @inbound_authserv_ids = Array(value)
     end
 
     def merge!(attributes)
@@ -49,7 +60,31 @@ module RecordingStudioNotificationsEmail
         signed_reference_expires_in: signed_reference_expires_in,
         message_id_domain: message_id_domain,
         recipient_types: recipients.keys
+      }.merge(reply_settings)
+    end
+
+    private
+
+    def reply_settings
+      {
+        reply_domain: reply_domain,
+        reply_address_expires_in: reply_address_expires_in,
+        require_inbound_authentication: require_inbound_authentication,
+        inbound_authserv_ids: inbound_authserv_ids,
+        reply_max_body_bytes: reply_max_body_bytes,
+        reply_max_attachment_bytes: reply_max_attachment_bytes,
+        reply_max_attachments: reply_max_attachments
       }
+    end
+
+    def apply_reply_defaults
+      @reply_domain = nil
+      @reply_address_expires_in = 30.days
+      @require_inbound_authentication = true
+      @inbound_authserv_ids = []
+      @reply_max_body_bytes = 64 * 1024
+      @reply_max_attachment_bytes = 10 * 1024 * 1024
+      @reply_max_attachments = 10
     end
   end
 end

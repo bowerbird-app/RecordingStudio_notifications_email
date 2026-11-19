@@ -16,15 +16,18 @@ module RecordingStudioNotificationsEmail
       reference = DeliveryToken.sign(notification: notification, delivery: delivery, configuration: @configuration)
       to = recipient_for(event)
       raise_if_suppressed!(to)
+      thread_reference = thread_reference_for([notification])
       message = mailer.with(
         event: event,
         to: to,
         from: configured_from,
-        reply_to: configured_reply_to,
+        reply_to: outbound_reply_to(notification, delivery),
         template_path: individual_template_path_for(event),
         tracked_notification_path: tracked_notification_path(notification),
         correlation_reference: reference,
-        message_id: DeliveryToken.message_id(reference, configuration: @configuration)
+        message_id: DeliveryToken.message_id(reference, configuration: @configuration),
+        in_reply_to: thread_reference,
+        references: thread_reference
       ).notification
 
       message.deliver_now
@@ -48,6 +51,7 @@ module RecordingStudioNotificationsEmail
 
       raise_if_suppressed!(recipients.first)
       template_path = rollup_template_path_for(events)
+      thread_reference = thread_reference_for(notifications)
 
       reference = DeliveryToken.sign(
         notifications: notifications,
@@ -59,13 +63,15 @@ module RecordingStudioNotificationsEmail
         events: events,
         to: recipients.first,
         from: configured_from,
-        reply_to: configured_reply_to,
+        reply_to: rollup_reply_to(notifications, deliveries),
         template_path: template_path,
         correlation_reference: reference,
         cadence: cadence,
         period_starts_at: period_starts_at,
         period_ends_at: period_ends_at,
-        message_id: DeliveryToken.message_id(reference, configuration: @configuration)
+        message_id: DeliveryToken.message_id(reference, configuration: @configuration),
+        in_reply_to: thread_reference,
+        references: thread_reference
       ).rollup
 
       message.deliver_now
@@ -122,6 +128,45 @@ module RecordingStudioNotificationsEmail
       value = @configuration.from.to_s.presence ||
               raise(DeliveryError, "configure RecordingStudioNotificationsEmail.config.from")
       validate_mailbox!(value, "from")
+    end
+
+    def outbound_reply_to(notification, delivery)
+      address = per_delivery_reply_to(notification, delivery)
+      return validate_mailbox!(address, "reply_to") if address
+
+      configured_reply_to
+    end
+
+    def rollup_reply_to(notifications, deliveries)
+      return outbound_reply_to(notifications.first, deliveries.first) if deliveries.one?
+
+      configured_reply_to
+    end
+
+    def per_delivery_reply_to(notification, delivery)
+      return unless replyable_notification?(notification)
+
+      ReplyAddress.address_for(delivery, configuration: @configuration)
+    end
+
+    def replyable_notification?(notification)
+      return false unless RecordingStudioNotifications.respond_to?(:replyable?)
+
+      RecordingStudioNotifications.replyable?(notification.notification_type)
+    end
+
+    def thread_reference_for(notifications)
+      keys = notifications.map { |notification| thread_key_for(notification) }
+      return if keys.any?(&:blank?)
+      return if keys.uniq.size != 1
+
+      ThreadMessageId.for(keys.first, configuration: @configuration)
+    end
+
+    def thread_key_for(notification)
+      return unless notification.respond_to?(:thread_key)
+
+      notification.thread_key.to_s.strip.presence
     end
 
     def configured_reply_to

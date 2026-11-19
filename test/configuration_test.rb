@@ -16,6 +16,13 @@ class ConfigurationTest < Minitest::Test
   def test_defaults_include_email_channel_and_template_constants
     assert_equal :email, @configuration.channel
     assert_equal 30.days, @configuration.signed_reference_expires_in
+    assert_nil @configuration.reply_domain
+    assert_equal 30.days, @configuration.reply_address_expires_in
+    assert_equal true, @configuration.require_inbound_authentication
+    assert_equal [], @configuration.inbound_authserv_ids
+    assert_equal 64 * 1024, @configuration.reply_max_body_bytes
+    assert_equal 10 * 1024 * 1024, @configuration.reply_max_attachment_bytes
+    assert_equal 10, @configuration.reply_max_attachments
     assert_equal "recording_studio_notifications_email/notification_mailer/notification",
                  RecordingStudioNotificationsEmail::Configuration::DEFAULT_TEMPLATE
     assert_equal "recording_studio_notifications_email/notification_mailer/rollup",

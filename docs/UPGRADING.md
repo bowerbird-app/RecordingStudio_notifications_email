@@ -1,5 +1,71 @@
 # Upgrading
 
+## 0.6.0
+
+This gem requires Recording Studio `>= 7.1`, `< 8.0` and Notifications
+`>= 0.20.0`, `< 1.0`.
+
+Reply-by-email is optional. Leave `config.reply_domain` unset and the
+previous Reply-To behavior stays. A notification type accepts replies only
+after the host registers a reply handler with Notifications.
+
+This gem adds no migration. Hosts that accept replies need three sets of
+migrations.
+
+1. Notifications 0.20 adds `thread_key` and the replies table. Run
+   `bin/rails generate recording_studio_notifications:migrations`, then
+   `bin/rails db:migrate`.
+2. Action Mailbox. Run `bin/rails action_mailbox:install`, then migrate.
+3. Active Storage, for reply attachments. Run
+   `bin/rails active_storage:install`, then migrate.
+
+Choose Postmark, Mailgun, or Amazon SES as the Action Mailbox ingress.
+Point MX for `reply_domain` at that provider and publish the DNS records
+it requires. Put the ingress secret in the host's credentials.
+
+Route replies from the host. This gem mounts no route.
+
+```ruby
+class ApplicationMailbox < ActionMailbox::Base
+  routing(/^reply\+/i => "recording_studio_notifications_email/reply")
+end
+```
+
+New settings are `reply_domain`, `reply_address_expires_in` (default 30
+days), `require_inbound_authentication` (default true),
+`inbound_authserv_ids` (default empty), `reply_max_body_bytes`,
+`reply_max_attachment_bytes`, and `reply_max_attachments`. Threading
+headers use the existing `message_id_domain`.
+
+Set `inbound_authserv_ids` to the authserv-id on the
+Authentication-Results header the ingress adds. Only those fields are
+trusted, and a reply needs `dmarc=pass` on one of them. SPF alone is
+not accepted. Leave the list empty and, while authentication is
+required, every reply is rejected.
+
+`DeliveryToken` is unchanged. Its purpose, header, format, and
+`signed_reference_expires_in` are separate from the reply address.
+
+A reply that Notifications rejects is ignored. This gem does not bounce
+it and does not send mail back. A duplicate is processed. A failed
+handler, or a result this gem does not recognize, raises
+`RecordingStudioNotificationsEmail::ReplyFailedError`. The message is
+the reason symbol only. Action Mailbox marks that inbound email failed.
+`ActionMailbox::RoutingJob` does not declare `retry_on`, so Action
+Mailbox does not schedule another attempt. A queue adapter that retries
+failed jobs on its own, such as Sidekiq, still can. Re-run the reply
+from the Rails Conductor inbound email page, or in a console with
+`inbound_email.pending!` and `inbound_email.route`, before incineration
+(30 days by default). Notifications rolls a failed handler's claim back,
+so the same Message-ID can be tried again.
+
+Suppressed addresses still do not receive mail. Hard bounces, complaints,
+and unsubscribes still suppress. Soft bounces do not. Every message still
+includes List-Unsubscribe headers and an unsubscribe link.
+
+The gem loads when Action Mailbox is not enabled. Require the mailbox only
+by routing to it, which the engine does when Action Mailbox is loaded.
+
 ## 0.5.4
 
 This gem requires Recording Studio `>= 7.0`, `< 8.0` and Notifications
