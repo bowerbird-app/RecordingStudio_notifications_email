@@ -50,13 +50,15 @@ RecordingStudioNotifications.register_channel(
 ```
 
 For local development in this repository, parent gems are sourced from GitHub
-tags. Current pins include Recording Studio `v7.3.0` (runtime
-`>= 7.1` and `< 8.0`), Accessible `v0.45.1`, Trashable `v1.0.1`
-(`require: false`; query-only for Accessible), notifications `v0.20.0`
-(runtime `>= 0.20.0` and `< 1.0`), Metrics `v0.9.0`, and FlatPack `v0.1.377`.
-The dummy also pins Commentable `v0.12.0`, Root Switchable `v0.16.0`, and
-Cache `v0.7.0`. Notifications `v0.19.1` requires API `v1.2.1`, which requires
-Logs `v0.8.0` and Moveable `v6.0.0`. Moveable requires Icons `v0.4.0`. Those
+tags. Current pins include Recording Studio `~> 7.8` (`v7.8.0`; runtime
+`>= 7.1` and `< 8.0`), Accessible `~> 0.58` (`v0.58.0`), Trashable `~> 1.3`
+(`v1.3.0`, `require: false`; query-only for Accessible), notifications
+`~> 0.21` (`v0.21.0`; runtime `>= 0.20.0` and `< 1.0`), Metrics `~> 0.10`
+(`v0.10.0`), and FlatPack `~> 0.2` (`v0.2.0`). The dummy also pins
+Commentable `v0.12.0`, Root Switchable `~> 0.17` (`v0.17.0`), and Cache
+`~> 0.8` (`v0.8.0`). Notifications requires API `~> 1.21` (`v1.21.2`), which
+requires Logs `~> 0.9` (`v0.9.0`) and Moveable `~> 6.1` (`v6.1.0`). Moveable
+requires Icons `~> 0.5` (`v0.5.0`). Those
 gems are GitHub tags because they are not published on RubyGems. Grants go through
 `bootstrap_owner_access!` / `grant_access`. The dummy allowlists `User` in
 `access_actor_types`. Accessible, Commentable, notifications, and Root
