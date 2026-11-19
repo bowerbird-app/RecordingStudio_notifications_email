@@ -55,13 +55,36 @@ class ReplyByEmailTest < ActionMailbox::TestCase
     ok = receive_reply(mail_source("ok@example.test")) { RecordingStudioNotifications::ReplyResult.ok }
     duplicate = receive_reply(mail_source("duplicate@example.test")) { RecordingStudioNotifications::ReplyResult.duplicate }
     rejected = receive_reply(mail_source("rejected@example.test")) { RecordingStudioNotifications::ReplyResult.rejected(:closed) }
-    failed = receive_reply(mail_source("failed@example.test")) { RecordingStudioNotifications::ReplyResult.failed(:handler_error) }
 
     assert ok.delivered?
     assert duplicate.delivered?
     assert rejected.delivered?
-    assert failed.delivered?
-    [ok, duplicate, rejected, failed].each { |inbound| refute inbound.bounced? }
+    [ok, duplicate, rejected].each { |inbound| refute inbound.bounced? }
+    assert_empty ActionMailer::Base.deliveries
+  end
+
+  test "a failed reply marks the inbound email failed and can be rerun" do
+    attempts = 0
+    handler = lambda do |**|
+      attempts += 1
+      attempts == 1 ? RecordingStudioNotifications::ReplyResult.failed(:handler_error) : RecordingStudioNotifications::ReplyResult.ok
+    end
+    inbound = create_inbound_email_from_source(mail_source("failed@example.test"))
+    error = assert_raises(RecordingStudioNotificationsEmail::ReplyFailedError) do
+      with_notifications(handler) { inbound.route }
+    end
+
+    assert_equal "handler_error", error.message
+    refute_includes error.message, "person@example.test"
+    assert inbound.reload.failed?
+    refute inbound.bounced?
+    assert_empty ActionMailer::Base.deliveries
+
+    inbound.pending!
+    with_notifications(handler) { inbound.route }
+
+    assert inbound.reload.delivered?
+    assert_equal 2, attempts
     assert_empty ActionMailer::Base.deliveries
   end
 

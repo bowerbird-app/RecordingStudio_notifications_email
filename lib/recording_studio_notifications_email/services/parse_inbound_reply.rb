@@ -4,6 +4,12 @@ require "mail"
 require "recording_studio/services/base_service"
 
 module RecordingStudioNotificationsEmail
+  class ReplyFailedError < StandardError
+    def initialize(reason)
+      super(reason.to_s)
+    end
+  end
+
   module Services
     class ParseInboundReply < RecordingStudio::Services::BaseService
       CHANNEL = :email
@@ -50,17 +56,25 @@ module RecordingStudioNotificationsEmail
         return :unknown_delivery unless target
         return :from_mismatch unless from_matches?
         return :authentication_failed unless authenticated?
-        return :empty_body if reply_text.blank?
         return :body_too_large if reply_text.bytesize > @configuration.reply_max_body_bytes
 
-        attachment_problem || missing_message_id
+        problem = attachment_problem
+        return problem if problem
+        return :empty_body if reply_text.blank? && prepared_attachments.empty?
+
+        missing_message_id
       end
 
       def submit_reply
         uploaded = upload_attachments
         return rejected(uploaded) if uploaded.is_a?(Symbol)
 
-        map_result(invoke_handler(uploaded))
+        map_result(invoke_handler(uploaded), uploaded)
+      rescue ReplyFailedError
+        raise
+      rescue StandardError
+        discard_blobs(uploaded)
+        raise
       end
 
       def token_accepted?
@@ -165,10 +179,17 @@ module RecordingStudioNotificationsEmail
       end
 
       def upload_attachments
-        prepared_attachments.map { |part, bytes| upload_blob(part, bytes) }
+        uploaded = []
+        prepared_attachments.each { |part, bytes| store_attachment(uploaded, part, bytes) }
+        uploaded
       rescue StandardError => e
+        discard_blobs(uploaded)
         log_exception(:attachment_store_failed, e)
         :attachment_store_failed
+      end
+
+      def store_attachment(uploaded, part, bytes)
+        uploaded << upload_blob(part, bytes)
       end
 
       def upload_blob(part, bytes)
@@ -190,17 +211,36 @@ module RecordingStudioNotificationsEmail
         )
       end
 
-      def map_result(result)
-        case result.respond_to?(:outcome) ? result.outcome : nil
+      def map_result(result, blobs)
+        outcome = result.respond_to?(:outcome) ? result.outcome : nil
+        discard_blobs(blobs) unless outcome == :ok
+
+        case outcome
         when :ok
           processed(nil)
         when :duplicate
           processed(:duplicate)
-        when :rejected, :failed
+        when :rejected
           rejected(symbol_reason(result.reason))
         else
-          rejected(:invalid_result)
+          raise_reply_failed!(failure_reason(result, outcome))
         end
+      end
+
+      def failure_reason(result, outcome)
+        return symbol_reason(result.reason) if outcome == :failed && result.respond_to?(:reason)
+
+        :invalid_result
+      end
+
+      def raise_reply_failed!(reason)
+        error = ReplyFailedError.new(reason)
+        log_exception(reason, error)
+        raise error
+      end
+
+      def discard_blobs(blobs)
+        Array(blobs).each(&:purge_later)
       end
 
       def reply_text

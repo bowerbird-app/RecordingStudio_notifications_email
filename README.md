@@ -275,12 +275,40 @@ config.reply_max_attachments = 10
 ```
 
 An accepted reply calls `handle_reply` with `channel: :email` and the
-inbound Message-ID as `idempotency_key`. `ok` and `duplicate` are
-processed. `rejected` and `failed` are ignored. Auto-replies and bounces
-are ignored. This gem does not send a bounce or any other reply mail.
-Action Mailbox records the inbound email as delivered either way, so the
-provider is not asked to retry. Notifications rolls a failed handler's
-claim back, and a later reprocess of the same Message-ID can try again.
+inbound Message-ID as `idempotency_key`. A blank body is rejected only
+when the reply also has no attachments. A photo-only reply is filed
+with an empty body and its blobs. Those blobs stay stored only when
+`handle_reply` returns `ok`. A duplicate, a rejection, a failed handler,
+an unrecognized result, an unexpected error, or an upload that fails
+after an earlier blob was stored purges the blobs with `purge_later`.
+
+`ok` and `duplicate` finish normally, and Action Mailbox marks that
+inbound email delivered. `rejected` finishes normally too. This gem
+does not send a bounce or any other reply mail. A `failed` result, or a
+result this gem does not recognize, raises
+`RecordingStudioNotificationsEmail::ReplyFailedError` after the blobs
+are purged. The message is the reason symbol and nothing else. Action
+Mailbox then marks the inbound email failed.
+
+`ActionMailbox::RoutingJob` does not retry that failure. The job only
+calls `inbound_email.route`, and it declares no `retry_on`. The error
+still fails the job, so a queue adapter that retries failed jobs on its
+own can run it again. Sidekiq does that unless the host turns retries
+off. Re-run a failed reply from the Rails Conductor inbound email page.
+Conductor sets the status back to pending and enqueues routing. From a
+console:
+
+```ruby
+inbound_email = ActionMailbox::InboundEmail.find(id)
+inbound_email.pending!
+inbound_email.route
+```
+
+Notifications rolls the claim back when the handler fails, so the same
+Message-ID can be processed again. Action Mailbox later incinerates a
+processed inbound email, including one whose status is failed. The
+default wait is `config.action_mailbox.incinerate_after` (30 days).
+Re-run the reply before that. Auto-replies and bounces are ignored.
 Logs include the reason symbol only.
 
 ## Webhook integration contract

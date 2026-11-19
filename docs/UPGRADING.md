@@ -46,10 +46,18 @@ required, every reply is rejected.
 `DeliveryToken` is unchanged. Its purpose, header, format, and
 `signed_reference_expires_in` are separate from the reply address.
 
-A reply that Notifications rejects or fails is ignored. This gem does not
-bounce it. Action Mailbox marks that inbound email delivered, so the
-provider does not retry it. A failed handler's claim is rolled back, and
-reprocessing the same Message-ID can try again.
+A reply that Notifications rejects is ignored. This gem does not bounce
+it and does not send mail back. A duplicate is processed. A failed
+handler, or a result this gem does not recognize, raises
+`RecordingStudioNotificationsEmail::ReplyFailedError`. The message is
+the reason symbol only. Action Mailbox marks that inbound email failed.
+`ActionMailbox::RoutingJob` does not declare `retry_on`, so Action
+Mailbox does not schedule another attempt. A queue adapter that retries
+failed jobs on its own, such as Sidekiq, still can. Re-run the reply
+from the Rails Conductor inbound email page, or in a console with
+`inbound_email.pending!` and `inbound_email.route`, before incineration
+(30 days by default). Notifications rolls a failed handler's claim back,
+so the same Message-ID can be tried again.
 
 Suppressed addresses still do not receive mail. Hard bounces, complaints,
 and unsubscribes still suppress. Soft bounces do not. Every message still

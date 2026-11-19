@@ -28,8 +28,12 @@ All notable changes to this project will be documented in this file.
   pass, auto-replies, bounces, quoted text, and body and attachment
   limits. `config.inbound_authserv_ids` names the ingress authserv-ids.
   An empty list trusts no Authentication-Results field.
-  Attachments are stored as Active Storage blobs. The parser calls
-  `handle_reply` with `channel: :email` and the inbound Message-ID.
+  Attachments are stored as Active Storage blobs. A blank body is
+  rejected only when the reply has no attachments. Blobs stay stored
+  only when `handle_reply` returns `ok`. Every other outcome, an
+  unexpected handler error, and a partial upload failure purge the
+  blobs already stored. The parser calls `handle_reply` with
+  `channel: :email` and the inbound Message-ID.
 
 ### Changed
 
@@ -60,8 +64,14 @@ All notable changes to this project will be documented in this file.
   headers and unsubscribe links stay on every message.
 - `DeliveryToken` is unchanged. Do not reuse its purpose or expiry for
   reply addresses.
-- A rejected or failed reply is ignored. This gem does not bounce it.
-  Reprocessing the same Message-ID can try a failed handler again.
+- A rejected reply is ignored. This gem does not bounce it and does not
+  send mail back. A duplicate is processed. A failed handler, or a
+  result this gem does not recognize, raises `ReplyFailedError` with
+  the reason symbol only. Action Mailbox marks that inbound email
+  failed. `RoutingJob` does not retry it. Re-run it from the Rails
+  Conductor inbound email page, or with `pending!` and `route` in a
+  console, before Action Mailbox incinerates it. Notifications rolls
+  the claim back, so the same Message-ID can be tried again.
 
 ## [0.5.4] - 2026-11-15
 

@@ -130,10 +130,13 @@ Leave `reply_domain` blank, or skip the reply handler, and the message keeps
 The host turns on Action Mailbox and routes `/^reply\+/` to
 `recording_studio_notifications_email/reply`. Set `inbound_authserv_ids`
 to the ingress authserv-id. A reply is accepted only when that field has
-`dmarc=pass`. This gem still mounts no route and adds no migration. Hosts
-that accept replies install the Action Mailbox and Active Storage
-migrations, plus the Notifications 0.20 migration. The README has the
-ingress, DNS, and routing steps.
+`dmarc=pass`. A failed handler raises `ReplyFailedError` and Action
+Mailbox marks the inbound email failed. `RoutingJob` does not retry it.
+Re-run it from the Rails Conductor page or with `pending!` and `route`.
+This gem still mounts no route and adds no migration. Hosts that accept
+replies install the Action Mailbox and Active Storage migrations, plus
+the Notifications 0.20 migration. The README has the ingress, DNS, and
+routing steps.
 
 ## Tell Core Which Notifications May Use Email
 

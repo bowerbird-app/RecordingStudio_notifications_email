@@ -53,7 +53,16 @@ class ParseInboundReplyTest < Minitest::Test
     assert_disposition(:ok, nil, :processed, nil)
     assert_disposition(:duplicate, nil, :processed, :duplicate)
     assert_disposition(:rejected, :closed, :rejected, :closed)
-    assert_disposition(:failed, :handler_error, :rejected, :handler_error)
+  end
+
+  def test_a_failed_or_invalid_reply_raises_the_reason_symbol
+    failed = assert_reply_failed { RecordingStudioNotifications::ReplyResult.failed(:handler_error) }
+    assert_equal "handler_error", failed.message
+
+    invalid = assert_reply_failed { Object.new }
+    assert_equal "invalid_result", invalid.message
+    refute_includes invalid.message, "person@example.test"
+    refute_includes @logs.join, "Thanks"
   end
 
   def test_duplicate_message_id_is_processed
@@ -267,6 +276,82 @@ class ParseInboundReplyTest < Minitest::Test
     assert_equal :empty_body, parse(mail_for(body: "   ")) { flunk "handler" }.reason
   end
 
+  def test_a_photo_only_reply_is_filed_with_an_empty_body
+    blob = trackable_blob
+    seen = nil
+    disposition = with_uploaded_blobs([blob]) do
+      parse(mail_with_attachment(body: nil)) do |kwargs|
+        seen = kwargs
+        RecordingStudioNotifications::ReplyResult.ok
+      end
+    end
+
+    assert disposition.processed?
+    assert_equal "", seen.fetch(:body)
+    assert_equal [blob], seen.fetch(:attachments)
+    assert_empty @purged
+  end
+
+  def test_attachment_blobs_are_kept_only_for_an_accepted_reply
+    mail = mail_with_attachment
+    kept = trackable_blob
+    with_uploaded_blobs([kept]) do
+      disposition = parse(mail) { RecordingStudioNotifications::ReplyResult.ok }
+      assert disposition.processed?
+    end
+    assert_empty @purged
+
+    expectations = [
+      [RecordingStudioNotifications::ReplyResult.duplicate, :processed, :duplicate],
+      [RecordingStudioNotifications::ReplyResult.rejected(:closed), :rejected, :closed]
+    ]
+    expectations.each do |result, status, reason|
+      blob = trackable_blob
+      disposition = with_uploaded_blobs([blob]) { parse(mail) { result } }
+
+      assert_equal status, disposition.status
+      assert_equal reason, disposition.reason
+      assert_equal [blob], @purged
+    end
+  end
+
+  def test_failed_and_invalid_replies_purge_blobs_before_raising
+    mail = mail_with_attachment
+    [RecordingStudioNotifications::ReplyResult.failed(:handler_error), Object.new].each do |result|
+      blob = trackable_blob
+      assert_raises(RecordingStudioNotificationsEmail::ReplyFailedError) do
+        with_uploaded_blobs([blob]) { parse(mail) { result } }
+      end
+      assert_equal [blob], @purged
+    end
+  end
+
+  def test_an_unexpected_handler_error_purges_blobs_and_reraises
+    blob = trackable_blob
+    error = assert_raises(RuntimeError) do
+      with_uploaded_blobs([blob]) do
+        parse(mail_with_attachment) { raise "handler failed" }
+      end
+    end
+
+    assert_equal "handler failed", error.message
+    assert_equal [blob], @purged
+  end
+
+  def test_a_partial_upload_purges_blobs_already_stored
+    stored = trackable_blob
+    mail = mail_with_attachment
+    mail.add_file(filename: "second.jpg", content: "more")
+    disposition = with_uploaded_blobs([stored, RuntimeError.new("disk")]) do
+      parse(mail) { flunk "handler" }
+    end
+
+    assert_equal :attachment_store_failed, disposition.reason
+    assert_equal [stored], @purged
+    assert_includes @logs.join, "attachment_store_failed"
+    refute_includes @logs.join, "person@example.test"
+  end
+
   def test_upcased_reply_address_is_accepted
     address = RecordingStudioNotificationsEmail::ReplyAddress.address_for(UUID, configuration: @configuration)
     mail = mail_for
@@ -301,6 +386,56 @@ class ParseInboundReplyTest < Minitest::Test
     when :failed
       RecordingStudioNotifications::ReplyResult.failed(reason)
     end
+  end
+
+  def assert_reply_failed(&)
+    assert_raises(RecordingStudioNotificationsEmail::ReplyFailedError) { parse(mail_for, &) }
+  end
+
+  def mail_with_attachment(body: "Thanks for the note")
+    mail = mail_for(body: body)
+    mail.add_file(filename: "photo.jpg", content: "jpeg-bytes")
+    mail
+  end
+
+  def trackable_blob
+    @purged = []
+    blob = Object.new
+    purged = @purged
+    blob.define_singleton_method(:purge_later) { purged << blob }
+    blob
+  end
+
+  def with_uploaded_blobs(results, &)
+    install_blob_class
+    queue = results.dup
+    uploader = lambda do |**|
+      item = queue.shift
+      raise item if item.is_a?(Exception)
+
+      item
+    end
+    ActiveStorage::Blob.stub(:create_and_upload!, uploader, &)
+  ensure
+    remove_blob_class
+  end
+
+  def install_blob_class
+    @installed_active_storage = !defined?(ActiveStorage)
+    Object.const_set(:ActiveStorage, Module.new) if @installed_active_storage
+    @installed_blob = !ActiveStorage.const_defined?(:Blob, false)
+    return unless @installed_blob
+
+    ActiveStorage.const_set(:Blob, Class.new do
+      def self.create_and_upload!(**)
+        raise "unstubbed upload"
+      end
+    end)
+  end
+
+  def remove_blob_class
+    ActiveStorage.send(:remove_const, :Blob) if @installed_blob && defined?(ActiveStorage::Blob)
+    Object.send(:remove_const, :ActiveStorage) if @installed_active_storage && defined?(ActiveStorage)
   end
 
   def parse(mail, target: @target, &block)
