@@ -2,8 +2,11 @@
 
 require "test_helper"
 require "open3"
+require_relative "reply_key"
 
 class ReplyAddressTest < Minitest::Test
+  include ReplyKey
+
   UUID = "11111111-1111-4111-8111-111111111111"
 
   def setup
@@ -11,6 +14,10 @@ class ReplyAddressTest < Minitest::Test
     @configuration.message_verifier = ActiveSupport::MessageVerifier.new("c" * 64, serializer: JSON)
     @configuration.reply_domain = "reply.example.test"
     @configuration.reply_address_expires_in = 30.days
+  end
+
+  def run
+    with_reply_key("c" * 64) { super }
   end
 
   def test_round_trip_is_lowercase_base32_and_fits_the_local_part_limit
@@ -97,9 +104,10 @@ class ReplyAddressTest < Minitest::Test
 
   def test_a_token_from_another_secret_is_rejected
     other = RecordingStudioNotificationsEmail::Configuration.new
-    other.message_verifier = ActiveSupport::MessageVerifier.new("d" * 64, serializer: JSON)
     other.reply_domain = "reply.example.test"
+    use_reply_key("d" * 64)
     address = RecordingStudioNotificationsEmail::ReplyAddress.address_for(UUID, configuration: other)
+    use_reply_key("c" * 64)
 
     assert_nil RecordingStudioNotificationsEmail::ReplyAddress.verify(address, configuration: @configuration)
   end

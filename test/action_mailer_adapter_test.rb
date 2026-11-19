@@ -52,6 +52,7 @@ class ActionMailerAdapterTest < Minitest::Test
     @configuration.from = "notifications@example.test"
     @configuration.mailer_class = FakeMailer
     @configuration.message_verifier = ActiveSupport::MessageVerifier.new("b" * 64, serializer: JSON)
+    @reply_key = ActiveSupport::KeyGenerator.new("b" * 64, iterations: 1)
     @configuration.message_id_domain = "mail.example.test"
     @adapter = RecordingStudioNotificationsEmail::ActionMailerAdapter.new(configuration: @configuration)
     FakeMailer.reset!
@@ -456,7 +457,9 @@ class ActionMailerAdapterTest < Minitest::Test
 
     assert_equal "reply.example.test", address.split("@").last
     assert_operator local.length, :<=, 64
-    verified = RecordingStudioNotificationsEmail::ReplyAddress.verify(address, configuration: @configuration)
+    verified = with_mailer_host do
+      RecordingStudioNotificationsEmail::ReplyAddress.verify(address, configuration: @configuration)
+    end
     assert_equal delivery.id, verified
     refute_equal "support@example.test", address
   end
@@ -638,6 +641,8 @@ class ActionMailerAdapterTest < Minitest::Test
     config.define_singleton_method(:action_mailer) { mailer_config }
     application.define_singleton_method(:routes) { route_set }
     application.define_singleton_method(:config) { config }
+    generator = @reply_key
+    application.define_singleton_method(:key_generator) { generator }
     application
   end
 

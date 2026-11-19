@@ -24,8 +24,10 @@ All notable changes to this project will be documented in this file.
   `Services::ParseInboundReply`. The host enables Action Mailbox and routes
   `/^reply\+/` to the mailbox. This gem mounts no route. The gem still
   loads when Action Mailbox is not loaded.
-- Inbound checks for HMAC, expiry, recipient address, SPF or DMARC,
-  auto-replies, bounces, quoted text, and body and attachment limits.
+- Inbound checks for HMAC, expiry, recipient address, a trusted DMARC
+  pass, auto-replies, bounces, quoted text, and body and attachment
+  limits. `config.inbound_authserv_ids` names the ingress authserv-ids.
+  An empty list trusts no Authentication-Results field.
   Attachments are stored as Active Storage blobs. The parser calls
   `handle_reply` with `channel: :email` and the inbound Message-ID.
 

@@ -62,7 +62,7 @@ module RecordingStudioNotificationsEmail
       match = text.match(OUTLOOK)
       return text unless match
 
-      text.byteslice(0, match.begin(0)).to_s
+      text[0, match.begin(0)].to_s
     end
     private_class_method :cut_outlook
 

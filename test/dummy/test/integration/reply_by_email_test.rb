@@ -13,6 +13,7 @@ class ReplyByEmailTest < ActionMailbox::TestCase
       reply_domain: @configuration.reply_domain,
       message_id_domain: @configuration.message_id_domain,
       require_inbound_authentication: @configuration.require_inbound_authentication,
+      inbound_authserv_ids: @configuration.inbound_authserv_ids,
       reply_max_body_bytes: @configuration.reply_max_body_bytes,
       reply_max_attachment_bytes: @configuration.reply_max_attachment_bytes,
       reply_max_attachments: @configuration.reply_max_attachments
@@ -20,6 +21,7 @@ class ReplyByEmailTest < ActionMailbox::TestCase
     @configuration.reply_domain = "reply.example.test"
     @configuration.message_id_domain = "mail.example.test"
     @configuration.require_inbound_authentication = true
+    @configuration.inbound_authserv_ids = ["mx.example.test"]
     @configuration.reply_max_body_bytes = 64 * 1024
     @configuration.reply_max_attachment_bytes = 10 * 1024 * 1024
     @configuration.reply_max_attachments = 10
@@ -82,7 +84,7 @@ class ReplyByEmailTest < ActionMailbox::TestCase
   test "a spoofed from and a failed authentication check are ignored" do
     spoofed = receive_reply(mail_source("spoof@example.test", from: "other@example.test")) { flunk "handler" }
     unauthenticated = receive_reply(
-      mail_source("auth@example.test", authentication: "example.test; spf=fail; dmarc=fail")
+      mail_source("auth@example.test", authentication: "mx.example.test; spf=pass; dmarc=fail")
     ) { flunk "handler" }
 
     assert spoofed.delivered?
@@ -132,7 +134,7 @@ class ReplyByEmailTest < ActionMailbox::TestCase
     mail.to = reply_address
     mail.subject = "Re: notice"
     mail.message_id = "<file@example.test>"
-    mail.header["Authentication-Results"] = "example.test; spf=pass"
+    mail.header["Authentication-Results"] = "mx.example.test; dmarc=pass"
     mail.body = "See the file"
     mail.add_file(filename: "note.txt", content: "hello")
     seen = nil
@@ -202,7 +204,7 @@ class ReplyByEmailTest < ActionMailbox::TestCase
   end
 
   def mail_source(message_id = "reply-1@example.test", from: "person@example.test", body: "Thanks for the note",
-                  authentication: "example.test; spf=pass", headers: {})
+                  authentication: "mx.example.test; dmarc=pass", headers: {})
     mail = Mail.new
     mail.from = from
     mail.to = reply_address

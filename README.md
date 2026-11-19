@@ -86,6 +86,9 @@ RecordingStudioNotificationsEmail.configure do |config|
   config.reply_domain = "reply.example.com"
   config.reply_address_expires_in = 30.days
   config.require_inbound_authentication = true
+  # Authserv-id written by the ingress on Authentication-Results.
+  # An empty list trusts nothing, so inbound authentication fails closed.
+  config.inbound_authserv_ids = ["mx.example.com"]
 end
 ```
 
@@ -251,10 +254,16 @@ class ApplicationMailbox < ActionMailbox::Base
 end
 ```
 
-The ingress must write Authentication-Results. The parser accepts the
-reply when SPF or DMARC is `pass`, and the From address matches the
-recipient. `config.require_inbound_authentication` defaults to true.
-Set it to false only when the ingress cannot add that header.
+The ingress must write Authentication-Results. Set
+`config.inbound_authserv_ids` to the authserv-id that ingress writes,
+the token before the first semicolon. The parser reads every
+Authentication-Results field and trusts only those ids. It accepts a
+reply only when a trusted field has `dmarc=pass`. An SPF pass is not
+enough, because DMARC is what ties the result to the From domain. A
+header the sender adds is ignored. An empty list trusts nothing, so
+authentication fails closed. `config.require_inbound_authentication`
+defaults to true. Set it to false only when the ingress cannot add
+that header.
 
 These settings limit the accepted reply. Defaults are 64 KB for the
 body, 10 MB for each attachment, and 10 attachments.

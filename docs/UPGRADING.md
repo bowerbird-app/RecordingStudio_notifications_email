@@ -33,9 +33,15 @@ end
 
 New settings are `reply_domain`, `reply_address_expires_in` (default 30
 days), `require_inbound_authentication` (default true),
-`reply_max_body_bytes`, `reply_max_attachment_bytes`, and
-`reply_max_attachments`. Threading headers use the existing
-`message_id_domain`.
+`inbound_authserv_ids` (default empty), `reply_max_body_bytes`,
+`reply_max_attachment_bytes`, and `reply_max_attachments`. Threading
+headers use the existing `message_id_domain`.
+
+Set `inbound_authserv_ids` to the authserv-id on the
+Authentication-Results header the ingress adds. Only those fields are
+trusted, and a reply needs `dmarc=pass` on one of them. SPF alone is
+not accepted. Leave the list empty and, while authentication is
+required, every reply is rejected.
 
 `DeliveryToken` is unchanged. Its purpose, header, format, and
 `signed_reference_expires_in` are separate from the reply address.

@@ -73,33 +73,22 @@ module RecordingStudioNotificationsEmail
         raise ConfigurationError, "reply_address_expires_in must be a positive duration"
       end
 
-      def signing_key(configuration)
-        secret = verifier_secret(configuration)
-        digest = OpenSSL::Digest::SHA256.hexdigest("#{PURPOSE}\0#{secret}")
-        key_cache.synchronize do
-          key_cache.store[digest] ||= ActiveSupport::KeyGenerator.new(secret).generate_key(PURPOSE, 32)
-        end
+      def signing_key(_configuration)
+        key_generator.generate_key(PURPOSE, 32)
       end
 
-      def verifier_secret(configuration)
-        secret = configuration.message_verifier ? secret_from(configuration.message_verifier) : rails_secret
-        return secret if secret.present?
+      def key_generator
+        application = rails_application
+        generator = application.key_generator if application.respond_to?(:key_generator)
+        return generator if generator.respond_to?(:generate_key)
 
-        raise ConfigurationError, "configure message_verifier before signing a reply address"
+        raise ConfigurationError, "Rails.application.key_generator is required to sign a reply address"
       end
 
-      def secret_from(verifier)
-        verifier.instance_variable_get(:@secret)
-      end
+      def rails_application
+        return unless defined?(Rails) && Rails.respond_to?(:application)
 
-      def rails_secret
-        return unless defined?(Rails) && Rails.respond_to?(:application) && Rails.application
-
-        Rails.application.secret_key_base
-      end
-
-      def key_cache
-        @key_cache ||= KeyCache.new
+        Rails.application
       end
 
       def extract_code(token)
@@ -157,19 +146,5 @@ module RecordingStudioNotificationsEmail
         decoded
       end
     end
-
-    class KeyCache
-      attr_reader :store
-
-      def initialize
-        @store = {}
-        @mutex = Mutex.new
-      end
-
-      def synchronize(&)
-        @mutex.synchronize(&)
-      end
-    end
-    private_constant :KeyCache
   end
 end

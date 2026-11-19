@@ -33,6 +33,14 @@ module RecordingStudioNotificationsEmail
       mailer_class.to_s.constantize
     end
 
+    def inbound_authserv_ids
+      Array(@inbound_authserv_ids).filter_map { |id| id.to_s.strip.downcase.presence }.uniq
+    end
+
+    def inbound_authserv_ids=(value)
+      @inbound_authserv_ids = Array(value)
+    end
+
     def merge!(attributes)
       return self unless attributes.respond_to?(:each)
 
@@ -62,6 +70,7 @@ module RecordingStudioNotificationsEmail
         reply_domain: reply_domain,
         reply_address_expires_in: reply_address_expires_in,
         require_inbound_authentication: require_inbound_authentication,
+        inbound_authserv_ids: inbound_authserv_ids,
         reply_max_body_bytes: reply_max_body_bytes,
         reply_max_attachment_bytes: reply_max_attachment_bytes,
         reply_max_attachments: reply_max_attachments
@@ -72,6 +81,7 @@ module RecordingStudioNotificationsEmail
       @reply_domain = nil
       @reply_address_expires_in = 30.days
       @require_inbound_authentication = true
+      @inbound_authserv_ids = []
       @reply_max_body_bytes = 64 * 1024
       @reply_max_attachment_bytes = 10 * 1024 * 1024
       @reply_max_attachments = 10

@@ -2,22 +2,29 @@
 
 require "test_helper"
 require "mail"
+require_relative "reply_key"
 
 class ParseInboundReplyTest < Minitest::Test
+  include ReplyKey
+
   UUID = "11111111-1111-4111-8111-111111111111"
   Target = Struct.new(:notification, :recipient, keyword_init: true)
   Recipient = Struct.new(:email, keyword_init: true)
 
   def setup
     @configuration = RecordingStudioNotificationsEmail::Configuration.new
-    @configuration.message_verifier = ActiveSupport::MessageVerifier.new("e" * 64, serializer: JSON)
     @configuration.reply_domain = "reply.example.test"
     @configuration.reply_address_expires_in = 30.days
     @configuration.require_inbound_authentication = true
+    @configuration.inbound_authserv_ids = ["mx.example.test"]
     @recipient = Recipient.new(email: "person@example.test")
     @notification = Object.new
     @target = Target.new(notification: @notification, recipient: @recipient)
     @logs = []
+  end
+
+  def run
+    with_reply_key("e" * 64) { super }
   end
 
   def test_a_matching_reply_is_processed
@@ -87,17 +94,47 @@ class ParseInboundReplyTest < Minitest::Test
     assert disposition.processed?
   end
 
-  def test_spf_or_dmarc_failure_is_rejected_and_either_pass_is_accepted
-    failed = parse(mail_for(authentication: "example.test; spf=fail; dmarc=fail")) { flunk "handler" }
-    assert_equal :authentication_failed, failed.reason
+  def test_trusted_dmarc_pass_is_required
+    forged_and_failed = parse(mail_for(authentication: [
+                                         "evil.test; dmarc=pass",
+                                         "mx.example.test; dmarc=fail"
+                                       ])) { flunk "handler" }
+    assert_equal :authentication_failed, forged_and_failed.reason
 
-    dmarc = parse(mail_for(authentication: "example.test; spf=fail; dmarc=pass")) do
-      RecordingStudioNotifications::ReplyResult.ok
-    end
-    assert dmarc.processed?
+    forged = parse(mail_for(authentication: "evil.test; dmarc=pass")) { flunk "handler" }
+    assert_equal :authentication_failed, forged.reason
+
+    spf_only = parse(mail_for(authentication: "mx.example.test; spf=pass; dmarc=fail")) { flunk "handler" }
+    assert_equal :authentication_failed, spf_only.reason
 
     missing = parse(mail_for(authentication: nil)) { flunk "handler" }
     assert_equal :authentication_failed, missing.reason
+
+    @configuration.inbound_authserv_ids = []
+    unconfigured = parse(mail_for(authentication: "mx.example.test; dmarc=pass")) { flunk "handler" }
+    assert_equal :authentication_failed, unconfigured.reason
+    @configuration.inbound_authserv_ids = ["mx.example.test"]
+
+    accepted = parse(mail_for(authentication: "mx.example.test; spf=fail; dmarc=pass")) do
+      RecordingStudioNotifications::ReplyResult.ok
+    end
+    assert accepted.processed?
+  end
+
+  def test_every_authentication_results_field_is_checked
+    rejected = parse(mail_for(authentication: [
+                                "mx.example.test; dmarc=fail",
+                                "evil.test; dmarc=pass"
+                              ])) { flunk "handler" }
+    assert_equal :authentication_failed, rejected.reason
+
+    accepted = parse(mail_for(authentication: [
+                                "evil.test; dmarc=pass",
+                                "MX.Example.TEST; spf=fail; dmarc=pass"
+                              ])) do
+      RecordingStudioNotifications::ReplyResult.ok
+    end
+    assert accepted.processed?
   end
 
   def test_authentication_can_be_turned_off
@@ -179,6 +216,20 @@ class ParseInboundReplyTest < Minitest::Test
     end
 
     assert_equal "Thanks for the note", seen
+    refute_includes seen, "person@example.test"
+  end
+
+  def test_outlook_quoting_keeps_utf8_text
+    body = "éé thanks\nFrom: Pat <person@example.test>\nSent: Monday\nhidden"
+    seen = nil
+    parse(mail_for(body: body)) do |kwargs|
+      seen = kwargs.fetch(:body)
+      RecordingStudioNotifications::ReplyResult.ok
+    end
+
+    assert_equal "éé thanks", seen
+    assert seen.valid_encoding?
+    refute_includes seen, "hidden"
     refute_includes seen, "person@example.test"
   end
 
@@ -289,7 +340,7 @@ class ParseInboundReplyTest < Minitest::Test
   end
 
   def mail_for(from: "person@example.test", body: "Thanks for the note", message_id: "<reply-1@example.test>",
-               authentication: "example.test; spf=pass", headers: {})
+               authentication: "mx.example.test; dmarc=pass", headers: {})
     address = RecordingStudioNotificationsEmail::ReplyAddress.address_for(UUID, configuration: @configuration)
     mail = Mail.new
     mail.from = from
@@ -297,7 +348,9 @@ class ParseInboundReplyTest < Minitest::Test
     mail.subject = "Re: notice"
     mail.body = body if body
     mail.message_id = message_id if message_id
-    mail.header["Authentication-Results"] = authentication if authentication
+    Array(authentication).each do |value|
+      mail.header["Authentication-Results"] = value
+    end
     headers.each { |name, value| mail.header[name] = value }
     mail
   end

@@ -8,6 +8,7 @@ module RecordingStudioNotificationsEmail
     class ParseInboundReply < RecordingStudio::Services::BaseService
       CHANNEL = :email
       AUTO_PRECEDENCE = %w[bulk auto_reply list].freeze
+      DMARC_PASS = /(?:\A|[;\s])dmarc\s*=\s*pass\b/i
       Disposition = Data.define(:status, :reason) do
         def processed?
           status == :processed
@@ -93,10 +94,37 @@ module RecordingStudioNotificationsEmail
       def authenticated?
         return true unless @configuration.require_inbound_authentication
 
-        field = @mail.header["Authentication-Results"]
-        return false unless field
+        authentication_results.any? { |value| trusted_dmarc_pass?(value) }
+      end
 
-        field.value.to_s.match?(/(?:^|[;\s])(?:spf|dmarc)=pass\b/i)
+      def authentication_results
+        header = @mail.header if @mail.respond_to?(:header)
+        return [] unless header.respond_to?(:fields)
+
+        header.fields.filter_map do |field|
+          next unless field.name.to_s.casecmp("Authentication-Results").zero?
+
+          field.value.to_s
+        end
+      end
+
+      def trusted_dmarc_pass?(value)
+        id = authserv_id(value)
+        id.present? && trusted_authserv_ids.include?(id) && value.match?(DMARC_PASS)
+      end
+
+      def trusted_authserv_ids
+        Array(@configuration.inbound_authserv_ids).filter_map { |id| normalize_authserv_id(id) }
+      end
+
+      def authserv_id(value)
+        head = value.to_s.strip.split(";", 2).first.to_s
+        head = head.gsub(/\([^)]*\)/, " ")
+        normalize_authserv_id(head.strip.split(/\s+/).first)
+      end
+
+      def normalize_authserv_id(value)
+        value.to_s.strip.downcase.presence
       end
 
       def auto_reply?
